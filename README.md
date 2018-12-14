@@ -1,5 +1,7 @@
 # Foremast
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/intuit/foremast)](https://goreportcard.com/report/github.com/intuit/foremast)
+
 ## Foremast
 
 ![](.gitbook/assets/be82786014542e402862c379f576f8c8.png)
