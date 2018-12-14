@@ -1,6 +1,7 @@
 # Foremast
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/intuit/foremast)](https://goreportcard.com/report/github.com/intuit/foremast)
+[![Coverage Status](https://coveralls.io/repos/github/intuit/foremast/badge.svg?branch=master)](https://coveralls.io/github/intuit/foremast?branch=master)
 
 ## Foremast
 
