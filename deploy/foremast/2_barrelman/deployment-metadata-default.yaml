@@ -1,0 +1,45 @@
+apiVersion: deployment.foremast.ai/v1alpha1
+kind: DeploymentMetadata
+metadata:
+  namespace: foremast
+  name: "spring-boot"
+spec:
+  metrics:
+    dataSourceType: prometheus
+    endpoint: http://prometheus-k8s.monitoring.svc.cluster.local:9090/api/v1/
+    monitoring:
+    - metricName: http_server_requests_error_5xx
+      metricType: counter
+      metricAlias: error5xx
+#    - metricName: http_server_requests_error_4xx
+#      metricType: counter
+#      metricAlias: error4xx
+#      - metricName: http_server_requests_latency
+#        metricType: gauge
+#        metricAlias: latency
+#      - metricName: cpu_usage_seconds_total
+#        metricType: gauge
+#        metricAlias: cpu
+#      - metricName: memory_usage_bytes
+#        metricType: gauge
+#        metricAlias: memory
+  analyst:
+    endpoint: http://foremast-service.foremast.svc.cluster.local:8099/v1/healthcheck/
+    version: 0.0.3
+  descriptor:
+    type: "spring-boot"
+    version: "0.0.1"
+    description: "A template spring-boot application"
+    maintainers:
+    - name: Sheldon Shao
+      email: shaoxt@gmail.com
+    owners:
+    - name: Sheldon Shao
+      email: shaoxt@gmail.com
+    keywords:
+    - "canary"
+    - "deployment"
+    - "metrics"
+    links:
+    - description: Application Git Repo
+      url: "https://github.com/spring-projects/spring-boot/tree/master/spring-boot-samples"

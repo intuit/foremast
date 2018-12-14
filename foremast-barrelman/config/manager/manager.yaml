@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: barrelman-service
+  namespace: foremast
+  labels:
+    app: barrelman
+spec:
+  selector:
+    app: barrelman
+  ports:
+  - port: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: barrelman
+  namespace: foremast
+  labels:
+    app: barrelman
+spec:
+  selector:
+    matchLabels:
+      app: barrelman
+#  serviceName: barrelman-service
+  template:
+    metadata:
+      labels:
+        app: barrelman
+    spec:
+      containers:
+      - command:
+        - /root/manager
+        image: docker.io/foremast/foremast-barrelman:latest
+        imagePullPolicy: Always
+        name: manager
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+      - name: regcred
+

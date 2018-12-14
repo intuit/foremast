@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foremast-barrelman
+  namespace: foremast
+  labels:
+    app: foremast-barrelman
+spec:
+  selector:
+    matchLabels:
+      app: foremast-barrelman
+  template:
+    metadata:
+      labels:
+        app: foremast-barrelman
+    spec:
+      containers:
+      - command:
+        - /root/manager
+        image: docker.io/foremast/foremast-barrelman:0.0.5
+        imagePullPolicy: Always
+        name: manager
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+      - name: regcred
+

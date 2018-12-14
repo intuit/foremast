@@ -1,0 +1,48 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:serviceaccount:foremast
+  namespace: foremast
+rules:
+- apiGroups:
+  - ""
+  - "extensions"
+  - "apps"
+  - "deployment.foremast.ai"
+  resources:
+  - namespaces
+  - services
+  - endpoints
+  - pods
+  - replicasets
+  - deployments
+  - deployments/rollback
+  - deployments/scale
+  - daemonsets
+  - daemonsets/scale
+  - statefulsets
+  - statefulsets/scale
+  - deploymentmonitors
+  - deploymentmetadatas
+  - events
+  - rollback
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:serviceaccount:foremast
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:serviceaccount:foremast
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: foremast

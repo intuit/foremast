@@ -1,0 +1,27 @@
+@startuml
+participant User
+User -> kubectl: Deploy v2
+
+activate APIServer
+kubectl -> APIServer: Update Deployment
+activate Barrelman
+Barrelman -> APIServer: Get deployment\nchange event (v2)
+deactivate APIServer
+
+Barrelman -> ForemastJudgement: Start analyzing
+activate ForemastJudgement
+ForemastJudgement -> Prometheus: Query metrics
+ForemastJudgement -> ForemastJudgement: Machine learning
+ForemastJudgement -> ForemastJudgement: Mark it as Healthy\nor Unhealthy
+
+deactivate ForemastJudgement
+
+Barrelman -> ForemastJudgement: Check status
+activate APIServer
+Barrelman -> APIServer: Update health status\nto DeploymentMonitor
+Barrelman -> APIServer: Watch DeploymentMonitor
+Barrelman -> APIServer: Rollback deployment (v2)
+deactivate APIServer
+
+deactivate Barrelman
+@enduml

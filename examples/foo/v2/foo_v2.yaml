@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: foo
+    appType: spring-boot
+  name: foo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foo
+  template:
+    metadata:
+      labels:
+        app: foo
+      annotations:
+        version: "v2" #Information for demo
+    spec:
+      containers:
+      - name: app
+        image: docker.io/foremast/k8s-metrics-demo:0.1.0
+        env:
+        - name: APP_NAME
+          value: foo
+        - name: JAVA_OPTS
+          value: "-DerrorType=5xx -Dfrequency=4"
+        ports:
+        - name: web
+          containerPort: 8080

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foremast-brain
+  namespace: foremast
+  labels:
+    app: foremast-brain
+spec:
+  selector:
+    matchLabels:
+      app: foremast-brain
+  template:
+    metadata:
+      labels:
+        app: foremast-brain
+    spec:
+      containers:
+      - name: brain
+        image: docker.io/foremast/foremast-brain:0.0.8
+        imagePullPolicy: Always
+        env:
+        - name: ES_ENDPOINT
+          value: "http://elasticsearch-discovery.foremast.svc.cluster.local:9200"
+        resources:
+          limits:
+            cpu: 100m
+          requests:
+            cpu: 100m

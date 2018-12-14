@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-discovery
+  namespace: foremast
+  labels:
+    app: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  clusterIP: None
+  ports:
+  - port: 9200
+    name: serving
+  - port: 9300
+    name: node-to-node
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: foremast
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  serviceName:  elasticsearch-discovery
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      terminationGracePeriodSeconds: 300
+      initContainers:
+      # NOTE:
+      # This is to fix the permission on the volume
+      # By default elasticsearch container is not run as
+      # non root user.
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_notes_for_production_use_and_defaults
+      - name: fix-the-volume-permission
+        image: busybox
+        command:
+        - sh
+        - -c
+        - chown -R 1000:1000 /data
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: storage
+          mountPath: /data
+      # NOTE:
+      # To increase the default vm.max_map_count to 262144
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-cli-run-prod-mode
+      - name: increase-the-vm-max-map-count
+        image: busybox
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      # To increase the ulimit
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_notes_for_production_use_and_defaults
+      - name: increase-the-ulimit
+        image: busybox
+        command:
+        - sh
+        - -c
+        - ulimit -n 65536
+        securityContext:
+          privileged: true
+      containers:
+      - name: "es-single"
+        image: docker.io/foremast/elasticsearch:6.4.2
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: "discovery.type"
+          value: "single-node"
+        - name: CLUSTER_NAME
+          value: "foremast"
+        - name: NETWORK_HOST
+          value: _global_
+        - name: NODE_MASTER
+          value: "true"
+        - name: NODE_DATA
+          value: "false"
+        - name: NODE_INGEST
+          value: "false"
+        - name: HTTP_ENABLE
+          value: "true"
+         # NOTE: This will tell the elasticsearch node where to connect to other nodes to form a cluster
+        - name: discovery.zen.ping.unicast.hosts
+          value: _global_
+        - name: ES_JAVA_OPTS
+          value: -Xms512m -Xmx512m
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        resources:
+          requests:
+            cpu: 0.25
+          limits:
+            cpu: 1
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: tcp
+        livenessProbe:
+          tcpSocket:
+            port: tcp
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        volumeMounts:
+        - name: storage
+          mountPath: /data
+      volumes:
+      - emptyDir:
+          medium: ""
+        name: "storage"

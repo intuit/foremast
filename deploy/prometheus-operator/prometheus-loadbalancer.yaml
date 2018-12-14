@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    prometheus: k8s
+  name: prometheus-k8s-public
+  namespace: monitoring
+spec:
+  type: LoadBalancer
+  ports:
+  - name: web
+    port: 9090
+    targetPort: web
+  selector:
+    app: prometheus
+    prometheus: k8s
+  loadBalancerSourceRanges:
+  - 65.204.229.0/24
