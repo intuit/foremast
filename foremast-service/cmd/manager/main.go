@@ -1,6 +1,13 @@
 package main
 
 import (
+	"log"
+	"net/http"
+	"os"
+	"reflect"
+	"strings"
+	"time"
+
 	common "foremast.ai/foremast/foremast-service/pkg/common"
 	converter "foremast.ai/foremast/foremast-service/pkg/converter"
 	models "foremast.ai/foremast/foremast-service/pkg/models"
@@ -8,12 +15,6 @@ import (
 	search "foremast.ai/foremast/foremast-service/pkg/search"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
-	"log"
-	"net/http"
-	"os"
-	"reflect"
-	"strings"
-	"time"
 )
 
 var (
@@ -21,9 +22,7 @@ var (
 )
 
 const CONFIG_SEPARATOR = " ||"
-const KV_SEPARATOR ="== "
-
-
+const KV_SEPARATOR = "== "
 
 func constructUrl(metricQuery models.MetricQuery) (int32, string) {
 	config := metricQuery.Parameters
@@ -37,7 +36,6 @@ func constructUrl(metricQuery models.MetricQuery) (int32, string) {
 	//type is not supported
 	return 404, ""
 }
-
 
 func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string) {
 	if len(metric) == 0 {
@@ -61,7 +59,6 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string) {
 	return 0, output.String()
 }
 
-
 func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string) {
 
 	configs := []string{"", "", ""}
@@ -73,7 +70,7 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 	errCode, ret := convertMetricQuerys(m.Current)
 
 	if errCode != 0 {
-		log.Println("Error: current convertMetricQuerys ",m.Current," failed. errorCode is ",errCode)
+		log.Println("Error: current convertMetricQuerys ", m.Current, " failed. errorCode is ", errCode)
 		reason.WriteString("current query encount error ")
 		reason.WriteString(ret)
 		reason.WriteString("\n")
@@ -84,26 +81,26 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 	if m.Baseline != nil {
 		errCode, ret := convertMetricQuerys(m.Baseline)
 		if errCode != 0 {
-			log.Println("Warning: baseline convertMetricQuerys ",m.Baseline," failed. errorCode is ",errCode)
+			log.Println("Warning: baseline convertMetricQuerys ", m.Baseline, " failed. errorCode is ", errCode)
 			reason.WriteString(" baseline query encount error ")
 			reason.WriteString(ret)
 		}
 		configs[1] = ret
 	}
 
-	if m.Historical != nil  {
+	if m.Historical != nil {
 		hErrCode, ret := convertMetricQuerys(m.Historical)
 		if hErrCode != 0 {
-			log.Println("Warning: historical convertMetricQuerys ",m.Historical," failed. errorCode is ",hErrCode)
+			log.Println("Warning: historical convertMetricQuerys ", m.Historical, " failed. errorCode is ", hErrCode)
 			reason.WriteString(" historical query encount error ")
 			reason.WriteString(ret)
 		}
-		if errCode !=0 && hErrCode!=0 {
+		if errCode != 0 && hErrCode != 0 {
 			errorCode = 404
 		}
 		configs[2] = ret
-	}else{
-		if (errCode!=0){
+	} else {
+		if errCode != 0 {
 			errorCode = 404
 		}
 	}
@@ -115,7 +112,7 @@ func RegisterEntry(context *gin.Context) {
 	var appRequest models.ApplicationHealthAnalyzeRequest
 	//check bad request
 	if err := context.BindJSON(&appRequest); err != nil {
-		log.Println("Error: encounter context error ", err," detail ",reflect.TypeOf(err))
+		log.Println("Error: encounter context error ", err, " detail ", reflect.TypeOf(err))
 		common.ErrorResponse(context, http.StatusBadRequest, "Bad request")
 		return
 	}
@@ -128,7 +125,7 @@ func RegisterEntry(context *gin.Context) {
 	//check metric query
 	errCode, reason, configs := convertMetricInfoString(appRequest.Metrics, appRequest.Strategy)
 	if errCode != 0 {
-		log.Println("encount error while convertMetricInfoString ",reason)
+		log.Println("encount error while convertMetricInfoString ", reason)
 		common.ErrorResponse(context, http.StatusBadRequest, reason)
 		return
 	}
@@ -166,8 +163,6 @@ func SearchById(context *gin.Context) {
 
 }
 
-
-
 func main() {
 	var esUrl = os.Getenv("ELASTIC_URL")
 	if esUrl == "" {
@@ -202,5 +197,3 @@ func main() {
 	}
 
 }
-
-
