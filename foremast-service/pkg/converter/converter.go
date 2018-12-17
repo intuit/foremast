@@ -1,9 +1,10 @@
 package converter
 
 import (
-	models "foremast.ai/foremast/foremast-service/pkg/models"
 	"fmt"
 	"strconv"
+
+	models "foremast.ai/foremast/foremast-service/pkg/models"
 )
 
 func ConvertStatusToExternal(status string) string {
