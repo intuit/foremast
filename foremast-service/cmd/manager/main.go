@@ -21,17 +21,19 @@ var (
 	elasticClient *elastic.Client
 )
 
-const CONFIG_SEPARATOR = " ||"
-const KV_SEPARATOR = "== "
+// ConfigSeparator .... constant variable based on to separate the queries
+const ConfigSeparator  = " ||"
+// KvSeparator   .... used for key and value separate
+const KvSeparator = "== "
 
-func constructUrl(metricQuery models.MetricQuery) (int32, string) {
+func constructURL(metricQuery models.MetricQuery) (int32, string) {
 	config := metricQuery.Parameters
 	if config == nil || len(config) == 0 {
 		return 404, ""
 	}
 
 	if metricQuery.DataSourceType == "prometheus" {
-		return 0, prometheus.BuildUrl(metricQuery)
+		return 0, prometheus.BuildURL(metricQuery)
 	}
 	//type is not supported
 	return 404, ""
@@ -42,17 +44,17 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string) {
 		return 404, ""
 	}
 	output := strings.Builder{}
-	var co int = 0
+	var co int
 	for key, value := range metric {
-		errCode, retstr := constructUrl(value)
+		errCode, retstr := constructURL(value)
 		if errCode != 0 {
 			return 404, ""
 		}
 		if co == 1 {
-			output.WriteString(CONFIG_SEPARATOR)
+			output.WriteString(ConfigSeparator )
 		}
 		output.WriteString(key)
-		output.WriteString(KV_SEPARATOR)
+		output.WriteString(KvSeparator )
 		output.WriteString(retstr)
 		co = 1
 	}
@@ -108,6 +110,7 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 	return errorCode, reason.String(), configs
 }
 
+// RegisterEntry .... mapping input request to elasticserch structure
 func RegisterEntry(context *gin.Context) {
 	var appRequest models.ApplicationHealthAnalyzeRequest
 	//check bad request
@@ -145,35 +148,36 @@ func RegisterEntry(context *gin.Context) {
 
 }
 
-func SearchById(context *gin.Context) {
+// SearchByID .... restful serach by uuid or job id
+func SearchByID(context *gin.Context) {
 	_id := context.Param("id")
 	log.Println("Search by id got called :" + _id + "\n")
-	doc, err, reason := search.SearchById(context, elasticClient, _id)
+	doc, err, reason := search.ByID(context, elasticClient, _id)
 
 	if err != 0 {
 		if err == -1 {
 			context.JSON(http.StatusOK, converter.ConvertESToNewResp(_id, 200, "unknown", _id+" not found."))
-			return
 		} else {
 			context.JSON(http.StatusOK, converter.ConvertESToNewResp(_id, 404, "unknown", reason))
-			return
 		}
+		return
 	}
 	context.JSON(http.StatusOK, converter.ConvertESToResp(doc))
 
 }
 
+// main .... program entry
 func main() {
-	var esUrl = os.Getenv("ELASTIC_URL")
-	if esUrl == "" {
-		esUrl = "http://aa41f5f30e2f011e8bde30674acac93e-1024276836.us-west-2.elb.amazonaws.com:9200"
+	var esURL = os.Getenv("ELASTIC_URL")
+	if esURL == "" {
+		esURL = "http://a31008275fcf911e8bde30674acac93e-885155939.us-west-2.elb.amazonaws.com:9200"
 	}
 
 	var err error
 	// Create Elastic client and wait for Elasticsearch to be ready
 	for {
 		elasticClient, err = elastic.NewClient(
-			elastic.SetURL(esUrl),
+			elastic.SetURL(esURL),
 			elastic.SetSniff(false),
 		)
 		if err != nil {
@@ -188,7 +192,7 @@ func main() {
 	v1 := router.Group("/v1/healthcheck")
 	{
 		//search by id
-		v1.GET("/id/:id", SearchById)
+		v1.GET("/id/:id", SearchByID)
 		//create request
 		v1.POST("/create", RegisterEntry)
 	}

@@ -18,6 +18,7 @@ const (
 	elasticTypeName  = "document"
 )
 
+// CreateNewDoc .... create new request
 func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc models.DocumentRequest) (string, int32) {
 
 	bulk := elasticClient.
@@ -27,7 +28,7 @@ func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc model
 	//first search if id already existing.
 	id := common.UUIDGen(ConvertDocumentRequestToString(doc))
 	log.Println("Generate UUID based on request ", id)
-	searchDoc, err, reason := SearchById(context, elasticClient, id)
+	searchDoc, err, reason := ByID(context, elasticClient, id)
 
 	if err != 0 {
 		log.Println("Ignore me, means request is not exist and it is ok to create new request ", searchDoc.ID, "  reason is ", reason)
@@ -57,7 +58,8 @@ func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc model
 	return id, 0
 }
 
-func SearchById(context *gin.Context, elasticClient *elastic.Client, myid string) (models.DocumentResponse, int32, string) {
+// ByID .... search elastic search via id or jobid
+func ByID(context *gin.Context, elasticClient *elastic.Client, myid string) (models.DocumentResponse, int32, string) {
 	skip := 0
 	take := 10
 	esQuery := elastic.NewMatchQuery("id", myid)
@@ -88,7 +90,8 @@ func SearchById(context *gin.Context, elasticClient *elastic.Client, myid string
 
 }
 
-func SearchByQuery(context *gin.Context, elasticClient *elastic.Client, query string) {
+// ByQuery .... search by elasticsearch query
+func ByQuery(context *gin.Context, elasticClient *elastic.Client, query string) {
 	skip := 0
 	take := 10
 	esQuery := elastic.NewMultiMatchQuery(query, "appName", "content").
@@ -115,8 +118,8 @@ func SearchByQuery(context *gin.Context, elasticClient *elastic.Client, query st
 	context.JSON(http.StatusOK, docs)
 }
 
-//This will be used by backend python model
-func SearchByStatus(context *gin.Context, elasticClient *elastic.Client, myStatusCode string) {
+// ByStatus .... This will be used by backend python model, search by open status
+func ByStatus(context *gin.Context, elasticClient *elastic.Client, myStatusCode string) {
 	skip := 0
 	take := 10
 	esQuery := elastic.NewMultiMatchQuery(myStatusCode, "statuscode").
@@ -142,6 +145,7 @@ func SearchByStatus(context *gin.Context, elasticClient *elastic.Client, myStatu
 	context.JSON(http.StatusOK, docs)
 }
 
+// ConvertDocumentRequestToString ... convert the request to string
 func ConvertDocumentRequestToString(doc models.DocumentRequest) string {
 	var buffer bytes.Buffer
 	buffer.WriteString(doc.AppName)
@@ -181,14 +185,14 @@ for {
 */
 //fmt.Println(CreateNewDoc(doc))
 
-//fmt.Println(SearchById("*"))
+//fmt.Println(ByID("*"))
 
 // Start HTTP server
 /*
 r := gin.Default()
 r.POST("/documents", createCheckRequest)
 r.GET("/search", searchRequest)
-//r.GET("/searchstatus", searchByStatus)
+//r.GET("/searchstatus", ByStatus)
 if err = r.Run(":8099"); err != nil {
 	log.Fatal(err)
 }

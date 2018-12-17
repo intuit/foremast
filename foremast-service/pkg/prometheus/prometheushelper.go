@@ -8,8 +8,8 @@ import (
 	models "foremast.ai/foremast/foremast-service/pkg/models"
 )
 
-//Build Prometheus url
-func BuildUrl(metricQuery models.MetricQuery) string {
+// BuildURL .... Build Prometheus url
+func BuildURL(metricQuery models.MetricQuery) string {
 	config := metricQuery.Parameters
 	urlstring := strings.Builder{}
 	urlstring.WriteString(config["endpoint"].(string))
