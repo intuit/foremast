@@ -3,22 +3,20 @@ package search
 import (
 	"bytes"
 	"encoding/json"
+	"log"
+	"net/http"
+	"time"
+
 	common "foremast.ai/foremast/foremast-service/pkg/common"
 	models "foremast.ai/foremast/foremast-service/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
-	"log"
-	"net/http"
-	"time"
 )
 
 const (
 	elasticIndexName = "documents"
 	elasticTypeName  = "document"
 )
-
-
-
 
 func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc models.DocumentRequest) (string, int32) {
 
@@ -28,41 +26,38 @@ func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc model
 		Type(elasticTypeName)
 	//first search if id already existing.
 	id := common.UUIDGen(ConvertDocumentRequestToString(doc))
-	log.Println("Generate UUID based on request ",id)
+	log.Println("Generate UUID based on request ", id)
 	searchDoc, err, reason := SearchById(context, elasticClient, id)
 
-	if err!=0{
+	if err != 0 {
 		log.Println("Ignore me, means request is not exist and it is ok to create new request ", searchDoc.ID, "  reason is ", reason)
 	}
-	if ( err == -1) {
+	if err == -1 {
 		docNew := models.Document{
-			ID:         id,
-			AppName:    doc.AppName,
-			CreatedAt:  time.Now().UTC(),
-			StartTime:  common.StrToTime(doc.StartTime),
-			EndTime:    common.StrToTime(doc.EndTime),
-			ModifiedAt: time.Now().UTC(),
+			ID:               id,
+			AppName:          doc.AppName,
+			CreatedAt:        time.Now().UTC(),
+			StartTime:        common.StrToTime(doc.StartTime),
+			EndTime:          common.StrToTime(doc.EndTime),
+			ModifiedAt:       time.Now().UTC(),
 			CurrentConfig:    doc.CurrentConfig,
-			BaselineConfig:    doc.BaselineConfig,
-			HistoricalConfig:   doc.HistoricalConfig,
-			Status:     "initial",
-			StatusCode:  doc.StatusCode,
-			Strategy:    doc.Strategy,
+			BaselineConfig:   doc.BaselineConfig,
+			HistoricalConfig: doc.HistoricalConfig,
+			Status:           "initial",
+			StatusCode:       doc.StatusCode,
+			Strategy:         doc.Strategy,
 		}
 		bulk.Add(elastic.NewBulkIndexRequest().Id(docNew.ID).Doc(docNew))
 		if _, err := bulk.Do(context.Request.Context()); err != nil {
 			log.Println(err)
 			common.ErrorResponse(context, http.StatusInternalServerError, "Failed to create job "+id)
-			return id,0
+			return id, 0
 		}
 	}
-	return id,0
+	return id, 0
 }
 
-
-
-
-func SearchById(context *gin.Context,  elasticClient *elastic.Client, myid string)( models.DocumentResponse, int32, string){
+func SearchById(context *gin.Context, elasticClient *elastic.Client, myid string) (models.DocumentResponse, int32, string) {
 	skip := 0
 	take := 10
 	esQuery := elastic.NewMatchQuery("id", myid)
@@ -79,11 +74,11 @@ func SearchById(context *gin.Context,  elasticClient *elastic.Client, myid strin
 		return empty, -1, ""
 	}
 	// Transform search results before returning them
-	if( len(result.Hits.Hits) ==0){
+	if len(result.Hits.Hits) == 0 {
 		var empty models.DocumentResponse
 		return empty, -1, ""
 	}
-	docs := make([] models.DocumentResponse, 0)
+	docs := make([]models.DocumentResponse, 0)
 	for _, hit := range result.Hits.Hits {
 		var doc models.DocumentResponse
 		json.Unmarshal(*hit.Source, &doc)
@@ -93,13 +88,10 @@ func SearchById(context *gin.Context,  elasticClient *elastic.Client, myid strin
 
 }
 
-
-
-
-func SearchByQuery(context *gin.Context, elasticClient *elastic.Client,  query string)  {
+func SearchByQuery(context *gin.Context, elasticClient *elastic.Client, query string) {
 	skip := 0
 	take := 10
-	esQuery := elastic.NewMultiMatchQuery(query, "appName","content").
+	esQuery := elastic.NewMultiMatchQuery(query, "appName", "content").
 		Fuzziness("2").
 		MinimumShouldMatch("2")
 	result, err := elasticClient.Search().
@@ -114,7 +106,7 @@ func SearchByQuery(context *gin.Context, elasticClient *elastic.Client,  query s
 		return
 	}
 	// Transform search results before returning them
-	docs := make([] models.DocumentResponse, 0)
+	docs := make([]models.DocumentResponse, 0)
 	for _, hit := range result.Hits.Hits {
 		var doc models.DocumentResponse
 		json.Unmarshal(*hit.Source, &doc)
@@ -123,11 +115,8 @@ func SearchByQuery(context *gin.Context, elasticClient *elastic.Client,  query s
 	context.JSON(http.StatusOK, docs)
 }
 
-
-
-
 //This will be used by backend python model
-func SearchByStatus(context *gin.Context,elasticClient *elastic.Client,   myStatusCode string){
+func SearchByStatus(context *gin.Context, elasticClient *elastic.Client, myStatusCode string) {
 	skip := 0
 	take := 10
 	esQuery := elastic.NewMultiMatchQuery(myStatusCode, "statuscode").
@@ -144,7 +133,7 @@ func SearchByStatus(context *gin.Context,elasticClient *elastic.Client,   myStat
 		return
 	}
 	// Transform search results before returning them
-	docs := make([] models.DocumentResponse, 0)
+	docs := make([]models.DocumentResponse, 0)
 	for _, hit := range result.Hits.Hits {
 		var doc models.DocumentResponse
 		json.Unmarshal(*hit.Source, &doc)
@@ -152,11 +141,6 @@ func SearchByStatus(context *gin.Context,elasticClient *elastic.Client,   myStat
 	}
 	context.JSON(http.StatusOK, docs)
 }
-
-
-
-
-
 
 func ConvertDocumentRequestToString(doc models.DocumentRequest) string {
 	var buffer bytes.Buffer
@@ -170,10 +154,6 @@ func ConvertDocumentRequestToString(doc models.DocumentRequest) string {
 	log.Print("create document request :", buffer.String())
 	return buffer.String()
 }
-
-
-
-
 
 /*
 func main() {

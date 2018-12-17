@@ -2,9 +2,9 @@ package common
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"strings"
-	"log"
 )
 
 type ConfigProperties map[string]string
