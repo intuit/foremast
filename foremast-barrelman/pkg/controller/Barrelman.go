@@ -266,8 +266,8 @@ func NewBarrelman(
 		AddFunc: func(obj interface{}) {
 			//get deployment object
 			newDepl := obj.(*appsv1.Deployment)
-			var newApp = ""
-			var ok = false
+			var newApp string
+			var ok bool
 			var deploymentName = newDepl.Name
 
 			if newApp, ok = newDepl.Labels["app"]; !ok || newApp == "" {
@@ -370,9 +370,9 @@ func NewBarrelman(
 			}
 
 			//skip if not marked to be tracked for ACA
-			var newApp = ""
-			var oldApp = ""
-			var ok = false
+			var newApp string
+			var oldApp string
+			var ok bool
 
 			if newApp, ok = newDepl.Labels["app"]; !ok || newApp == "" {
 				glog.V(5).Infof("no app label found on new deployment, skipping deployment %v", newDepl.Name)
@@ -575,14 +575,6 @@ func (c *Barrelman) getReplicaSet(newUid, oldUid string, namespace string, kubec
 }
 
 func (c *Barrelman) getPodNames(oldDepl, newDepl *appsv1.Deployment, kubeclientset kubernetes.Interface) ([][]string, error) {
-	//var appName = string(newDepl.Labels["app"])
-
-	//var err error = nil
-
-	//var podList, err = kubeclientset.CoreV1().Pods(newDepl.Namespace).List(metav1.ListOptions{
-	//	LabelSelector: "app in (" + appName + ")",
-	//})
-
 	var oldUid = string(oldDepl.UID)
 	var newUid = string(newDepl.UID)
 
@@ -736,7 +728,7 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 
 	glog.Infof("Found pod names: %s, %d", podNames[0], len(podNames))
 
-	var jobId = ""
+	var jobId string
 	jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime)
 
 	if err != nil {

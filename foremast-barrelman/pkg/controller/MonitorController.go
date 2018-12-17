@@ -65,7 +65,7 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			oldMonitor := old.(*d.DeploymentMonitor)
 
 			//skip if not marked to be tracked for ACA
-			var newPhase = ""
+			var newPhase string
 			var oldPhase = ""
 
 			if newPhase = newMonitor.Status.Phase; newPhase == "" {

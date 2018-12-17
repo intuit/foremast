@@ -1,4 +1,4 @@
-# jsk-spring-boot-starter-k8s-metrics
+# foremast-spring-boot-k8s-metrics-starter
 Metrics and custom metrics setup for spring boot application on K8s
 
 #### Features
