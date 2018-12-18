@@ -1,6 +1,6 @@
 sudo: required
 language: go
-go_import_path: ai.foremast/foremast
+go_import_path: foremast.ai/foremast
 dist: trusty
 matrix:
   include:
