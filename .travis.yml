@@ -32,9 +32,9 @@ env:
 install:
 - cd foremast-barrelman
 - make
-- if [ "$ALL_IN_ONE" == true ]; then bash docker build . ; fi
-- if [ "$DOCKER" == true ]; then bash docker build . ; fi
+- if [ "$ALL_IN_ONE" == true ]; then docker build . ; fi
+- if [ "$DOCKER" == true ]; then docker build . ; fi
 - cd ../foremast-service
 - bash ./build.sh
-- if [ "$ALL_IN_ONE" == true ]; then bash docker build . ; fi
-- if [ "$DOCKER" == true ]; then bash docker build . ; fi
+- if [ "$ALL_IN_ONE" == true ]; then docker build . ; fi
+- if [ "$DOCKER" == true ]; then docker build . ; fi

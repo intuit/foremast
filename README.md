@@ -1,5 +1,5 @@
 # Foremast
-
+[![Build Status](https://api.travis-ci.org/intuit/foremast.svg?branch=master)](https://www.travis-ci.org/intuit/foremast)
 [![Go Report Card](https://goreportcard.com/badge/github.com/intuit/foremast)](https://goreportcard.com/report/github.com/intuit/foremast)
 [![Coverage Status](https://coveralls.io/repos/github/intuit/foremast/badge.svg?branch=master)](https://coveralls.io/github/intuit/foremast?branch=master)
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
