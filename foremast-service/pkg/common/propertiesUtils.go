@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
+// ConfigProperties -- is key string, value is string
 type ConfigProperties map[string]string
 
+// ReadPropertiesFile --- read config from properties file
 func ReadPropertiesFile(filename string) (ConfigProperties, error) {
 	config := ConfigProperties{}
 

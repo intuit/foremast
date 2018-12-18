@@ -1,11 +1,11 @@
 package common
 
 import (
-	"fmt"
 	"log"
 	"time"
 )
 
+// StrToTime .... convert input string format of time to time
 func StrToTime(input string) time.Time {
 
 	t1, err := time.Parse(
@@ -15,8 +15,6 @@ func StrToTime(input string) time.Time {
 		log.Fatal(err)
 		return time.Now().UTC()
 	}
-	fmt.Println("ok")
-	fmt.Print(t1)
 	return t1
 }
 

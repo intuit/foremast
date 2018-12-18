@@ -7,6 +7,7 @@ import (
 	models "foremast.ai/foremast/foremast-service/pkg/models"
 )
 
+// ConvertStatusToExternal .... convert internal status to k8s controller
 func ConvertStatusToExternal(status string) string {
 	switch status {
 	case "initial":
@@ -28,13 +29,14 @@ func ConvertStatusToExternal(status string) string {
 	}
 }
 
+// ConvertESToNewResp .... convert elasticsearch to new response
 func ConvertESToNewResp(uuid string, statusCode int32, status, reason string) models.ApplicationHealthAnalyzeResponseNew {
 	if statusCode == 0 {
 		statusCode = 200
 	}
 
 	resp := models.ApplicationHealthAnalyzeResponseNew{
-		JobId:      uuid,
+		JobID:      uuid,
 		StatusCode: statusCode,
 		Status:     status,
 		Reason:     reason,
@@ -42,6 +44,7 @@ func ConvertESToNewResp(uuid string, statusCode int32, status, reason string) mo
 	return resp
 }
 
+// ConvertESToResp .... convert elasticsearch to response
 func ConvertESToResp(input models.DocumentResponse) models.ApplicationHealthAnalyzeResponse {
 
 	code, err := strconv.Atoi(input.StatusCode)
@@ -49,7 +52,7 @@ func ConvertESToResp(input models.DocumentResponse) models.ApplicationHealthAnal
 		code = 200
 	}
 	resp := models.ApplicationHealthAnalyzeResponse{
-		JobId:      input.ID,
+		JobID:      input.ID,
 		StatusCode: int32(code),
 		Status:     ConvertStatusToExternal(input.Status),
 		Reason:     input.Reason,
@@ -57,6 +60,7 @@ func ConvertESToResp(input models.DocumentResponse) models.ApplicationHealthAnal
 	return resp
 }
 
+// ConvertESsToResps .... convert elasticsearch results to multiples responses
 func ConvertESsToResps(inputs []models.DocumentResponse) []models.ApplicationHealthAnalyzeResponse {
 
 	docs := make([]models.ApplicationHealthAnalyzeResponse, len(inputs))

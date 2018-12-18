@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// ConvertMapToString ... convert map to string
 func ConvertMapToString(m map[string]string) string {
 	b := new(bytes.Buffer)
 	size := len(m)
@@ -21,6 +22,7 @@ func ConvertMapToString(m map[string]string) string {
 	return b.String()
 }
 
+// ConvertStringToMap .... convert string to map
 func ConvertStringToMap(str string) map[string]string {
 	m := make(map[string]string)
 	strs := strings.Split(str, ",")

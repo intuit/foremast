@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-//MetricQuery
+// MetricQuery .... define metric query structures
 type MetricQuery struct {
 	DataSourceType string `json:"dataSourceType"`
 
@@ -24,12 +24,14 @@ type MetricQuery struct {
 	//End int64 `json:"end,omitempty"`
 }
 
+// MetricsInfo .... MetricsInfo structure by current, baseline and historical
 type MetricsInfo struct {
 	Current    map[string]MetricQuery `json:"current"`
 	Baseline   map[string]MetricQuery `json:"baseline,omitempty"`
 	Historical map[string]MetricQuery `json:"historical,omitempty"`
 }
 
+// ApplicationHealthAnalyzeRequest .... structure by appname, start, end time metric info and strategy
 type ApplicationHealthAnalyzeRequest struct {
 	AppName string `json:"appName"`
 
@@ -49,26 +51,30 @@ type ApplicationHealthAnalyzeRequest struct {
 	Strategy string `json:"strategy"`
 }
 
+// AnomalyInfo .... anomaly structures
 type AnomalyInfo struct {
 	Tags   string  `json:"tags"`
 	Values []int64 `json:"values"`
 }
 
+// ApplicationHealthAnalyzeResponse  -- health analyze response fields
 type ApplicationHealthAnalyzeResponse struct {
-	JobId      string                 `json:"jobId"`
+	JobID      string                 `json:"jobId"`
 	StatusCode int32                  `json:"statusCode"`
 	Status     string                 `json:"status"`
 	Reason     string                 `json:"reason,omitempty"`
 	Anomaly    map[string]AnomalyInfo `json:"anomaly",omitempty`
 }
 
+// ApplicationHealthAnalyzeResponseNew .... new response
 type ApplicationHealthAnalyzeResponseNew struct {
-	JobId      string `json:"jobId"`
+	JobID      string `json:"jobId"`
 	StatusCode int32  `json:"statusCode"`
 	Status     string `json:"status"`
 	Reason     string `json:"reason,omitempty"`
 }
 
+// Document --- elastic search document index
 type Document struct {
 	ID                string    `json:"id"`
 	AppName           string    `json:"appName"`
@@ -86,6 +92,7 @@ type Document struct {
 	ProcessingContent string    `json:"processingContent",omitempty`
 }
 
+// DocumentRequest .... request structure
 type DocumentRequest struct {
 	AppName          string `json:"appName"`
 	StartTime        string `json:"startTime"`
@@ -97,6 +104,7 @@ type DocumentRequest struct {
 	Strategy         string `json:"strategy"`
 }
 
+// DocumentResponse .... es response structure
 type DocumentResponse struct {
 	ID         string    `json:"id"`
 	AppName    string    `json:"appName"`
@@ -116,6 +124,7 @@ type DocumentResponse struct {
 	AnomalyInfo       string `json:"anomalyInfo",omitempty`
 }
 
+// SearchResponse .... es search reqponse structure
 type SearchResponse struct {
 	Time      string             `json:"time"`
 	Hits      string             `json:"hits"`
