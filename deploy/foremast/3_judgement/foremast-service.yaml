@@ -29,7 +29,7 @@ spec:
         app: foremast-service
     spec:
       containers:
-      - image: docker.io/foremast/foremast-service:0.0.4
+      - image: docker.io/foremast/foremast-service:0.0.5
         imagePullPolicy: Always
         name: service
         env:
