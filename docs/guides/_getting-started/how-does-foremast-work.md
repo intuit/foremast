@@ -6,4 +6,4 @@ Foremast leverages multiple components that work in harmony in order to ascertai
 - Brain: Machine learning on application health metrics and triggering of anomalies
 - UI: Visually show the current state of applications, expected state and any remediations performed
 
-The [design and architecture](https://github.intuit.com/dev-containers/foremast/blob/master/docs/design.md) captures the interaction between these components in greater detail.
+The [design and architecture]({{ $repo }}/blob/master/docs/guides/design.md) captures the interaction between these components in greater detail.

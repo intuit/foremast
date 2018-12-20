@@ -1,7 +1,7 @@
 title: "Foremast - The Application Manager for Kubernetes"
 url: https://foremast.io # site url
 ## BaseURL - change based on repository from where this is going to be hosted
-baseurl: "/foremast"
+#baseurl: "/foremast"
 
 repo: http://github.com/intuit/foremast
 comments: false
