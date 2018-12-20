@@ -45,6 +45,7 @@ How to [Set Up](docs/installation.md).
 #### v0.5
 
 *  Controller/CRD with time series modeling
+*  Multi-metrices support
 *  More machine learning models for different time series data behavior
 
 
