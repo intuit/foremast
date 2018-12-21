@@ -18,4 +18,4 @@ It addresses following problems in an enterprise environment of Kubernetes:
 - Metrics anomaly Aggregated at service or API level
 - Aggregate service health check across multiple K8s clusters
 
-Check out the [architecture and design]({{ $repo }}/blob/master/docs/guides/design.md).
+Check out the [architecture and design]({{ site.repo }}/blob/master/docs/guides/design.md).
