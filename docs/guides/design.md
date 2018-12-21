@@ -44,7 +44,7 @@ Based on the configuration it will first query the historical metric from metric
 
 ### Monitoring/Alerting
 
-![](../.gitbook/assets/foremastrequeststatediagram.png)
+![](../../.gitbook/assets/foremastrequeststatediagram.png)
 
 We leverage ElasticSearch as datastore to store the request content and status. Foremast Brain not only update the request status but also provide reason and anomaly information if there is any failure or anomaly gets detected.
 
