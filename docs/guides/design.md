@@ -2,7 +2,7 @@
 
 ## Architecture
 
-![](../.gitbook/assets/foremastarchitecture-1%20%281%29.png)
+![](ForemastArchitecture.png)
 
 
 
