@@ -12,7 +12,7 @@ Barrelman is a component to watch the Deployment change in DeploymentTime and st
 
 
 
-![Foremast-Barrelman Diagram](../.gitbook/assets/foremast-barrelman.png)
+![Foremast-Barrelman Diagram](foremast-barrelman.png)
 
 ### Foremast Service
 
