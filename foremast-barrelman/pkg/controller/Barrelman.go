@@ -808,12 +808,6 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 	}
 }
 
-//getPrometheusMetrics queries the prometheus data with the given query label from the given time stamp
-//func (c *Barrelman) getPrometheusMetrics(query string, time time.Time) (model.Value, error) {
-//	result, err := c.prometheus.Query(context.Background(), query, time)
-//	return result, err
-//}
-
 // Run will set up the event handlers for types we are interested in, as well
 // as syncing informer caches and starting workers. It will block until stopCh
 // is closed, at which point it will shutdown the workqueue and wait for

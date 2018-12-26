@@ -242,6 +242,60 @@ const (
 	MonitorPhaseAbort = "Abort"
 )
 
+//Constants for Actions
+const (
+	//No remediation required
+	RemediationNone = "None"
+	//Trigger a rollback if error occured
+	RemediationAutoRollback = "AutoRollback"
+	//Trigger a pause only to reduce the error rate
+	RemediationAutoPause = "AutoPause"
+	//Trigger an auto scaling for specific use cases, for example, connection stack or CPU bump up a lot
+	RemediationAutoScaling = "AutoScaling"
+	//Let foremast take care everything for you
+	RemediationAuto = "Auto"
+
+	//Non alert required
+	AlertNone = "None"
+	//Alert webhook
+	AlertWebhook = "Webhook"
+)
+
+//  Actions could be remediation action AND triggering alerts
+//  Since remediation action should be triggered very carefully. We are going to support only one action this time.
+//  Ideally system should cover all the use cases automatically. so we should only need a SUPER_SMART remediation action in the future.
+//  But alerts could be different ways, such as sending email or sending slack message, either way should take care of duplication messages,
+//  We'd like to integrate with existing smart open source solutions which support those use cases very well in the future,
+//  So we just define the webhook interface, foremast push the information to the web hook, the alert adapter can get the information
+//  and send them to existing alert system
+type Actions struct {
+	Remediation RemediationAction `json:"remediation,omitempty"`
+
+	Alert AlertAction `json:"alert,omitempty"`
+}
+
+// Option could be RemediationNone, RemediationAutoRollback, RemediationAutoPause, RemediationAutoScaling, RemediationAuto
+//
+type RemediationAction struct {
+	Option string `json:"option"`
+
+	Parameters map[string]string `json:"parameters,omitempty"`
+}
+
+// It supports AlertNone or AlertWebhook for now
+// For webhook settings examples,
+// option: webhook
+// parameters:
+//   endpoint: "http://youralertserver.com/alert_adapter
+//
+// POST Body examples,
+// TODO
+type AlertAction struct {
+	Option string `json:"option,omitempty"`
+
+	Parameters map[string]string `json:"parameters,omitempty"`
+}
+
 // Anomaly detected
 type Anomaly struct {
 	AnomalousMetrics []AnomalousMetric `json:"anomalousMetrics,omitempty"`
