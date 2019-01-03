@@ -24,7 +24,7 @@
 		<java.version>1.8</java.version>
 		<metrics.version>4.0.2</metrics.version>
 		<start-class>ai.foremast.metrics.demo.K8sMetricsDemoApp</start-class>
-		<foremast-spring-boot-k8s-metrics-starter>0.1.2-SNAPSHOT</foremast-spring-boot-k8s-metrics-starter>
+		<foremast-spring-boot-k8s-metrics-starter>0.1.3</foremast-spring-boot-k8s-metrics-starter>
 	</properties>
 
 	<dependencies>
