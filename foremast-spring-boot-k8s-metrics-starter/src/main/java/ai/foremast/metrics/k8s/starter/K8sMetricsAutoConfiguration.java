@@ -7,6 +7,7 @@ import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsPro
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,6 +23,8 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
     @Autowired
     K8sMetricsProperties metricsProperties;
 
+    @Autowired
+    ConfigurableApplicationContext appContext;
 
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
 
@@ -69,7 +72,11 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
                     }
                     else {
                         value = System.getProperty(patterns[i]);
+                        if ((value == null || value.isEmpty()) && appContext != null) {
+                            value = appContext.getEnvironment().getProperty(patterns[i]);
+                        }
                     }
+
                     if (value != null && !value.isEmpty()) {
                         registry.config().commonTags(nameAndValue[0], value);
                         break;
