@@ -9,8 +9,6 @@
 
 ![](docs/assets/images/foremast-logo.png)
 
-### What It Does
-
 Foremast is a service health detection and canary analysis system for Kubernetes.
 
 Foremast is an early warning system for detecting problems with the deployment of a new version of a service or component. Production deployments have used manual canary analysis for a few years now in various forms, be it A/B testing, phased rollout, or incremental rollout.
