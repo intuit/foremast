@@ -1,0 +1,66 @@
+---
+title: Home
+---
+<!DOCTYPE html>
+<html lang="en">
+  {% include head.html %}
+  <body>
+    {% include nav.html %}
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <img src="{{ site.baseurl }}/guides/ForemastHighLevel.svg" alt="Foremast High Level Overview">
+        <p><i>Foremast</i> is an open-source platform for observability in order to maintain application health during deployments and in steady state operations running on Kubernetes.  
+        </p>
+        <p><a class="btn btn-outline-inverse btn-lg" href="{{ site.baseurl }}/getting-started" role="button">Get Started</a></p>
+      </div>
+    </div>
+    <div class="container">
+      <div class="md-guide-feature">
+        <h1 class="no-anchor">Everything about Foremast</h1>
+        
+          <p class="lead" style="margin-bottom: 60px"><em>Foremast</em> is the intelligent application management platform of the future</p>
+        
+        <div class="row">
+
+          <div class="col-sm-4">
+            <div class="icon">
+              <i class="fas fa-chart-area"></i>
+            </div>
+            <h3 class="no-anchor">Real-time Metrics Analysis</h3>
+            <p>Analyze application behavior and have a real-time view of application health</p>
+          </div>
+          <div class="col-sm-4">
+            <div class="icon">
+              <i class="fas fa-bug"></i>
+            </div>
+            <h3 class="no-anchor">Identify Problems Early</h3>
+            <p>Application problems get identified and alerted during deployment - allowing for timely fixes</p>
+          </div>
+          <div class="col-sm-4">
+            <div class="icon">
+              <i class="fas fa-brain"></i>
+            </div>
+            <h3 class="no-anchor">Machine Learnt Application Patterns</h3>
+            <p>Historical application performance and behavior is learnt using advanced machine learning algorithms</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!--
+    <hr>
+
+    <div class="container">
+      <div class="md-guide-feature">
+        <h1 class="no-anchor">Stay in the loop.</h1>
+        <p class="lead">Sign up now to get priority notifications about the <em>Markdown Guide</em>.</p>
+        <br/>
+        <a class="btn btn-default btn-lg" href="https://tinyletter.com/markdownguide" style="margin-top: -10px">Subscribe via Email</a>
+      </div>
+    </div>
+    -->
+    {% include footer.html %}
+  </body>
+</html>

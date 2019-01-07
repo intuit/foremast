@@ -7,9 +7,7 @@
 
 ## Foremast
 
-![](.gitbook/assets/be82786014542e402862c379f576f8c8.png)
-
-### What It Does
+![](docs/assets/images/foremast-logo.png)
 
 Foremast is a service health detection and canary analysis system for Kubernetes.
 
@@ -25,7 +23,7 @@ It addresses following problems in an enterprise environment of Kubernetes:
 * Metrics anomaly Aggregated at service or API level
 * Aggregate service health check across multiple K8s clusters
 
-Check out the [architecture and design](docs/design.md).
+Check out the [architecture and design](docs/guides/design.md).
 
 ## Deploying to a Cluster
 
@@ -38,13 +36,14 @@ Make sure you have the following prerequisites:
 
 ### Setup Steps
 
-How to [Set Up](docs/installation.md).
+How to [Set Up](docs/guides/installation.md).
 
 ## Roadmap
 
 #### v0.5
 
 *  Controller/CRD with time series modeling
+*  Multi-metrices support
 *  More machine learning models for different time series data behavior
 
 
@@ -53,5 +52,5 @@ How to [Set Up](docs/installation.md).
 
 We encourage you to get involved with Foremast, as users or contributors and help with code reviews.
 
-Read the [contributing guidelines](docs/contributing.md) to learn about building the project, the project structure, and the purpose of each package.
+Read the [contributing guidelines](docs/guides/contributing.md) to learn about building the project, the project structure, and the purpose of each package.
 

@@ -79,7 +79,7 @@ foremast-engine-748d45cc98-qph54   1/1     Running   0          5h
 
 ## Run example
 
-![Example diagram](../.gitbook/assets/demo.png)
+![Example diagram](../../.gitbook/assets/demo.png)
 
 Foo is a spring boot application with a metric "http\_server\_requests\_errors", the metric shows the errors happen during the http requests.  **V1** is a normal application, the error count is always **ZERO. V2** is an error generator version, it can generate 5xx error based on the environment settings. This example is to simulate a typical deployment error, then foremast helps to roll it back.
 
@@ -140,7 +140,7 @@ $ kubectl get deployment foo -o yaml
 
 Within the prometheus metric chart, you can also see the error count trend after couple minutes.
 
-![](../.gitbook/assets/prometheus_sceen.png)
+![](../../.gitbook/assets/prometheus_sceen.png)
 
 
 

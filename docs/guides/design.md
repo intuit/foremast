@@ -2,7 +2,7 @@
 
 ## Architecture
 
-![](../.gitbook/assets/foremastarchitecture-1%20%281%29.png)
+![](ForemastArchitecture.png)
 
 
 
@@ -12,7 +12,7 @@ Barrelman is a component to watch the Deployment change in DeploymentTime and st
 
 
 
-![Foremast-Barrelman Diagram](../.gitbook/assets/foremast-barrelman.png)
+![Foremast-Barrelman Diagram](foremast-barrelman.png)
 
 ### Foremast Service
 
@@ -44,7 +44,7 @@ Based on the configuration it will first query the historical metric from metric
 
 ### Monitoring/Alerting
 
-![](../.gitbook/assets/foremastrequeststatediagram.png)
+![](../../.gitbook/assets/foremastrequeststatediagram.png)
 
 We leverage ElasticSearch as datastore to store the request content and status. Foremast Brain not only update the request status but also provide reason and anomaly information if there is any failure or anomaly gets detected.
 
