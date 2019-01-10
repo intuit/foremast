@@ -6,10 +6,18 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - services
+  - endpoints
+  - pods
   - nodes/metrics
   verbs:
   - get
+  - list
+  - watch
 - nonResourceURLs:
   - /metrics
+  - /actuator/prometheus
   verbs:
   - get
+  - list
+  - watch
