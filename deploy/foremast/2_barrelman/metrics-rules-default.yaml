@@ -52,6 +52,8 @@ spec:
       expr: sum(rate(http_server_requests_seconds_sum{status="200"}[1m])/rate(http_server_requests_seconds_count{status="200"}[1m])) by (namespace, pod)
     - record: namespace_pod:http_server_requests_2xx
       expr: sum(rate(http_server_requests_seconds_count{status=~"2[0-9]+"}[1m])) by (namespace, pod)
+    - record: namespace_pod:http_server_requests_count
+      expr: sum(rate(http_server_requests_seconds_count[1m])) by (namespace, pod)
 
     # Aggregated by namespace + app
     - record: namespace_app:http_server_requests_error_4xx
@@ -64,6 +66,8 @@ spec:
       expr: sum(rate(http_server_requests_seconds_sum{status="200"}[1m])/rate(http_server_requests_seconds_count{status="200"}[1m])) by (namespace, app)
     - record: namespace_app:http_server_requests_2xx
       expr: sum(rate(http_server_requests_seconds_count{status=~"2[0-9]+"}[1m])) by (namespace, app)
+    - record: namespace_app:http_server_requests_count
+      expr: sum(rate(http_server_requests_seconds_count[1m])) by (namespace, app)
 
     # Aggregated by namespace + app and averaged by pod
     - record: namespace_app_per_pod:http_server_requests_error_4xx
@@ -76,3 +80,5 @@ spec:
       expr: namespace_app:http_server_requests_latency / namespace_app:pod_count
     - record: namespace_app_per_pod:http_server_requests_2xx
       expr: namespace_app:http_server_requests_2xx / namespace_app:pod_count
+    - record: namespace_app_per_pod:http_server_requests_count
+      expr: namespace_app:http_server_requests_count / namespace_app:pod_count
