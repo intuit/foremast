@@ -182,6 +182,14 @@ type DeploymentMonitor struct {
 }
 
 // DeploymentMonitorSpec is the spec for a DeploymentMonitor resource
+
+//  Actions could be remediation action AND triggering alerts
+//  Since remediation action should be triggered very carefully. We are going to support only one action this time.
+//  Ideally system should cover all the use cases automatically. so we should only need a SUPER_SMART remediation action in the future.
+//  But alerts could be different ways, such as sending email or sending slack message, either way should take care of duplication messages,
+//  We'd like to integrate with existing smart open source solutions which support those use cases very well in the future,
+//  We will send foremast internal metrics so that we can define AlertRules in prometheus to generate Alerts
+
 type DeploymentMonitorSpec struct {
 	// Selector is a label query over kinds that created by the application. It must match the component objects' labels.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
@@ -200,6 +208,8 @@ type DeploymentMonitorSpec struct {
 	Logs []Logs `json:"logs,omitempty"`
 
 	AutoRollback bool `json:"autoRollback,omitempty"`
+
+	Remediation RemediationAction `json:"remediation,omitempty"`
 
 	// Rollback revision
 	RollbackRevision int64 `json:"rollbackRevision,omitempty"`
@@ -241,6 +251,28 @@ const (
 
 	MonitorPhaseAbort = "Abort"
 )
+
+//Constants for Actions
+const (
+	//No remediation required
+	RemediationNone = "None"
+	//Trigger a rollback if error occured
+	RemediationAutoRollback = "AutoRollback"
+	//Trigger a pause only to reduce the error rate
+	RemediationAutoPause = "AutoPause"
+	//Trigger an auto scaling for specific use cases, for example, connection stack or CPU bump up a lot
+	RemediationAutoScaling = "AutoScaling"
+	//Let foremast take care everything for you
+	RemediationAuto = "Auto"
+)
+
+// Option could be RemediationNone, RemediationAutoRollback, RemediationAutoPause, RemediationAutoScaling, RemediationAuto
+//
+type RemediationAction struct {
+	Option string `json:"option"`
+
+	Parameters map[string]string `json:"parameters,omitempty"`
+}
 
 // Anomaly detected
 type Anomaly struct {
