@@ -80,13 +80,8 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			oldMonitor := old.(*d.DeploymentMonitor)
 
 			//skip if not marked to be tracked for ACA
-			var newPhase string
+			var newPhase = newMonitor.Status.Phase
 			var oldPhase = ""
-
-			if newPhase = newMonitor.Status.Phase; newPhase == "" {
-				//glog.Infof("No valid phase, skipping deployment monitor change %v", newMonitor.Name)
-				return
-			}
 
 			var continuous = oldMonitor.Spec.Continuous
 			var newContinuous = newMonitor.Spec.Continuous
@@ -95,12 +90,12 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			if newPhase == oldPhase {
 				if continuousChange {
 					if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
-						var deploymentName = newMonitor.Annotations[DeploymentName]
-						barrelman.monitorContinuously(deploymentName, newMonitor.Namespace)
+						go barrelman.monitorContinuously(newMonitor)
 					}
 				} else {
 					glog.V(10).Infof("There is no status change, skipping this event[%v:%v] new[%v:%v",
 						oldMonitor.Name, newPhase, newMonitor.Name, oldPhase)
+					//glog.Infof("No valid phase, skipping deployment monitor change %v", newMonitor.Name)
 					return
 				}
 			}
@@ -116,8 +111,7 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 
 			// Got a newPhase
 			if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
-				var deploymentName = newMonitor.Annotations[DeploymentName]
-				barrelman.monitorContinuously(deploymentName, newMonitor.Namespace)
+				go barrelman.monitorContinuously(newMonitor)
 			}
 		},
 	})
@@ -135,6 +129,9 @@ func (c *MonitorController) rollback(monitor d.DeploymentMonitor) error {
 	}
 
 	var deploymentName = monitor.Annotations[DeploymentName]
+	if deploymentName == "" {
+		deploymentName = monitor.Name
+	}
 
 	depl, err := c.kubeclientset.ExtensionsV1beta1().Deployments(monitor.Namespace).Get(deploymentName, metav1.GetOptions{})
 

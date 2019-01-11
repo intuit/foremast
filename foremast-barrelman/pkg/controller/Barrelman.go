@@ -159,22 +159,32 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 	return deploymentMetadata, nil
 }
 
-func (c *Barrelman) monitorContinuously(deploymentName string, namespace string) error {
-	depl, err := c.kubeclientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
+func (c *Barrelman) monitorContinuously(monitor *v1alpha1.DeploymentMonitor) error {
+	var deploymentName = monitor.Annotations[DeploymentName]
+	if deploymentName == "" {
+		deploymentName = monitor.Name
+	}
+	depl, err := c.kubeclientset.AppsV1().Deployments(monitor.Namespace).Get(deploymentName, metav1.GetOptions{})
 
 	if err != nil {
 		return err
 	}
 
-	var newApp string
+	var appName string
 	var ok bool
 
-	if newApp, ok = depl.Labels["app"]; !ok || newApp == "" {
+	if appName, ok = depl.Labels["app"]; !ok || appName == "" {
 		glog.V(5).Infof("no app label found on new deployment, skipping deployment %v", deploymentName)
 		return errors.NewBadRequest("no app label found on new deployment, skipping deployment " + deploymentName)
 	}
 
-	c.monitorDeployment(newApp, depl, depl, nil)
+	//Try to get the metadata by "app" name, if it doesn't existing, try to search by "appType"
+	deploymentMetadata, err := c.getDeploymentMetadata(depl.Namespace, appName, depl)
+	if err != nil {
+		return err
+	}
+
+	c.monitorNewDeployment(appName, depl, depl, deploymentMetadata, monitor, true, m.StrategyContinuous)
 	return nil
 }
 
@@ -310,6 +320,7 @@ func NewBarrelman(
 
 			var remediationAction v1alpha1.RemediationAction
 			var create = false
+			var continuous = false
 			if err != nil {
 				oldMonitor = &v1alpha1.DeploymentMonitor{
 					ObjectMeta: metav1.ObjectMeta{
@@ -323,9 +334,11 @@ func NewBarrelman(
 				remediationAction = v1alpha1.RemediationAction{
 					Option: v1alpha1.RemediationNone,
 				}
+
 				create = true
 			} else {
 				remediationAction = oldMonitor.Spec.Remediation
+				continuous = oldMonitor.Spec.Continuous
 			}
 
 			oldMonitor.Spec = v1alpha1.DeploymentMonitorSpec{
@@ -336,6 +349,7 @@ func NewBarrelman(
 				Metrics:          deploymentMetadata.Spec.Metrics,
 				Logs:             deploymentMetadata.Spec.Logs,
 				Remediation:      remediationAction,
+				Continuous:       continuous,
 				RollbackRevision: 0,
 			}
 			oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{
@@ -470,9 +484,9 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 
 		if list != nil && len(list.Items) > 0 {
 			for _, item := range list.Items {
+
 				if item.Status.Phase == v1alpha1.MonitorPhaseRunning {
 					//Expire
-
 					var changed = false
 					if !item.Status.Expired {
 						analystClient, err := a.NewClient(nil, item.Spec.Analyst.Endpoint)
@@ -533,6 +547,9 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 							glog.Infof("Updated deployment monitor %v", item)
 						}
 					}
+				} else if item.Spec.Continuous {
+					//Trigger a continuous monitoring
+					go c.monitorContinuously(&item)
 				}
 			}
 		}

@@ -1,4 +1,11 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+  annotations:
+    foremast.ai/monitoring: "true" # This flag is to let barrleman keep monitoring the deployment in this namespace
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: foo
