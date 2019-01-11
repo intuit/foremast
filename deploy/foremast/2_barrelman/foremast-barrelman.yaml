@@ -17,7 +17,7 @@ spec:
       containers:
       - command:
         - /root/manager
-        image: docker.io/foremast/foremast-barrelman:0.0.6-SNAPSHOT
+        image: docker.io/foremast/foremast-barrelman:0.0.6
         imagePullPolicy: Always
         name: manager
         resources:
