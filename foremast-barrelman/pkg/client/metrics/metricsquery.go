@@ -88,8 +88,8 @@ func createMap(namespace string, appName string, podNames []string, metrics d.Me
 }
 
 func CreateMetricsInfo(namespace string, appName string, podNames [][]string, metrics d.Metrics, timeWindow time.Duration, strategy string) (MetricsInfo, error) {
-	if len(podNames) == 0 {
-		return MetricsInfo{}, errors.NewBadRequest("No valid pod nbames")
+	if strategy != StrategyContinuous && len(podNames) == 0 {
+		return MetricsInfo{}, errors.NewBadRequest("No valid pod names")
 	}
 	var dataSourceType = metrics.DataSourceType
 	if dataSourceType == "prometheus" {

@@ -184,7 +184,7 @@ func (c *Barrelman) monitorContinuously(monitor *v1alpha1.DeploymentMonitor) err
 		return err
 	}
 
-	c.monitorNewDeployment(appName, depl, depl, deploymentMetadata, monitor, true, m.StrategyContinuous)
+	c.monitorNewDeployment(appName, depl, depl, deploymentMetadata, monitor, false, m.StrategyContinuous)
 	return nil
 }
 
@@ -822,6 +822,7 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 			Remediation: v1alpha1.RemediationAction{
 				Option: remediationOption,
 			},
+			Continuous:       oldMonitor.Spec.Continuous,
 			RollbackRevision: oldRevision,
 		}
 
