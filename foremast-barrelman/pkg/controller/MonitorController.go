@@ -47,6 +47,8 @@ type MonitorController struct {
 	recorder record.EventRecorder
 
 	barrelman *Barrelman
+
+	remediationOptions *RemediationOptions
 }
 
 // NewBarrelman returns a new sample controller
@@ -66,6 +68,12 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 		monitorInformer:   monitorInformer,
 		recorder:          recorder,
 		barrelman:         barrelman,
+	}
+
+	controller.remediationOptions = &RemediationOptions{
+		rollback: controller.rollback,
+		pause:    controller.pause,
+		auto:     nil,
 	}
 
 	glog.Info("Setting up event handlers for DeploymentMonitor")
@@ -101,11 +109,23 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			}
 
 			if newPhase == d.MonitorPhaseUnhealthy && !newMonitor.Status.RemediationTaken {
-				if newMonitor.Spec.Remediation.Option == d.RemediationAutoRollback {
+				var action func(monitor *d.DeploymentMonitor) error
+				switch newMonitor.Spec.Remediation.Option {
+				case d.RemediationAutoRollback:
+					action = controller.remediationOptions.rollback
+					break
+				case d.RemediationAutoPause:
+					action = controller.remediationOptions.pause
+					break
+				case d.RemediationAuto:
+					action = controller.remediationOptions.auto
+					break
+				}
+				if action != nil {
 					newMonitor.Status.RemediationTaken = true
 					controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newMonitor.Namespace).Update(newMonitor)
 
-					go controller.rollback(*newMonitor)
+					go action(newMonitor)
 				}
 			}
 
@@ -119,22 +139,31 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 	return controller
 }
 
+//Trigger a rollback if error occured
+//RemediationAutoRollback = "AutoRollback"
+//Trigger a pause only to reduce the error rate
+//RemediationAutoPause = "AutoPause"
+//Let foremast take care everything for you
+//RemediationAuto = "Auto"
+type RemediationOptions struct {
+	rollback func(monitor *d.DeploymentMonitor) error
+
+	pause func(monitor *d.DeploymentMonitor) error
+
+	auto func(monitor *d.DeploymentMonitor) error
+}
+
 const AnnotationDeploymentRollbackMessage = "deployment.foremast.ai/rollbackMessage"
 
 // rollback will take an old and a new deployment object, and restore the new
 // deployment object to the same specification as the old deployment
-func (c *MonitorController) rollback(monitor d.DeploymentMonitor) error {
+func (c *MonitorController) rollback(monitor *d.DeploymentMonitor) error {
 	if monitor.Spec.RollbackRevision == 0 {
 		return nil
 	}
 
-	var deploymentName = monitor.Annotations[DeploymentName]
-	if deploymentName == "" {
-		deploymentName = monitor.Name
-	}
-
+	var deploymentName = c.getDeploymentName(monitor)
 	depl, err := c.kubeclientset.ExtensionsV1beta1().Deployments(monitor.Namespace).Get(deploymentName, metav1.GetOptions{})
-
 	if err != nil {
 		return err
 	}
@@ -195,4 +224,52 @@ func (c *MonitorController) rollback(monitor d.DeploymentMonitor) error {
 	glog.Infof("Rolled back to %d", monitor.Spec.RollbackRevision)
 	//msg, err := rollbacker.Rollback(depl, nil, monitor.Spec.RollbackRevision, false)
 	return err
+}
+
+func (c *MonitorController) getDeploymentName(monitor *d.DeploymentMonitor) string {
+	var deploymentName = monitor.Annotations[DeploymentName]
+	if deploymentName == "" {
+		deploymentName = monitor.Name
+	}
+	return deploymentName
+}
+
+func (c *MonitorController) getDeployment(monitor *d.DeploymentMonitor) (*v1beta1.Deployment, error) {
+	var deploymentName = c.getDeploymentName(monitor)
+	return c.kubeclientset.ExtensionsV1beta1().Deployments(monitor.Namespace).Get(deploymentName, metav1.GetOptions{})
+}
+
+// pause the current deployment
+func (c *MonitorController) pause(monitor *d.DeploymentMonitor) error {
+	depl, err := c.getDeployment(monitor)
+	if err != nil {
+		return err
+	}
+
+	depl.Spec.Paused = true
+
+	var now = metav1.Time{
+		Time: time.Now(),
+	}
+
+	depl.Status.Conditions = append(depl.Status.Conditions, v1beta1.DeploymentCondition{
+		Type:               v1beta1.DeploymentProgressing,
+		Status:             "True",
+		LastUpdateTime:     now,
+		LastTransitionTime: now,
+		Reason:             "ForemastPaused",
+		Message:            "Foremast detected unhealthy, so paused this deployment",
+	})
+
+	// Update messages
+	if _, err := c.kubeclientset.ExtensionsV1beta1().Deployments(depl.Namespace).Update(depl); err != nil {
+		glog.Infof("Updating existing deployment error %v %v", depl, err)
+		return err
+	}
+	return nil
+}
+
+func (c *MonitorController) auto(monitor *d.DeploymentMonitor) error {
+	//TODO Determine by foremast
+	return nil
 }

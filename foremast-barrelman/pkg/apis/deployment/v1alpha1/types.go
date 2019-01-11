@@ -263,7 +263,7 @@ const (
 	//Trigger a pause only to reduce the error rate
 	RemediationAutoPause = "AutoPause"
 	//Trigger an auto scaling for specific use cases, for example, connection stack or CPU bump up a lot
-	RemediationAutoScaling = "AutoScaling"
+	//RemediationAutoScaling = "AutoScaling"
 	//Let foremast take care everything for you
 	RemediationAuto = "Auto"
 )

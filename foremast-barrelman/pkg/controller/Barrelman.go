@@ -37,6 +37,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	gocache "github.com/pmylund/go-cache"
+
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -88,6 +90,11 @@ func AddToManager(m manager.Manager) error {
 	return nil
 }
 
+var (
+	namespaceCache = gocache.New(5*time.Minute, 30*time.Second)
+	metadataCache  = gocache.New(5*time.Minute, 30*time.Second)
+)
+
 // Barrelman is the controller implementation for watching deployment changes
 type Barrelman struct {
 	// kubeclientset is a standard kubernetes clientset
@@ -109,18 +116,6 @@ type Barrelman struct {
 	// Kubernetes API.
 	recorder record.EventRecorder
 
-	// lastDeployments is a map where the keys are <namespace>.<name> for deployments,
-	// and values are the image of the previous deployment. We track this to avoid an
-	// infinite loop when we rollback, as rollback otherwise looks the same as any other
-	// update to the image of the deployment.
-	// TODO: track more than just the image of the first container
-	//lastDeployments map[string]string
-
-	//prometheus api object to query prometheus data
-	//prometheus prometheusv1.API
-
-	//channel to tell go routine monitoring current new deployment to stop
-	//TODO: more than one channel to monitor more than one new deployment at a time
 	quit chan bool
 }
 
@@ -137,6 +132,12 @@ func EnvArrayEquals(a []corev1.EnvVar, b []corev1.EnvVar) bool {
 }
 
 func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl *appsv1.Deployment) (*v1alpha1.DeploymentMetadata, error) {
+
+	var key = namespace + ":" + appName
+	if deploymentMetadata, found := metadataCache.Get(key); found {
+		return deploymentMetadata.(*v1alpha1.DeploymentMetadata), nil
+	}
+
 	//Try to get the metadata by "app" name, if it doesn't existing, try to search by "appType"
 	metadatas := c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(depl.Namespace)
 	deploymentMetadata, err := metadatas.Get(appName, metav1.GetOptions{})
@@ -156,6 +157,7 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 			return nil, err
 		}
 	}
+	metadataCache.Set(key, deploymentMetadata, gocache.DefaultExpiration)
 	return deploymentMetadata, nil
 }
 
@@ -460,11 +462,17 @@ func NewBarrelman(
 }
 
 func (c *Barrelman) isMonitoring(namespace string) bool {
+	if cached, found := namespaceCache.Get(namespace); found {
+		return cached == true
+	}
+
 	ns, err := c.kubeclientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		return false
 	}
-	return ns.Annotations[ForemastAnotation] != ""
+	var result = ns.Annotations[ForemastAnotation] == "true"
+	namespaceCache.Set(namespace, result, gocache.DefaultExpiration)
+	return result
 }
 
 func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface) {
