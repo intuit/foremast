@@ -81,7 +81,7 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 
 //func (c *Client) toMetricQueries()
 
-func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]string, endpoint string, metrics d.Metrics, timeWindow time.Duration) (string, error) {
+func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]string, endpoint string, metrics d.Metrics, timeWindow time.Duration, strategy string) (string, error) {
 	//queries[] MetricQuery
 
 	var t = time.Now()
@@ -89,7 +89,7 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 	t = t.Add(timeWindow * time.Minute)
 	var endTime = t.Format(time.RFC3339)
 
-	var metricsInfo, err = m.CreateMetricsInfo(namespace, appName, podNames, metrics, timeWindow)
+	var metricsInfo, err = m.CreateMetricsInfo(namespace, appName, podNames, metrics, timeWindow, strategy)
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +99,7 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 		AppName:   appName,
 		StartTime: startTime,
 		EndTime:   endTime,
-		Strategy:  "canary",
+		Strategy:  strategy,
 		Metrics:   metricsInfo,
 	}
 

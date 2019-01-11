@@ -207,8 +207,10 @@ type DeploymentMonitorSpec struct {
 	// Logs should be monitored by canary deployment
 	Logs []Logs `json:"logs,omitempty"`
 
-	AutoRollback bool `json:"autoRollback,omitempty"`
+	// Continuous monitoring or not
+	Continuous bool `json:"continuous,omitempty"`
 
+	// Remediation action
 	Remediation RemediationAction `json:"remediation,omitempty"`
 
 	// Rollback revision

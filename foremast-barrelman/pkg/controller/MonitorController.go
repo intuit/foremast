@@ -45,11 +45,13 @@ type MonitorController struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	barrelman *Barrelman
 }
 
 // NewBarrelman returns a new sample controller
 func NewController(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface,
-	monitorInformer informers.DeploymentMonitorInformer) *MonitorController {
+	monitorInformer informers.DeploymentMonitorInformer, barrelman *Barrelman) *MonitorController {
 
 	// Create event broadcaster
 	glog.V(4).Info("Creating event broadcaster")
@@ -63,6 +65,7 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 		foremastClientset: foremastClientset,
 		monitorInformer:   monitorInformer,
 		recorder:          recorder,
+		barrelman:         barrelman,
 	}
 
 	glog.Info("Setting up event handlers for DeploymentMonitor")
@@ -85,14 +88,25 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 				return
 			}
 
+			var continuous = oldMonitor.Spec.Continuous
+			var newContinuous = newMonitor.Spec.Continuous
+			var continuousChange = continuous != newContinuous
+
 			if newPhase == oldPhase {
-				glog.V(10).Infof("There is no status change, skipping this event[%v:%v] new[%v:%v",
-					oldMonitor.Name, newPhase, newMonitor.Name, oldPhase)
-				return
+				if continuousChange {
+					if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
+						var deploymentName = newMonitor.Annotations[DeploymentName]
+						barrelman.monitorContinuously(deploymentName, newMonitor.Namespace)
+					}
+				} else {
+					glog.V(10).Infof("There is no status change, skipping this event[%v:%v] new[%v:%v",
+						oldMonitor.Name, newPhase, newMonitor.Name, oldPhase)
+					return
+				}
 			}
 
 			if newPhase == d.MonitorPhaseUnhealthy && !newMonitor.Status.RemediationTaken {
-				if newMonitor.Spec.AutoRollback {
+				if newMonitor.Spec.Remediation.Option == d.RemediationAutoRollback {
 					newMonitor.Status.RemediationTaken = true
 					controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newMonitor.Namespace).Update(newMonitor)
 
@@ -100,6 +114,11 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 				}
 			}
 
+			// Got a newPhase
+			if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
+				var deploymentName = newMonitor.Annotations[DeploymentName]
+				barrelman.monitorContinuously(deploymentName, newMonitor.Namespace)
+			}
 		},
 	})
 
