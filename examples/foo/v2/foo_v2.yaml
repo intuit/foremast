@@ -5,6 +5,7 @@ metadata:
     app: foo
     appType: spring-boot
   name: foo
+  namespace: foremast-examples
 spec:
   replicas: 1
   selector:

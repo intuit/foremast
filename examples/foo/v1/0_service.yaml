@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: default
+  name: foremast-examples
   annotations:
     foremast.ai/monitoring: "true" # This flag is to let barrleman keep monitoring the deployment in this namespace
 ---
@@ -9,6 +9,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: foo
+  namespace: foremast-examples
   labels:
     app: foo
     appType: spring-boot
@@ -26,6 +27,7 @@ apiVersion: deployment.foremast.ai/v1alpha1
 kind: DeploymentMonitor
 metadata:
   name: foo
+  namespace: foremast-examples
 spec:
   # Auto rollback or not when unhealthy detected
   remediation:
