@@ -56,6 +56,8 @@ const DeploymentName = "deployment.kubernetes.io/name"
 
 const Strategy = "deployment.foremast.ai/strategy"
 
+const ForemastAnotation = "foremast.ai/monitoring"
+
 const CanarySuffic = "-foremast-canary"
 
 const (
@@ -72,13 +74,6 @@ const (
 	// is synced successfully
 	MessageResourceSynced = "Foremast-barrelman-enabled resource synced successfully"
 )
-
-var IgnoreNamespaces = map[string]bool{
-	"monitoring":  true,
-	"foremast":    true,
-	"kube-system": true,
-	"kube-public": true,
-}
 
 // AddToManagerFuncs is a list of functions to add all Controllers to the Manager
 var AddToManagerFuncs []func(manager.Manager) error
@@ -292,7 +287,7 @@ func NewBarrelman(
 				return
 			}
 
-			if IgnoreNamespaces[newDepl.Namespace] {
+			if !controller.isMonitoring(newDepl.Namespace) {
 				glog.V(5).Infof("Ignore namespace %s", newDepl.Namespace)
 				return
 			}
@@ -384,7 +379,7 @@ func NewBarrelman(
 			newDepl := new.(*appsv1.Deployment)
 			oldDepl := old.(*appsv1.Deployment)
 
-			if IgnoreNamespaces[newDepl.Namespace] {
+			if !controller.isMonitoring(newDepl.Namespace) {
 				glog.V(5).Infof("Ignore namespace %s", newDepl.Namespace)
 				return
 			}
@@ -415,7 +410,7 @@ func NewBarrelman(
 			//get deployment object
 			depl := obj.(*appsv1.Deployment)
 
-			if IgnoreNamespaces[depl.Namespace] {
+			if !controller.isMonitoring(depl.Namespace) {
 				glog.V(5).Infof("Ignore namespace %s", depl.Namespace)
 				return
 			}
@@ -448,6 +443,14 @@ func NewBarrelman(
 	}()
 
 	return controller
+}
+
+func (c *Barrelman) isMonitoring(namespace string) bool {
+	ns, err := c.kubeclientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err != nil {
+		return false
+	}
+	return ns.Annotations[ForemastAnotation] != ""
 }
 
 func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface) {
