@@ -7,7 +7,7 @@ metadata:
   name: foo
   namespace: foremast-examples
 spec:
-  replicas: 5
+  replicas: 1
   selector:
     matchLabels:
       app: foo
