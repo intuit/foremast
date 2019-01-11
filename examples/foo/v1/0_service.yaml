@@ -21,4 +21,6 @@ metadata:
   name: foo
 spec:
   # Auto rollback or not when unhealthy detected
-  autoRollback: true
+  remediation:
+    option: AutoRollback
+
