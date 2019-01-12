@@ -109,23 +109,25 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			}
 
 			if newPhase == d.MonitorPhaseUnhealthy && !newMonitor.Status.RemediationTaken {
-				var action func(monitor *d.DeploymentMonitor) error
-				switch newMonitor.Spec.Remediation.Option {
-				case d.RemediationAutoRollback:
-					action = controller.remediationOptions.rollback
-					break
-				case d.RemediationAutoPause:
-					action = controller.remediationOptions.pause
-					break
-				case d.RemediationAuto:
-					action = controller.remediationOptions.auto
-					break
-				}
-				if action != nil {
-					newMonitor.Status.RemediationTaken = true
-					controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newMonitor.Namespace).Update(newMonitor)
+				if !newMonitor.Spec.Continuous {
+					var action func(monitor *d.DeploymentMonitor) error
+					switch newMonitor.Spec.Remediation.Option {
+					case d.RemediationAutoRollback:
+						action = controller.remediationOptions.rollback
+						break
+					case d.RemediationAutoPause:
+						action = controller.remediationOptions.pause
+						break
+					case d.RemediationAuto:
+						action = controller.remediationOptions.auto
+						break
+					}
+					if action != nil {
+						newMonitor.Status.RemediationTaken = true
+						controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newMonitor.Namespace).Update(newMonitor)
 
-					go action(newMonitor)
+						go action(newMonitor)
+					}
 				}
 			}
 
