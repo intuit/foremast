@@ -226,6 +226,10 @@ func (c *Barrelman) monitorDeployment(appName string, oldDepl, newDepl *appsv1.D
 			oldMonitor, err := c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
 			var monitorNotFound = true
 			if err == nil {
+				if oldMonitor.Spec.Continuous {
+					glog.Infof("The deployment is watching continuously:%s", newDepl.Name)
+					return
+				}
 				monitorNotFound = false
 				newRevision, err := deploymentutil.Revision(newDepl)
 				if err == nil && newRevision > 0 && newRevision == oldMonitor.Spec.RollbackRevision {
