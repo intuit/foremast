@@ -141,7 +141,8 @@
     },
     {
       "aliasColors": {
-        "Demo Service": "#e24d42",
+        "Anomaly": "#052b51",
+        "Demo Service": "#ef843c",
         "ForemastDemo": "#e24d42",
         "foo": "#e24d42"
       },
@@ -177,7 +178,30 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "Upper",
+          "color": "#bf1b00",
+          "dashes": true,
+          "linewidth": 1
+        },
+        {
+          "alias": "Lower",
+          "color": "#508642",
+          "dashes": true,
+          "linewidth": 1,
+          "pointradius": 1
+        },
+        {
+          "alias": "Anomaly",
+          "color": "#bf1b00",
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "pointradius": 3,
+          "points": true,
+          "yaxis": 2
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -189,26 +213,34 @@
           "intervalFactor": 1,
           "legendFormat": "Demo Service",
           "refId": "A"
-        }
-      ],
-      "thresholds": [
-        {
-          "colorMode": "warning",
-          "fill": true,
-          "line": false,
-          "op": "gt",
-          "value": 1,
-          "yaxis": "left"
         },
         {
-          "colorMode": "critical",
-          "fill": true,
-          "line": false,
-          "op": "gt",
-          "value": 2,
-          "yaxis": "left"
+          "expr": "namespace_app_per_pod:http_server_requests_error_5xx_upper{app=\"foo\",exported_namespace=\"foremast-examples\"}",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "intervalFactor": 1,
+          "legendFormat": "Upper",
+          "refId": "B"
+        },
+        {
+          "expr": "namespace_app_per_pod:http_server_requests_error_5xx_lower{app=\"foo\",exported_namespace=\"foremast-examples\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Lower",
+          "refId": "C"
+        },
+        {
+          "expr": "changes(namespace_app_per_pod:http_server_requests_error_5xx_anomaly{app=\"foo\",exported_namespace=\"foremast-examples\"}[1m]) > 0",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "intervalFactor": 1,
+          "legendFormat": "Anomaly",
+          "refId": "D"
         }
       ],
+      "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
       "title": "Errors (5xx 4xx)",
@@ -237,11 +269,12 @@
           "show": true
         },
         {
+          "decimals": null,
           "format": "short",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": null,
+          "label": "Anomaly",
+          "logBase": 2,
+          "max": "1",
+          "min": "0",
           "show": true
         }
       ],
@@ -259,8 +292,8 @@
     "list": []
   },
   "time": {
-    "from": "now-15m",
-    "to": "now"
+    "from": "2019-01-11T19:25:23.072Z",
+    "to": "2019-01-11T19:55:23.072Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -281,5 +314,5 @@
   "timezone": "browser",
   "title": "ForemastDashboard",
   "uid": "A4yxivymk",
-  "version": 9
+  "version": 15
 }
