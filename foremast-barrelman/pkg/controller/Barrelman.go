@@ -21,6 +21,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"os"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -45,8 +46,6 @@ import (
 	appslisters "k8s.io/client-go/listers/apps/v1"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
 )
-
-const Foremast = "foremast"
 
 const barrelman = "barrelman"
 
@@ -146,9 +145,10 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 		if hasAppType {
 			deploymentMetadata, err = metadatas.Get(newAppType, metav1.GetOptions{})
 			if err != nil {
-				deploymentMetadata, err = c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(Foremast).Get(newAppType, metav1.GetOptions{})
+				var curerntNamespace = os.Getenv("FOO")
+				deploymentMetadata, err = c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(curerntNamespace).Get(newAppType, metav1.GetOptions{})
 				if err != nil {
-					glog.Infof("Getting deployment metadata error by appType:%s, in either namespace %s or %s:", newAppType, depl.Namespace, Foremast)
+					glog.Infof("Getting deployment metadata error by appType:%s, in either namespace %s or %s:", newAppType, depl.Namespace, curerntNamespace)
 					return nil, err
 				}
 			}
