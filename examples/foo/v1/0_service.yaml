@@ -1,11 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: foremast-examples
-  annotations:
-    foremast.ai/monitoring: "true" # This flag is to let barrleman keep monitoring the deployment in this namespace
----
-apiVersion: v1
 kind: Service
 metadata:
   name: foo
@@ -23,6 +16,7 @@ spec:
   selector:
     app: foo
 ---
+## kubectl patch deploymentmonitor foo --type="merge" -p '{"spec":{"continuous":true}}' -n foremast-examples
 apiVersion: deployment.foremast.ai/v1alpha1
 kind: DeploymentMonitor
 metadata:
