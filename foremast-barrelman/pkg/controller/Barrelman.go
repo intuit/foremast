@@ -90,6 +90,12 @@ func AddToManager(m manager.Manager) error {
 }
 
 var (
+	namespaceBlacklist = map[string]bool{
+		"kube-public": false,
+		"kube-system": false,
+		"opa":         false,
+		"monitoring":  false,
+	}
 	namespaceCache = gocache.New(5*time.Minute, 30*time.Second)
 	metadataCache  = gocache.New(5*time.Minute, 30*time.Second)
 )
@@ -145,15 +151,16 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 		if hasAppType {
 			deploymentMetadata, err = metadatas.Get(newAppType, metav1.GetOptions{})
 			if err != nil {
-				var curerntNamespace = os.Getenv("FOO")
+				var curerntNamespace = os.Getenv("NAMESPACE")
 				deploymentMetadata, err = c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(curerntNamespace).Get(newAppType, metav1.GetOptions{})
 				if err != nil {
+					metadataCache.Set(key, nil, gocache.DefaultExpiration)
 					glog.Infof("Getting deployment metadata error by appType:%s, in either namespace %s or %s:", newAppType, depl.Namespace, curerntNamespace)
 					return nil, err
 				}
 			}
 		} else {
-			glog.Info("Getting deployment metadata error by app:" + appName)
+			metadataCache.Set(key, nil, gocache.DefaultExpiration)
 			return nil, err
 		}
 	}
@@ -466,6 +473,10 @@ func NewBarrelman(
 }
 
 func (c *Barrelman) isMonitoring(namespace string) bool {
+	if namespaceBlacklist[namespace] == false {
+		return false
+	}
+
 	if cached, found := namespaceCache.Get(namespace); found {
 		return cached == true
 	}
@@ -474,7 +485,7 @@ func (c *Barrelman) isMonitoring(namespace string) bool {
 	if err != nil {
 		return false
 	}
-	var result = ns.Annotations[ForemastAnotation] == "true"
+	var result = ns.Annotations[ForemastAnotation] != "false"
 	namespaceCache.Set(namespace, result, gocache.DefaultExpiration)
 	return result
 }
