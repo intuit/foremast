@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
+	"reflect"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -97,7 +98,7 @@ var (
 		"monitoring":  false,
 	}
 	namespaceCache = gocache.New(5*time.Minute, 30*time.Second)
-	metadataCache  = gocache.New(5*time.Minute, 30*time.Second)
+	metadataCache  = gocache.New(1*time.Minute, 10*time.Second)
 )
 
 // Barrelman is the controller implementation for watching deployment changes
@@ -140,7 +141,11 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 
 	var key = namespace + ":" + appName
 	if deploymentMetadata, found := metadataCache.Get(key); found {
-		return deploymentMetadata.(*v1alpha1.DeploymentMetadata), nil
+		if strings.Contains(reflect.TypeOf(deploymentMetadata).String(), "DeploymentMetadata") {
+			return deploymentMetadata.(*v1alpha1.DeploymentMetadata), nil
+		} else {
+			return nil, deploymentMetadata.(error)
+		}
 	}
 
 	//Try to get the metadata by "app" name, if it doesn't existing, try to search by "appType"
@@ -154,13 +159,13 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 				var curerntNamespace = os.Getenv("NAMESPACE")
 				deploymentMetadata, err = c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(curerntNamespace).Get(newAppType, metav1.GetOptions{})
 				if err != nil {
-					metadataCache.Set(key, nil, gocache.DefaultExpiration)
+					metadataCache.Set(key, err, gocache.DefaultExpiration)
 					glog.Infof("Getting deployment metadata error by appType:%s, in either namespace %s or %s:", newAppType, depl.Namespace, curerntNamespace)
 					return nil, err
 				}
 			}
 		} else {
-			metadataCache.Set(key, nil, gocache.DefaultExpiration)
+			metadataCache.Set(key, err, gocache.DefaultExpiration)
 			return nil, err
 		}
 	}
@@ -473,7 +478,8 @@ func NewBarrelman(
 }
 
 func (c *Barrelman) isMonitoring(namespace string) bool {
-	if namespaceBlacklist[namespace] == false {
+	_, ok := namespaceBlacklist[namespace]
+	if ok {
 		return false
 	}
 
