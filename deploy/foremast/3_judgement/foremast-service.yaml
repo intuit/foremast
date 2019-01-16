@@ -35,7 +35,7 @@ spec:
         env:
         - name: ELASTIC_URL
           value: "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
-        - name: QUERY_SERVER_ENDPOINT
+        - name: QUERY_SERVICE_ENDPOINT
           value: "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
         resources:
           limits:
