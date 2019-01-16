@@ -1,11 +1,11 @@
 package main
 
 import (
-	"foremast.ai/foremast/foremast-service/pkg/common"
-	"foremast.ai/foremast/foremast-service/pkg/converter"
-	"foremast.ai/foremast/foremast-service/pkg/models"
-	"foremast.ai/foremast/foremast-service/pkg/prometheus"
-	"foremast.ai/foremast/foremast-service/pkg/search"
+	common "foremast.ai/foremast/foremast-service/pkg/common"
+	converter "foremast.ai/foremast/foremast-service/pkg/converter"
+	models "foremast.ai/foremast/foremast-service/pkg/models"
+	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
+	search "foremast.ai/foremast/foremast-service/pkg/search"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
 	"io/ioutil"
@@ -219,7 +219,6 @@ func main() {
 	QueryEndpoint  = os.Getenv("QUERY_SERVICE_ENDPOINT")
 	if esURL == "" {
 		esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
-		esURL = "http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200/"
 	}
 	if QueryEndpoint  ==""{
 		QueryEndpoint  = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
