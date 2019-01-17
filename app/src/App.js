@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { withRouter } from 'react-router-dom';
 import Highcharts from 'highcharts';
 import Highstock from 'highcharts/highstock';
 import HighchartsReact from 'highcharts-react-official';
@@ -9,14 +10,22 @@ var moment = require('moment');
 
 const dataDomain = 'http://foremast-api-service.foremast.svc.cluster.local:8099';
 const dataPath = '/api/v1/query_range';
-const metricBasename = 'namespace_app_per_pod:http_server_requests_error_5xx';
 const metricNameMap = {
+  'namespace_app_per_pod:cpu_usage_seconds_total': [
+    'namespace_app_per_pod:cpu_usage_seconds_total'
+  ],
+  'namespace_app_per_pod:memory_usage_bytes': [
+    'namespace_app_per_pod:memory_usage_bytes'
+  ],
   'namespace_app_per_pod:http_server_requests_error_5xx': [
     'namespace_app_per_pod:http_server_requests_error_5xx',
     //'namespace_app_per_pod:http_server_requests_error_5xx_upper',
     //'namespace_app_per_pod:http_server_requests_error_5xx_lower',
     //'namespace_app_per_pod:http_server_requests_error_5xx_anomaly'
-  ]
+  ],
+  'namespace_app_per_pod:http_server_requests_latency': [
+    'namespace_app_per_pod:http_server_requests_latency'
+  ],
 };
 const dataQueryParamsA = '?query=';
 const dataQueryParamsB = '{namespace="default",app="foo"}';
@@ -48,7 +57,12 @@ class App extends Component {
 
   componentDidMount() {
     //TODO:DM - read path params to provide metric name
-    metricNameMap[metricBasename].forEach(metricName => {
+    const pathComponents = this.props.location.pathname.split('/');
+    //TODO:DM - simply grabbing last param after '/' feels fragile
+    //could be empty string... a better default to use, if so?
+    const pathParam = pathComponents[pathComponents.length - 1];
+
+    metricNameMap[pathParam].forEach(metricName => {
       let uri = dataDomain + dataPath + dataQueryParamsA +
         encodeURIComponent(metricName + dataQueryParamsB) + dataQueryParamsC + startTimestamp + dataQueryParamsD +
         endTimestamp + dataQueryParamsE;
@@ -88,7 +102,7 @@ class App extends Component {
   }
 }
 
-export default App;
+export default withRouter(App);
 
 const timeseriesOptions = {
   chart: {
@@ -125,28 +139,28 @@ const timeseriesOptions = {
     }
   },
 
-  series: [{
-    name: 'Error5xxCountUpper',
-    data: [[1539120304467,0.8537],[1539120374467,0.8537],[1539120374467,0.869],[1539120444467,0.869],[1539120444467,0.8728],[1539120514467,0.8728],[1539120514467,0.8731],[1539120584467,0.8731],[1539120584467,0.874]]
-  }, {
-    name: 'Error5xxCount',
-    data: [[1539120304467,0.7537],[1539120318467,0.7537],[1539120332467,0.7559],[1539120346467,0.7631],[1539120360467,0.9644],[1539120374467,0.769],[1539120388467,0.7683],[1539120402467,0.77],[1539120416467,0.7703],[1539120430467,0.7757],[1539120444467,0.7728],[1539120458467,0.7721],[1539120472467,0.7748],[1539120486467,0.574],[1539120500467,0.7718],[1539120514467,0.7731],[1539120528467,0.767],[1539120542467,0.769],[1539120556467,0.7706],[1539120570467,0.7752],[1539120584467,0.774]]
-  }, {
-    name: 'Error5xxCountLower',
-    data: [[1539120304467,0.6537],[1539120374467,0.669],[1539120444467,0.6728],[1539120514467,0.6731],[1539120584467,0.674]]
-  }, {
-    name: 'Error5xxCountAnomaly',
-    data: [[1539120360467,0.9644],[1539120486467,0.574]],
-    marker: {
-      symbol: 'url(img/explosion.png)'
-    },
-    lineWidth: 0,
-    states: {
-      hover: {
-        lineWidthPlus: 0
-      }
-    }
-  }],
+  // series: [{
+  //   name: 'Error5xxCountUpper',
+  //   data: [[1539120304467,0.8537],[1539120374467,0.8537],[1539120374467,0.869],[1539120444467,0.869],[1539120444467,0.8728],[1539120514467,0.8728],[1539120514467,0.8731],[1539120584467,0.8731],[1539120584467,0.874]]
+  // }, {
+  //   name: 'Error5xxCount',
+  //   data: [[1539120304467,0.7537],[1539120318467,0.7537],[1539120332467,0.7559],[1539120346467,0.7631],[1539120360467,0.9644],[1539120374467,0.769],[1539120388467,0.7683],[1539120402467,0.77],[1539120416467,0.7703],[1539120430467,0.7757],[1539120444467,0.7728],[1539120458467,0.7721],[1539120472467,0.7748],[1539120486467,0.574],[1539120500467,0.7718],[1539120514467,0.7731],[1539120528467,0.767],[1539120542467,0.769],[1539120556467,0.7706],[1539120570467,0.7752],[1539120584467,0.774]]
+  // }, {
+  //   name: 'Error5xxCountLower',
+  //   data: [[1539120304467,0.6537],[1539120374467,0.669],[1539120444467,0.6728],[1539120514467,0.6731],[1539120584467,0.674]]
+  // }, {
+  //   name: 'Error5xxCountAnomaly',
+  //   data: [[1539120360467,0.9644],[1539120486467,0.574]],
+  //   marker: {
+  //     symbol: 'url(img/explosion.png)'
+  //   },
+  //   lineWidth: 0,
+  //   states: {
+  //     hover: {
+  //       lineWidthPlus: 0
+  //     }
+  //   }
+  // }],
 
   responsive: {
     rules: [{
@@ -161,7 +175,50 @@ const timeseriesOptions = {
         }
       }
     }]
-  }
+  },
+
+  rangeSelector: {
+    //allButtonsEnabled: true,
+    buttons: [{
+      type: 'day',
+      count: 1,
+      text: '1d',
+    }, {
+      type: 'day',
+      count: 3,
+      text: '3d',
+    }, {
+      type: 'week',
+      count: 1,
+      text: '1w',
+    }, {
+      type: 'week',
+      count: 2,
+      text: '2w',
+    }, {
+      type: 'month',
+      count: 1,
+      text: '1m',
+    }, {
+      type: 'month',
+      count: 3,
+      text: '3m',
+    }, {
+      type: 'month',
+      count: 6,
+      text: '6m',
+    }, {
+      type: 'ytd',
+      text: 'ytd',
+    }, {
+      type: 'year',
+      count: 1,
+      text: '1y',
+    }, {
+      type: 'all',
+      text: 'all',
+    }],
+  },
 };
 
 const scatterOptions = {
