@@ -24,6 +24,7 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
 
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
 
+
     @Override
     public void customize(MeterRegistry registry) {
         String commonTagNameValuePair = metricsProperties.getCommonTagNameValuePairs();

@@ -81,10 +81,10 @@ public class WebMvcMetricsFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         HandlerExecutionChain handler = null;
         try {
-            MatchableHandlerMapping matchableHandlerMapping = mappingIntrospector.getMatchableHandlerMapping(request);
-            if (matchableHandlerMapping != null) {
-                handler = matchableHandlerMapping.getHandler(request);
-            }
+            handler = mappingIntrospector.getHandlerExecutionChain(request);
+//            if (matchableHandlerMapping != null) {
+//                handler = matchableHandlerMapping.getHandler(request);
+//            }
         } catch (Exception e) {
             logger.debug("Unable to time request", e);
             filterChain.doFilter(request, response);

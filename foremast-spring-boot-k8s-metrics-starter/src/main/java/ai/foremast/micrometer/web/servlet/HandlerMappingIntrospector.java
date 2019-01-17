@@ -50,7 +50,7 @@ import org.springframework.web.servlet.HandlerMapping;
  *
  * <p>Provides the following methods:
  * <ul>
- * <li>{@link #getMatchableHandlerMapping} &mdash; obtain a {@code HandlerMapping}
+ * <li>{@link #getHandlerExecutionChain} &mdash; obtain a {@code HandlerMapping}
  * to check request-matching criteria against.
  * <li>{@link #getCorsConfiguration} &mdash; obtain the CORS configuration for the
  * request.
@@ -117,7 +117,7 @@ public class HandlerMappingIntrospector
      * @return the resolved matcher, or {@code null}
      * @throws Exception if any of the HandlerMapping's raise an exception
      */
-    public MatchableHandlerMapping getMatchableHandlerMapping(HttpServletRequest request) throws Exception {
+    public HandlerExecutionChain getHandlerExecutionChain(HttpServletRequest request) throws Exception {
         Assert.notNull(this.handlerMappings, "Handler mappings not initialized");
         HttpServletRequest wrapper = new RequestAttributeChangeIgnoringWrapper(request);
         for (HandlerMapping handlerMapping : this.handlerMappings) {
@@ -125,8 +125,8 @@ public class HandlerMappingIntrospector
             if (handler == null) {
                 continue;
             }
-            if (handlerMapping instanceof MatchableHandlerMapping) {
-                return ((MatchableHandlerMapping) handlerMapping);
+            if (handler instanceof HandlerExecutionChain) {
+                return (HandlerExecutionChain)handler;
             }
             throw new IllegalStateException("HandlerMapping is not a MatchableHandlerMapping");
         }

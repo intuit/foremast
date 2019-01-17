@@ -54,14 +54,10 @@ public class MetricsAutoConfiguration {
         return Clock.SYSTEM;
     }
 
-//    @Bean
-//    public static MeterRegistryPostProcessor meterRegistryPostProcessor(
-//            ObjectProvider<List<MeterBinder>> meterBinders,
-//            ObjectProvider<List<MeterFilter>> meterFilters,
-//            ObjectProvider<List<MeterRegistryCustomizer<?>>> meterRegistryCustomizers,
-//            ObjectProvider<MetricsProperties> metricsProperties) {
-//        return new MeterRegistryPostProcessor(meterBinders, meterFilters, meterRegistryCustomizers, metricsProperties);
-//    }
+    @Bean
+    public static MeterRegistryPostProcessor meterRegistryPostProcessor() {
+        return new MeterRegistryPostProcessor();
+    }
 
     @Bean
     @Order(0)
