@@ -32,7 +32,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,24 +66,14 @@ public class WebMvcMetricsAutoConfiguration {
 
     @SuppressWarnings("deprecation")
     @Bean
-    public FilterRegistrationBean webMetricsFilter(MeterRegistry registry,
+    public WebMvcMetricsFilter webMetricsFilter(MeterRegistry registry,
                                                 WebMvcTagsProvider tagsProvider,
                                                 WebApplicationContext ctx) {
-        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean(new WebMvcMetricsFilter(registry, tagsProvider,
+        return new WebMvcMetricsFilter(registry, tagsProvider,
                 properties.getWeb().getServer().getRequestsMetricName(),
                 properties.getWeb().getServer().isAutoTimeRequests(),
-                new HandlerMappingIntrospector(ctx)));
-        filterRegistrationBean.addUrlPatterns("/*");
-        return filterRegistrationBean;
+                new HandlerMappingIntrospector(ctx));
     }
-
-//    @Bean
-//    public FilterRegistrationBean filterRegistrationBean() {
-//        FilterRegistrationBean bean = new FilterRegistrationBean(new K8sMetricsFilter());
-//        bean.addUrlPatterns("/metrics");
-//        bean.addUrlPatterns("/actuator/prometheus");
-//        return bean;
-//    }
 
     @Bean
     @Order(0)

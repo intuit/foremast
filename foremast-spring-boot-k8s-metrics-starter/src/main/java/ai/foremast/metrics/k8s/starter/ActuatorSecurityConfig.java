@@ -17,7 +17,8 @@ public class ActuatorSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers("/actuator/info", "/actuator/health", "/actuator/prometheus", "/metrics")
+                .antMatchers("/actuator/info", "/actuator/health",
+                        "/actuator/prometheus", "/metrics", "/prometheus")
                 .permitAll();
     }
 }
