@@ -69,11 +69,23 @@ h4 .anchorjs-link {
 }
 
 .site-footer {
-  padding-top: 35px;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100px;
+  padding-top: 20px;
   padding-bottom: 20px;
-  margin-top: 50px;
   color: #99979c;
   background-color: #dbdbdb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 100px;
 }
 
 .about {

@@ -170,7 +170,7 @@ func SearchByID(context *gin.Context) {
 func main() {
 	var esURL = os.Getenv("ELASTIC_URL")
 	if esURL == "" {
-		esURL = "http://a31008275fcf911e8bde30674acac93e-885155939.us-west-2.elb.amazonaws.com:9200"
+		esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
 	}
 
 	var err error

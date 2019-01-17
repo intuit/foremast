@@ -1,0 +1,17 @@
+# Configuration to let prometheus discover this service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: spring-boot-metrics
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      appType: spring-boot
+  endpoints:
+  - port: http
+    targetPort: 8080
+    scheme: http
+    path: /actuator/prometheus
