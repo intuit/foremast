@@ -1,14 +1,10 @@
 package ai.foremast.metrics.k8s.starter;
 
+import ai.foremast.micrometer.autoconfigure.MeterRegistryCustomizer;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
-import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider;
-import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.regex.Pattern;
@@ -27,23 +23,6 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
     ConfigurableApplicationContext appContext;
 
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
-
-    @Bean
-    public FilterRegistrationBean filterRegistrationBean() {
-        FilterRegistrationBean bean = new FilterRegistrationBean(new K8sMetricsFilter());
-        bean.addUrlPatterns("/metrics");
-        return bean;
-    }
-
-    @Bean
-    public WebMvcTagsProvider serviceCallerTag() {
-        if (metricsProperties.hasCaller()) {
-            return new CallerWebMvcTagsProvider(metricsProperties.getCallerHeader());
-        }
-        else {
-            return new DefaultWebMvcTagsProvider();
-        }
-    }
 
     @Override
     public void customize(MeterRegistry registry) {
