@@ -196,6 +196,8 @@ func ProxyQuery(context *gin.Context) {
 // QueryProxy .... Acting as proxy for different cluster of  query service (for example prometheus)
 //                 assume service only access global query service
 func QueryProxy(context *gin.Context) {
+	//allow crqs
+	context.Header("Access-Control-Allow-Origin", "*")
 	queryMaps := context.Request.URL.RawQuery
 	targeturl := QueryEndpoint +"api/v1/query_range?"+queryMaps
 	httpclient := http.Client{
