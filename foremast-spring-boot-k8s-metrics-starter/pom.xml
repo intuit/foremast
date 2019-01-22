@@ -5,7 +5,7 @@
 
     <groupId>ai.foremast.metrics</groupId>
     <artifactId>foremast-spring-boot-k8s-metrics-starter</artifactId>
-    <version>0.1.4-SB1X_4-SNAPSHOT</version>
+    <version>0.1.4-SB1X_5-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <parent>
@@ -157,6 +157,7 @@
                 <configuration>
                     <serverId>ossrh-releases</serverId>
                     <nexusUrl>https://oss.sonatype.org</nexusUrl>
+                    <stagingProgressTimeoutMinutes>20</stagingProgressTimeoutMinutes>
                 </configuration>
             </plugin>
             <plugin>

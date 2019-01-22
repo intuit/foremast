@@ -23,6 +23,10 @@ public class ActuatorSecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        if (metricsProperties.isDisableSecurityConfig()) {
+            return;
+        }
+
         if (metricsProperties.isDisableCsrf()) { //For special use case
             http.csrf().disable();
         }
