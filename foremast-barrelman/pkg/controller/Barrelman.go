@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
-	"reflect"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -140,11 +139,12 @@ func EnvArrayEquals(a []corev1.EnvVar, b []corev1.EnvVar) bool {
 func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl *appsv1.Deployment) (*v1alpha1.DeploymentMetadata, error) {
 
 	var key = namespace + ":" + appName
-	if deploymentMetadata, found := metadataCache.Get(key); found {
-		if strings.Contains(reflect.TypeOf(deploymentMetadata).String(), "DeploymentMetadata") {
-			return deploymentMetadata.(*v1alpha1.DeploymentMetadata), nil
-		} else {
-			return nil, deploymentMetadata.(error)
+	if cached, found := metadataCache.Get(key); found {
+		switch cached.(type) {
+		case *v1alpha1.DeploymentMetadata:
+			return cached.(*v1alpha1.DeploymentMetadata), nil
+		default:
+			return nil, cached.(error)
 		}
 	}
 
