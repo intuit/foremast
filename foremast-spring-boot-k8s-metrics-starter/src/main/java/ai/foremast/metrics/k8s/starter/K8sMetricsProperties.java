@@ -15,8 +15,6 @@ public class K8sMetricsProperties {
 
     private boolean disableCsrf = false;
 
-    private boolean disableSecurityConfig = false;
-
     public String getInitializeForStatuses() {
         return initializeForStatuses;
     }
@@ -51,13 +49,5 @@ public class K8sMetricsProperties {
 
     public void setDisableCsrf(boolean disableCsrf) {
         this.disableCsrf = disableCsrf;
-    }
-
-    public boolean isDisableSecurityConfig() {
-        return disableSecurityConfig;
-    }
-
-    public void setDisableSecurityConfig(boolean disableSecurityConfig) {
-        this.disableSecurityConfig = disableSecurityConfig;
     }
 }

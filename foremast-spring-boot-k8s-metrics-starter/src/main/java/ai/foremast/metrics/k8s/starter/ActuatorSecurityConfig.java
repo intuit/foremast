@@ -8,9 +8,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
 @Configuration
-@Order(99)
+@Order(101)
 @EnableConfigurationProperties({K8sMetricsProperties.class})
-
 public class ActuatorSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
@@ -23,10 +22,6 @@ public class ActuatorSecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        if (metricsProperties.isDisableSecurityConfig()) {
-            return;
-        }
-
         if (metricsProperties.isDisableCsrf()) { //For special use case
             http.csrf().disable();
         }
