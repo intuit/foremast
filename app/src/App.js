@@ -17,6 +17,7 @@ const ANOMALY = 'anomaly';
 
 const dataDomain = 'http://foremast-api-service.foremast.svc.cluster.local:8099';
 const dataPath = '/api/v1/query_range';
+
 const metricNameMap = {
   'namespace_app_per_pod:cpu_usage_seconds_total': [{
     type: BASE,
@@ -72,7 +73,7 @@ const metricNameMap = {
   'namespace_app_per_pod:http_server_requests_latency': [{
     type: BASE,
     name: 'namespace_app_per_pod:http_server_requests_latency',
-    tags: '{namespace="default",app="foo"}',
+    tags: '{namespace="foremast-examples",app="foo"}',
   },{
     type: UPPER,
     name: 'foremastbrain:namespace_app_per_pod:http_server_requests_latency_upper',
@@ -91,38 +92,36 @@ const dataQueryParam = '?query=';
 const dataStartParam = '&start=';
 const dataEndParam = '&end=';
 const dataStepParam = '&step=';
-const dataStepValSec = 60; //60 second granularity
+const dataStepValSec = 60; //data granularity
 
 //API can't provide more than roughly 7 days of data at 60sec granularity
-const endTimestamp = moment().subtract(5, 'days').unix();
-const startTimestamp = moment().subtract(12, 'days').unix();
+const endTimestamp = moment().subtract(2, 'days').unix();
+const startTimestamp = moment().subtract(9, 'days').unix();
 
 class App extends Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      metricName: '',
-      baseSeries: {data:[]},
-      upperSeries: {data:[]},
-      lowerSeries: {data:[]},
-      anomalySeries: {data:[]},
-    };
-  }
+  state = {
+    metricName: '',
+    baseSeries: {data:[]},
+    upperSeries: {data:[]},
+    lowerSeries: {data:[]},
+    anomalySeries: {data:[]},
+  };
 
   componentDidMount() {
-    //TODO:DM - read path params to provide metric name
-    const pathComponents = this.props.location.pathname.split('/');
-    //TODO:DM - simply grabbing last param after '/' feels fragile
-    //could be empty string... a better default to use, if so?
-    const pathParam = pathComponents[pathComponents.length - 1];
+    const pathParam = this.props.match.params.metricName;
     this.setState({metricName: pathParam});
+
+    const queryParams = new URLSearchParams(this.props.location.search);
+    const namespaceParam = queryParams.get('namespace') || 'foremast-examples';
+    const appNameParam = queryParams.get('app') || 'foo';
+    const tagsStr = `{namespace="${namespaceParam}",app="${appNameParam}"}`;
+    //TODO:DM - would like to use namespace/app from query params, however, diff series currently use diff tag names (ex: 'namespace' vs 'exported_namespace')
 
     metricNameMap[pathParam].forEach(metric => {
       let uri = dataDomain + dataPath + dataQueryParam +
-        encodeURIComponent(metric.name + metric.tags) + dataStartParam +
-        startTimestamp + dataEndParam + endTimestamp + dataStepParam +
-        dataStepValSec;
+        encodeURIComponent(metric.name + metric.tags) +
+        dataStartParam + startTimestamp + dataEndParam + endTimestamp +
+        dataStepParam + dataStepValSec;
       let responsePromise = fetch(uri);
       switch (metric.type) {
         case BASE:
@@ -135,7 +134,10 @@ class App extends Component {
           responsePromise.then(resp => this.processLowerResponse(resp));
           break;
         case ANOMALY:
-          responsePromise.then(resp => this.processAnomalyResponse(resp));
+          responsePromise.then(resp => {
+            //TODO:DM - this is a hack to ensure that the base series is loaded before attempting to process anomalies; instead should use promose resolution to signal ready to process anomalies
+            setTimeout(this.processAnomalyResponse.bind(this, resp), 1000);
+          });
           break;
         default:
           break;
@@ -166,6 +168,7 @@ class App extends Component {
     );
   }
 
+  //TODO:DM - how to clean-up copy/paste of next 3 fns?
   processBaseResponse(resp) {
     this.processResponse(resp).then(result => {
       let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])]);
@@ -205,7 +208,11 @@ class App extends Component {
       //TODO: DM any way to clean up this n * m processing; for each anomaly timestamp, see if it exists in the base series and use its y value, if so
       uniqueAnomalyTimestamps.forEach(anomalyTimestamp => {
         this.state.baseSeries.data.forEach(basePoint => {
-          if(anomalyTimestamp === basePoint[0]) {
+          let timeDiff = anomalyTimestamp - basePoint[0];
+          //use this point if it's within a minute (data resolution requested), but only if BEFORE anomaly stamp
+          if(timeDiff < dataStepValSec * 1000 && timeDiff > 0) {
+            //NOTE: using base point here will allow for anomolous points to fall directly on top of measured series BUT does therefore indicate slightly different timing than the anaomalies may be marked with
+            //NOTE: also, this strategy allows for out of order points to be added, highcharts will warn about this with error #15, but it doesn't stop it from rendering as expected
             data.push(basePoint);
           }
         });
@@ -213,8 +220,10 @@ class App extends Component {
       this.setState({anomalySeries: {
         name,
         data,
+        color: '#FF0000',
         marker: {
-          symbol: 'url(img/explosion.png)'
+          enabled: true,
+          symbol: 'circle'//'url(img/explosion.png)'
         },
         lineWidth: 0,
         states: {

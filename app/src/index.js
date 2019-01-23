@@ -8,7 +8,7 @@ import App from './App';
 render(
   <BrowserRouter>
     <Switch>
-      <Route path="/" component={App} />
+      <Route path="/:metricName" component={App} />
     </Switch>
   </BrowserRouter>,
   document.getElementById('root')
