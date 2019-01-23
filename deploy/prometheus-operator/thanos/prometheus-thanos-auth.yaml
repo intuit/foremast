@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-thanos-auth
+  namespace: monitoring
+type: Opaque
+data:
+  access: QUtJQUlGVEpNMzdYWkNIV1RFSEE=
+  secret: MXAyTDhpVkR6NmJBeEF6YVBEajdBK3VZNkNQa3JYbndVQmxuVjNmLw==

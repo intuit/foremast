@@ -75,16 +75,16 @@ func main() {
 
 	sharedInformerFactory := externalversions.NewSharedInformerFactory(foremastClient, time.Second*10)
 
-	monitorController := controller.NewController(kubeClient, foremastClient, sharedInformerFactory.Deployment().V1alpha1().DeploymentMonitors())
+	barrelman := controller.NewBarrelman(kubeClient, foremastClient,
+		kubeInformerFactory.Apps().V1().Deployments())
+
+	monitorController := controller.NewController(kubeClient, foremastClient, sharedInformerFactory.Deployment().V1alpha1().DeploymentMonitors(), barrelman)
 
 	if monitorController != nil {
 		log.Printf("Monitor controller started.")
 	}
 
 	go sharedInformerFactory.Start(stopCh)
-
-	contr := controller.NewBarrelman(kubeClient, foremastClient,
-		kubeInformerFactory.Apps().V1().Deployments())
 
 	go kubeInformerFactory.Start(stopCh)
 
@@ -98,7 +98,7 @@ func main() {
 	// Start the Cmd
 	//log.Fatal(mgr.Start(signals.SetupSignalHandler()))
 
-	if err = contr.Run(2, stopCh); err != nil {
+	if err = barrelman.Run(2, stopCh); err != nil {
 		glog.Fatalf("Error running controller: %s", err.Error())
 	}
 }

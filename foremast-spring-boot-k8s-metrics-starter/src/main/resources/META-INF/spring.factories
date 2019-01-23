@@ -1,4 +1,10 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-    ai.foremast.metrics.k8s.starter.ExposePrometheusAutoConfiguration,\
     ai.foremast.metrics.k8s.starter.ActuatorSecurityConfig,\
+    ai.foremast.micrometer.autoconfigure.CompositeMeterRegistryAutoConfiguration,\
+    ai.foremast.micrometer.autoconfigure.MetricsAutoConfiguration,\
+    ai.foremast.micrometer.autoconfigure.SystemMetricsAutoConfiguration,\
+    ai.foremast.micrometer.autoconfigure.export.prometheus.PrometheusMetricsExportAutoConfiguration,\
+    ai.foremast.micrometer.autoconfigure.export.simple.SimpleMetricsExportAutoConfiguration,\
+    ai.foremast.micrometer.autoconfigure.web.servlet.WebMvcMetricsAutoConfiguration,\
+    ai.foremast.micrometer.autoconfigure.web.tomcat.TomcatMetricsAutoConfiguration,\
     ai.foremast.metrics.k8s.starter.K8sMetricsAutoConfiguration

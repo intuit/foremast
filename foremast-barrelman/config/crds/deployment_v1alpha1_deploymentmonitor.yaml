@@ -31,7 +31,7 @@ spec:
               required:
               - endpoint
               type: object
-            autoRollback:
+            continuous:
               type: boolean
             logs:
               items:
@@ -70,6 +70,15 @@ spec:
               required:
               - dataSourceType
               - endpoint
+              type: object
+            remediation:
+              properties:
+                option:
+                  type: string
+                parameters:
+                  type: object
+              required:
+              - option
               type: object
             rollbackRevision:
               format: int64
@@ -121,10 +130,13 @@ spec:
               type: integer
             phase:
               type: string
+            remediationTaken:
+              type: boolean
             timestamp:
               type: string
           required:
           - phase
+          - remediationTaken
           - timestamp
           - expired
           type: object

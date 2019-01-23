@@ -17,8 +17,12 @@ import (
 	"fmt"
 	"foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment/v1alpha1"
 	a "foremast.ai/foremast/foremast-barrelman/pkg/client/analyst"
+	m "foremast.ai/foremast/foremast-barrelman/pkg/client/metrics"
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"os"
+	"reflect"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -35,14 +39,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	gocache "github.com/pmylund/go-cache"
+
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	appslisters "k8s.io/client-go/listers/apps/v1"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
 )
-
-const Foremast = "foremast"
 
 const barrelman = "barrelman"
 
@@ -52,11 +56,9 @@ const waitUntilMax = 30
 
 const DeploymentName = "deployment.kubernetes.io/name"
 
-const DeploymentStrategy = "deployment.foremast.ai/strategy"
+const Strategy = "deployment.foremast.ai/strategy"
 
-const DeploymentStrategyRollingUpdate = "RollingUpdate"
-
-const DeploymentStrategyCanary = "Canary"
+const ForemastAnotation = "foremast.ai/monitoring"
 
 const CanarySuffic = "-foremast-canary"
 
@@ -75,13 +77,6 @@ const (
 	MessageResourceSynced = "Foremast-barrelman-enabled resource synced successfully"
 )
 
-var IgnoreNamespaces = map[string]bool{
-	"monitoring":  true,
-	"foremast":    true,
-	"kube-system": true,
-	"kube-public": true,
-}
-
 // AddToManagerFuncs is a list of functions to add all Controllers to the Manager
 var AddToManagerFuncs []func(manager.Manager) error
 
@@ -94,6 +89,17 @@ func AddToManager(m manager.Manager) error {
 	}
 	return nil
 }
+
+var (
+	namespaceBlacklist = map[string]bool{
+		"kube-public": false,
+		"kube-system": false,
+		"opa":         false,
+		"monitoring":  false,
+	}
+	namespaceCache = gocache.New(5*time.Minute, 30*time.Second)
+	metadataCache  = gocache.New(1*time.Minute, 10*time.Second)
+)
 
 // Barrelman is the controller implementation for watching deployment changes
 type Barrelman struct {
@@ -116,18 +122,6 @@ type Barrelman struct {
 	// Kubernetes API.
 	recorder record.EventRecorder
 
-	// lastDeployments is a map where the keys are <namespace>.<name> for deployments,
-	// and values are the image of the previous deployment. We track this to avoid an
-	// infinite loop when we rollback, as rollback otherwise looks the same as any other
-	// update to the image of the deployment.
-	// TODO: track more than just the image of the first container
-	//lastDeployments map[string]string
-
-	//prometheus api object to query prometheus data
-	//prometheus prometheusv1.API
-
-	//channel to tell go routine monitoring current new deployment to stop
-	//TODO: more than one channel to monitor more than one new deployment at a time
 	quit chan bool
 }
 
@@ -144,6 +138,16 @@ func EnvArrayEquals(a []corev1.EnvVar, b []corev1.EnvVar) bool {
 }
 
 func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl *appsv1.Deployment) (*v1alpha1.DeploymentMetadata, error) {
+
+	var key = namespace + ":" + appName
+	if deploymentMetadata, found := metadataCache.Get(key); found {
+		if strings.Contains(reflect.TypeOf(deploymentMetadata).String(), "DeploymentMetadata") {
+			return deploymentMetadata.(*v1alpha1.DeploymentMetadata), nil
+		} else {
+			return nil, deploymentMetadata.(error)
+		}
+	}
+
 	//Try to get the metadata by "app" name, if it doesn't existing, try to search by "appType"
 	metadatas := c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(depl.Namespace)
 	deploymentMetadata, err := metadatas.Get(appName, metav1.GetOptions{})
@@ -152,18 +156,50 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 		if hasAppType {
 			deploymentMetadata, err = metadatas.Get(newAppType, metav1.GetOptions{})
 			if err != nil {
-				deploymentMetadata, err = c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(Foremast).Get(newAppType, metav1.GetOptions{})
+				var curerntNamespace = os.Getenv("NAMESPACE")
+				deploymentMetadata, err = c.foremastClientset.DeploymentV1alpha1().DeploymentMetadatas(curerntNamespace).Get(newAppType, metav1.GetOptions{})
 				if err != nil {
-					glog.Infof("Getting deployment metadata error by appType:%s, in either namespace %s or %s:", newAppType, depl.Namespace, Foremast)
+					metadataCache.Set(key, err, gocache.DefaultExpiration)
+					glog.Infof("Getting deployment metadata error by appType:%s, in either namespace %s or %s:", newAppType, depl.Namespace, curerntNamespace)
 					return nil, err
 				}
 			}
 		} else {
-			glog.Info("Getting deployment metadata error by app:" + appName)
+			metadataCache.Set(key, err, gocache.DefaultExpiration)
 			return nil, err
 		}
 	}
+	metadataCache.Set(key, deploymentMetadata, gocache.DefaultExpiration)
 	return deploymentMetadata, nil
+}
+
+func (c *Barrelman) monitorContinuously(monitor *v1alpha1.DeploymentMonitor) error {
+	var deploymentName = monitor.Annotations[DeploymentName]
+	if deploymentName == "" {
+		deploymentName = monitor.Name
+	}
+	depl, err := c.kubeclientset.AppsV1().Deployments(monitor.Namespace).Get(deploymentName, metav1.GetOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	var appName string
+	var ok bool
+
+	if appName, ok = depl.Labels["app"]; !ok || appName == "" {
+		glog.V(5).Infof("no app label found on new deployment, skipping deployment %v", deploymentName)
+		return errors.NewBadRequest("no app label found on new deployment, skipping deployment " + deploymentName)
+	}
+
+	//Try to get the metadata by "app" name, if it doesn't existing, try to search by "appType"
+	deploymentMetadata, err := c.getDeploymentMetadata(depl.Namespace, appName, depl)
+	if err != nil {
+		return err
+	}
+
+	c.monitorNewDeployment(appName, depl, depl, deploymentMetadata, monitor, false, m.StrategyContinuous)
+	return nil
 }
 
 func (c *Barrelman) monitorDeployment(appName string, oldDepl, newDepl *appsv1.Deployment, deploymentMetadata *v1alpha1.DeploymentMetadata) {
@@ -202,6 +238,10 @@ func (c *Barrelman) monitorDeployment(appName string, oldDepl, newDepl *appsv1.D
 			oldMonitor, err := c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
 			var monitorNotFound = true
 			if err == nil {
+				if oldMonitor.Spec.Continuous {
+					glog.Infof("The deployment is watching continuously:%s", newDepl.Name)
+					return
+				}
 				monitorNotFound = false
 				newRevision, err := deploymentutil.Revision(newDepl)
 				if err == nil && newRevision > 0 && newRevision == oldMonitor.Spec.RollbackRevision {
@@ -217,7 +257,7 @@ func (c *Barrelman) monitorDeployment(appName string, oldDepl, newDepl *appsv1.D
 			//begin monitoring new deployment
 			glog.Info("Starting to monitor new deployment...")
 
-			go c.monitorNewDeployment(appName, oldDepl, newDepl, deploymentMetadata, oldMonitor, monitorNotFound)
+			go c.monitorNewDeployment(appName, oldDepl, newDepl, deploymentMetadata, oldMonitor, monitorNotFound, m.StrategyRollingUpdate)
 
 			c.handleObject(newDepl)
 			return
@@ -275,7 +315,7 @@ func NewBarrelman(
 				return
 			}
 
-			if IgnoreNamespaces[newDepl.Namespace] {
+			if !controller.isMonitoring(newDepl.Namespace) {
 				glog.V(5).Infof("Ignore namespace %s", newDepl.Namespace)
 				return
 			}
@@ -285,9 +325,9 @@ func NewBarrelman(
 				return
 			}
 
-			var deploymentStrategy = DeploymentStrategyRollingUpdate
+			var deploymentStrategy = m.StrategyRollingUpdate
 			if strings.HasSuffix(deploymentName, CanarySuffic) {
-				deploymentStrategy = DeploymentStrategyCanary
+				deploymentStrategy = m.StrategyCanary
 			}
 
 			var t = time.Now()
@@ -296,8 +336,9 @@ func NewBarrelman(
 
 			oldMonitor, err := foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
 
-			var autoRollback = true
+			var remediationAction v1alpha1.RemediationAction
 			var create = false
+			var continuous = false
 			if err != nil {
 				oldMonitor = &v1alpha1.DeploymentMonitor{
 					ObjectMeta: metav1.ObjectMeta{
@@ -308,9 +349,14 @@ func NewBarrelman(
 						},
 					},
 				}
+				remediationAction = v1alpha1.RemediationAction{
+					Option: v1alpha1.RemediationNone,
+				}
+
 				create = true
 			} else {
-				autoRollback = oldMonitor.Spec.AutoRollback
+				remediationAction = oldMonitor.Spec.Remediation
+				continuous = oldMonitor.Spec.Continuous
 			}
 
 			oldMonitor.Spec = v1alpha1.DeploymentMonitorSpec{
@@ -320,7 +366,8 @@ func NewBarrelman(
 				WaitUntil:        waitUntil,
 				Metrics:          deploymentMetadata.Spec.Metrics,
 				Logs:             deploymentMetadata.Spec.Logs,
-				AutoRollback:     autoRollback,
+				Remediation:      remediationAction,
+				Continuous:       continuous,
 				RollbackRevision: 0,
 			}
 			oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{
@@ -347,7 +394,7 @@ func NewBarrelman(
 			}
 
 			//If the strategy is canary, it should be monitored also
-			if deploymentStrategy == DeploymentStrategyCanary {
+			if deploymentStrategy == m.StrategyCanary {
 				var l = len(deploymentName) - len(CanarySuffic)
 				var oldDeploymentName = deploymentName[0:l]
 				oldDepl, err := kubeclientset.AppsV1().Deployments(newDepl.Namespace).Get(oldDeploymentName, metav1.GetOptions{})
@@ -364,7 +411,7 @@ func NewBarrelman(
 			newDepl := new.(*appsv1.Deployment)
 			oldDepl := old.(*appsv1.Deployment)
 
-			if IgnoreNamespaces[newDepl.Namespace] {
+			if !controller.isMonitoring(newDepl.Namespace) {
 				glog.V(5).Infof("Ignore namespace %s", newDepl.Namespace)
 				return
 			}
@@ -395,7 +442,7 @@ func NewBarrelman(
 			//get deployment object
 			depl := obj.(*appsv1.Deployment)
 
-			if IgnoreNamespaces[depl.Namespace] {
+			if !controller.isMonitoring(depl.Namespace) {
 				glog.V(5).Infof("Ignore namespace %s", depl.Namespace)
 				return
 			}
@@ -430,6 +477,25 @@ func NewBarrelman(
 	return controller
 }
 
+func (c *Barrelman) isMonitoring(namespace string) bool {
+	_, ok := namespaceBlacklist[namespace]
+	if ok {
+		return false
+	}
+
+	if cached, found := namespaceCache.Get(namespace); found {
+		return cached == true
+	}
+
+	ns, err := c.kubeclientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err != nil {
+		return false
+	}
+	var result = ns.Annotations[ForemastAnotation] != "false"
+	namespaceCache.Set(namespace, result, gocache.DefaultExpiration)
+	return result
+}
+
 func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface) {
 
 	ni := kubeclientset.CoreV1().Namespaces()
@@ -447,9 +513,9 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 
 		if list != nil && len(list.Items) > 0 {
 			for _, item := range list.Items {
+
 				if item.Status.Phase == v1alpha1.MonitorPhaseRunning {
 					//Expire
-
 					var changed = false
 					if !item.Status.Expired {
 						analystClient, err := a.NewClient(nil, item.Spec.Analyst.Endpoint)
@@ -510,6 +576,9 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 							glog.Infof("Updated deployment monitor %v", item)
 						}
 					}
+				} else if item.Spec.Continuous {
+					//Trigger a continuous monitoring
+					go c.monitorContinuously(&item)
 				}
 			}
 		}
@@ -708,16 +777,22 @@ func (c *Barrelman) getPodNames(oldDepl, newDepl *appsv1.Deployment, kubeclients
 
 //monitorNewDeployment loops, checking the new deployment metrics against those from the old deployment, rolling back if need be
 func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv1.Deployment, deploymentMetadata *v1alpha1.DeploymentMetadata,
-	oldMonitor *v1alpha1.DeploymentMonitor, monitorNotFound bool) {
+	oldMonitor *v1alpha1.DeploymentMonitor, monitorNotFound bool, strategy string) {
 	glog.Infof("Beginning to monitor new deployment %v vs. old deployment %v",
 		newDepl.Spec.Template.Spec.Containers[0].Image, oldDepl.Spec.Template.Spec.Containers[0].Image)
 	glog.Infof("Beginning to monitor new env %v vs. old env %v",
 		newDepl.Spec.Template.Spec.Containers[0].Env, oldDepl.Spec.Template.Spec.Containers[0].Env)
 
-	podNames, err := c.getPodNames(oldDepl, newDepl, c.kubeclientset)
-	if err != nil {
-		glog.Infof("Get pod names error %v %s", newDepl, err)
-		return
+	var podNames [][]string
+	var err error
+	if strategy != m.StrategyContinuous {
+		podNames, err = c.getPodNames(oldDepl, newDepl, c.kubeclientset)
+		if err != nil {
+			glog.Infof("Get pod names error %v %s", newDepl, err)
+			return
+		}
+
+		glog.Infof("Found pod names: %s, %d", podNames[0], len(podNames))
 	}
 
 	analystClient, err := a.NewClient(nil, deploymentMetadata.Spec.Analyst.Endpoint)
@@ -726,14 +801,12 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 		return
 	}
 
-	glog.Infof("Found pod names: %s, %d", podNames[0], len(podNames))
-
 	var jobId string
-	jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime)
+	jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
 
 	if err != nil {
 		glog.Infof("Starting analyzing error, try it again: %v", err)
-		jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime)
+		jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
 		if err != nil {
 			glog.Infof("Tried twice to analyzing error: %v", err)
 			return
@@ -763,25 +836,30 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 		var oldRevision, _ = deploymentutil.Revision(oldDepl)
 
 		oldMonitor.Annotations[DeploymentName] = newDepl.Name
-		var autoRollback = true
-		if !oldMonitor.Spec.AutoRollback {
-			autoRollback = oldMonitor.Spec.AutoRollback
+		var remediationOption = v1alpha1.RemediationNone
+		if oldMonitor.Spec.Remediation.Option != "" {
+			remediationOption = oldMonitor.Spec.Remediation.Option
 		}
 
 		oldMonitor.Spec = v1alpha1.DeploymentMonitorSpec{
-			Selector:         newDepl.Spec.Selector,
-			Analyst:          deploymentMetadata.Spec.Analyst,
-			StartTime:        start,
-			WaitUntil:        waitUntil,
-			Metrics:          deploymentMetadata.Spec.Metrics,
-			Logs:             deploymentMetadata.Spec.Logs,
-			AutoRollback:     autoRollback,
+			Selector:  newDepl.Spec.Selector,
+			Analyst:   deploymentMetadata.Spec.Analyst,
+			StartTime: start,
+			WaitUntil: waitUntil,
+			Metrics:   deploymentMetadata.Spec.Metrics,
+			Logs:      deploymentMetadata.Spec.Logs,
+			Remediation: v1alpha1.RemediationAction{
+				Option: remediationOption,
+			},
+			Continuous:       oldMonitor.Spec.Continuous,
 			RollbackRevision: oldRevision,
 		}
 
-		//Set default to true
+		//Set default Remediation to RemediationAutoRollback
 		if monitorNotFound {
-			oldMonitor.Spec.AutoRollback = true
+			oldMonitor.Spec.Remediation = v1alpha1.RemediationAction{
+				Option: v1alpha1.RemediationAutoRollback,
+			}
 		}
 
 		oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{

@@ -17,7 +17,7 @@ public class K8sMetricsFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         if (servletResponse instanceof HttpServletResponse) {
             HttpServletResponse response = (HttpServletResponse)servletResponse;
-            response.sendRedirect("/actuator/prometheus");
+            response.sendRedirect("/prometheus");
         }
         else {
             filterChain.doFilter(servletRequest, servletResponse);
