@@ -19,7 +19,7 @@ const metricNameMap = {
   'namespace_app_per_pod:cpu_usage_seconds_total': [{
     type: BASE,
     name: 'namespace_app_per_pod:cpu_usage_seconds_total',
-    tags: '{namespace="default",app="foo"}',
+    tags: '{namespace="examples",app="foo"}',
   // },{
   //   type: UPPER,
   //   name: 'foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_upper',
@@ -36,7 +36,7 @@ const metricNameMap = {
   'namespace_app_per_pod:memory_usage_bytes': [{
     type: BASE,
     name: 'namespace_app_per_pod:memory_usage_bytes',
-    tags: '{namespace="default",app="foo"}',
+    tags: '{namespace="examples",app="foo"}',
   // },{
   //   type: UPPER,
   //   name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_upper',
@@ -53,7 +53,7 @@ const metricNameMap = {
   'namespace_app_per_pod:http_server_requests_error_5xx': [{
     type: BASE,
     name: 'namespace_app_per_pod:http_server_requests_error_5xx',
-    tags: '{namespace="default",app="foo"}',
+    tags: '{namespace="foremast-examples",app="foo"}',
   },{
     type: UPPER,
     name: 'foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_upper',
@@ -132,7 +132,7 @@ class App extends React.Component {
           break;
         case ANOMALY:
           responsePromise.then(resp => {
-            //TODO:DM - this is a hack to ensure that the base series is loaded before attempting to process anomalies; instead should use promose resolution to signal ready to process anomalies
+            //TODO:DM - this is a hack to ensure that the base series is loaded before attempting to process anomalies; instead should use promise resolution to signal ready to process anomalies
             setTimeout(this.processAnomalyResponse.bind(this, resp), 1000);
           });
           break;
@@ -140,6 +140,29 @@ class App extends React.Component {
           break;
       }
     });
+
+    //now force requests for CPU v Mem
+    let cpuMetric = metricNameMap['namespace_app_per_pod:cpu_usage_seconds_total'][0];
+    let cpuUri = dataDomain + dataPath + dataQueryParam +
+      encodeURIComponent(cpuMetric.name + cpuMetric.tags) +
+      dataStartParam + startTimestamp + dataEndParam + endTimestamp +
+      dataStepParam + dataStepValSec;
+    fetch(cpuUri)
+      .then(resp => this.processResponse(resp))
+      .then(result => {
+        console.log(result);
+      });
+
+    let memMetric = metricNameMap['namespace_app_per_pod:memory_usage_bytes'][0];
+    let memUri = dataDomain + dataPath + dataQueryParam +
+      encodeURIComponent(memMetric.name + memMetric.tags) +
+      dataStartParam + startTimestamp + dataEndParam + endTimestamp +
+      dataStepParam + dataStepValSec;
+    fetch(memUri)
+      .then(resp => this.processResponse(resp))
+      .then(result => {
+        console.log(result);
+      });
   }
 
   render() {

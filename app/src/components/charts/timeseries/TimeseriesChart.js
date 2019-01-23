@@ -65,7 +65,7 @@ const timeseriesOptions = {
   },
   yAxis: {
     title: {
-      //how to change this depending on data loaded?
+      //TODO:DM - change this based on metric name selected, may need to hard-code unit with rest of data in App.js
       text: 'Seconds'
     }
   },

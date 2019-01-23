@@ -19,6 +19,30 @@ class ScatterChart extends React.Component {
       />
     );
   }
+  buildHighchartsSeries() {
+    let rangeData = [];
+    const { baseSeries, upperSeries, lowerSeries, anomalySeries } = this.props;
+    if (upperSeries.data.length === lowerSeries.data.length) {
+      //TODO:DM - seems fragile to just presume that the points in both series have same sequence of timestamps
+      for(let i = 0; i < upperSeries.data.length; i++){
+        rangeData.push([
+          upperSeries.data[i][0],
+          lowerSeries.data[i][1],
+          upperSeries.data[i][1]
+        ]);
+      }
+    } else {
+      console.warn('Upper and Lower series of different lengths, cannot build range series.')
+    }
+    let rangeSeries = {
+      type: 'arearange',
+      showInLegend: false,
+      name: 'Model Range',
+      data: rangeData,
+      fillOpacity: 0.1
+    };
+    return [baseSeries, anomalySeries, rangeSeries];
+  }
 }
 
 export default ScatterChart;
