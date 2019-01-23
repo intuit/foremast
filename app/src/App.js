@@ -1,14 +1,11 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { withRouter } from 'react-router-dom';
-import Highcharts from 'highcharts';
-import HighchartsMore from 'highcharts/highcharts-more'; //necessary for 'arearange' series type
-import Highstock from 'highcharts/highstock';
-import HighchartsReact from 'highcharts-react-official';
+import SplitterLayout from 'react-splitter-layout';
 import moment from 'moment';
 
 import './App.css';
-
-HighchartsMore(Highstock);
+import TimeseriesChart from './components/charts/timeseries/TimeseriesChart';
+import ScatterChart from './components/charts/scatter/ScatterChart';
 
 const BASE = 'base';
 const UPPER = 'upper';
@@ -95,10 +92,10 @@ const dataStepParam = '&step=';
 const dataStepValSec = 60; //data granularity
 
 //API can't provide more than roughly 7 days of data at 60sec granularity
-const endTimestamp = moment().subtract(2, 'days').unix();
-const startTimestamp = moment().subtract(9, 'days').unix();
+const endTimestamp = moment().subtract(7, 'days').unix();
+const startTimestamp = moment().subtract(14, 'days').unix();
 
-class App extends Component {
+class App extends React.Component {
   state = {
     metricName: '',
     baseSeries: {data:[]},
@@ -146,24 +143,20 @@ class App extends Component {
   }
 
   render() {
-    let dynamicTimeseriesOptions = {
-      ...timeseriesOptions,
-      series: this.buildHighchartsSeries(),
-      title: {
-        text: this.state.metricName + ' Metric + Modeled Range',
-      },
-    };
+    let { metricName, baseSeries, upperSeries,
+      lowerSeries, anomalySeries } = this.state;
     return (
       <div className="App">
-        <HighchartsReact
-          highcharts={Highstock}
-          constructorType={'stockChart'}
-          options={dynamicTimeseriesOptions}
-        />
-        <HighchartsReact
-          highcharts={Highcharts}
-          options={scatterOptions}
-        />
+        <SplitterLayout vertical={true}>
+          <TimeseriesChart
+            metricName={metricName}
+            baseSeries={baseSeries}
+            upperSeries={upperSeries}
+            lowerSeries={lowerSeries}
+            anomalySeries={anomalySeries}
+          />
+          <ScatterChart/>
+        </SplitterLayout>
       </div>
     );
   }
@@ -223,7 +216,7 @@ class App extends Component {
         color: '#FF0000',
         marker: {
           enabled: true,
-          symbol: 'circle'//'url(img/explosion.png)'
+          symbol: 'circle'
         },
         lineWidth: 0,
         states: {
@@ -247,157 +240,6 @@ class App extends Component {
       }
     });
   }
-  buildHighchartsSeries() {
-    let rangeData = [];
-    if (this.state.upperSeries.data.length === this.state.lowerSeries.data.length) {
-      //TODO:DM - seems fragile to just presume that the points in both series have same sequence of timestamps
-      for(let i = 0; i < this.state.upperSeries.data.length; i++){
-        rangeData.push([
-          this.state.upperSeries.data[i][0],
-          this.state.lowerSeries.data[i][1],
-          this.state.upperSeries.data[i][1]
-        ]);
-      }
-    }
-    let rangeSeries = {
-      type: 'arearange',
-      showInLegend: false,
-      name: 'Model Range',
-      data: rangeData,
-      fillOpacity: 0.1
-    };
-    return [this.state.baseSeries, this.state.anomalySeries, rangeSeries];
-  }
 }
 
 export default withRouter(App);
-
-const timeseriesOptions = {
-  chart: {
-    zoomType: 'x'
-  },
-
-  subtitle: {
-    text: document.ontouchstart === undefined ?
-      'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
-  },
-  xAxis: {
-    type: 'datetime'
-  },
-  yAxis: {
-    title: {
-      //how to change this depending on data loaded?
-      text: 'Seconds'
-    }
-  },
-  legend: {
-    layout: 'vertical',
-    align: 'right',
-    verticalAlign: 'middle'
-  },
-
-  plotOptions: {
-    series: {
-      label: {
-        connectorAllowed: false
-      },
-    }
-  },
-
-  responsive: {
-    rules: [{
-      condition: {
-        maxWidth: 500
-      },
-      chartOptions: {
-        legend: {
-          layout: 'horizontal',
-          align: 'center',
-          verticalAlign: 'bottom'
-        }
-      }
-    }]
-  },
-
-  rangeSelector: {
-    buttons: [{
-      type: 'day',
-      count: 1,
-      text: '1d',
-    }, {
-      type: 'day',
-      count: 3,
-      text: '3d',
-    }, {
-      type: 'week',
-      count: 1,
-      text: '1w',
-    // }, {
-    //   type: 'week',
-    //   count: 2,
-    //   text: '2w',
-    // }, {
-    //   type: 'month',
-    //   count: 1,
-    //   text: '1m',
-    // }, {
-    //   type: 'month',
-    //   count: 3,
-    //   text: '3m',
-    // }, {
-    //   type: 'month',
-    //   count: 6,
-    //   text: '6m',
-    // }, {
-    //   type: 'ytd',
-    //   text: 'ytd',
-    // }, {
-    //   type: 'year',
-    //   count: 1,
-    //   text: '1y',
-    }, {
-      type: 'all',
-      text: 'all',
-    }],
-  },
-  credits: {
-    enabled: false
-  },
-};
-
-const scatterOptions = {
-  chart: {
-    type: 'scatter',
-    zoomType: 'xy'
-  },
-
-  title: {
-    text: 'CPU vs Memory'
-  },
-
-  subtitle: {
-    text: document.ontouchstart === undefined ?
-      'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
-  },
-  xAxis: {
-    title: {
-      text: 'Memory (MB)'
-    }
-  },
-  yAxis: {
-    title: {
-      text: 'CPU %'
-    }
-  },
-  legend: {
-    enabled: false
-  },
-
-  series: [{
-    name: 'CpuVsMemory',
-    data: [[512000,0.7537],[568000,0.7547],[594000,0.7559],[506000,0.7631],[518000,0.7644],[400000,0.569],[812000,0.9683],[502000,0.77],[532000,0.7703],[555000,0.7057],[500000,0.69728],[504000,0.7721],[517000,0.7748],[519000,0.774],[523000,0.7718],[492000,0.7731],[510000,0.767],[511000,0.769],[512500,0.7706],[506000,0.7752],[512000,0.874]]
-  }],
-  credits: {
-    enabled: false
-  },
-};
