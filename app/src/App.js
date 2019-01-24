@@ -92,8 +92,8 @@ const dataStepParam = '&step=';
 const dataStepValSec = 60; //data granularity
 
 //API can't provide more than roughly 7 days of data at 60sec granularity
-const endTimestamp = moment().subtract(7, 'days').unix();
-const startTimestamp = moment().subtract(14, 'days').unix();
+const endTimestamp = moment().subtract(0, 'days').unix();
+const startTimestamp = moment().subtract(7, 'days').unix();
 
 class App extends React.Component {
   state = {
@@ -102,6 +102,8 @@ class App extends React.Component {
     upperSeries: {data:[]},
     lowerSeries: {data:[]},
     anomalySeries: {data:[]},
+    xSeries: {data:[]},
+    ySeries: {data:[]},
   };
 
   componentDidMount() {
@@ -148,10 +150,7 @@ class App extends React.Component {
       dataStartParam + startTimestamp + dataEndParam + endTimestamp +
       dataStepParam + dataStepValSec;
     fetch(cpuUri)
-      .then(resp => this.processResponse(resp))
-      .then(result => {
-        console.log(result);
-      });
+      .then(resp => this.processYResponse(resp));
 
     let memMetric = metricNameMap['namespace_app_per_pod:memory_usage_bytes'][0];
     let memUri = dataDomain + dataPath + dataQueryParam +
@@ -159,15 +158,12 @@ class App extends React.Component {
       dataStartParam + startTimestamp + dataEndParam + endTimestamp +
       dataStepParam + dataStepValSec;
     fetch(memUri)
-      .then(resp => this.processResponse(resp))
-      .then(result => {
-        console.log(result);
-      });
+      .then(resp => this.processXResponse(resp));
   }
 
   render() {
-    let { metricName, baseSeries, upperSeries,
-      lowerSeries, anomalySeries } = this.state;
+    let { metricName, baseSeries, upperSeries, lowerSeries,
+      anomalySeries, xSeries, ySeries } = this.state;
     return (
       <div className="App">
         <SplitterLayout vertical={true}>
@@ -178,13 +174,32 @@ class App extends React.Component {
             lowerSeries={lowerSeries}
             anomalySeries={anomalySeries}
           />
-          <ScatterChart/>
+          <ScatterChart
+            xSeries={xSeries}
+            ySeries={ySeries}
+          />
         </SplitterLayout>
       </div>
     );
   }
 
-  //TODO:DM - how to clean-up copy/paste of next 3 fns?
+  //TODO:DM - how to clean-up copy/paste of next 5 fns? notice sometimes diff scaling
+  processXResponse(resp) {
+    this.processResponse(resp).then(result => {
+      let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])/1000000]);
+      let name = (result.metric ? result.metric.__name__ : null);
+      this.setState({xSeries: {name, data}});
+    });
+
+  }
+  processYResponse(resp) {
+    this.processResponse(resp).then(result => {
+      let data = result.values.map(point => [1000 * point[0], 100 * parseFloat(point[1])]);
+      let name = (result.metric ? result.metric.__name__ : null);
+      this.setState({ySeries: {name, data}});
+    });
+
+  }
   processBaseResponse(resp) {
     this.processResponse(resp).then(result => {
       let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])]);
