@@ -37,9 +37,6 @@ public class FileErrorGenerator implements Runnable {
     @PostConstruct
     public void init() {
         if (url != null) {
-            thread = new Thread(this, "Error_Generator");
-            thread.start();
-
             try (FileInputStream fstream = new FileInputStream(filename)){
               BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
 
@@ -55,6 +52,9 @@ public class FileErrorGenerator implements Runnable {
             catch (IOException ex) {
                 ex.printStackTrace();
             }
+
+            thread = new Thread(this, "Error_Generator");
+            thread.start();
         }
     }
 
@@ -71,17 +71,18 @@ public class FileErrorGenerator implements Runnable {
                     long sleepTime = (long)(1000.00/v);
                     if (v > 1) {
                         for(int j = 0; j < v; j ++) {
-                            Thread.sleep(sleepTime);
+
                             URL u = new URL(url);
                             try (InputStream input = u.openStream()) {
                             }
+                            Thread.sleep(sleepTime);
                         }
                     }
                     else {
-                        Thread.sleep(sleepTime);
                         URL u = new URL(url);
                         try (InputStream input = u.openStream()) {
                         }
+                        Thread.sleep(sleepTime);
                     }
                 } catch (Exception ex) {
                 }
