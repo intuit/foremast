@@ -1,4 +1,4 @@
-package com.intuit.dev.containers.metrics.error;
+package ai.foremast.metrics.demo.error;
 
 import javax.annotation.PostConstruct;
 import java.io.InputStream;
@@ -39,7 +39,12 @@ public class FileErrorGenerator implements Runnable {
     public FileErrorGenerator(int frequency, String errorType, String filename, String threshold) {
         this.frequency = frequency;
         this.filename = filename;
-        this.threshold = Double.parseDouble(threshold);
+        if (threshold != null) {
+            this.threshold = Double.parseDouble(threshold);
+        }
+        else {
+            this.threshold = 0.5;
+        }
         if ("4xx".equalsIgnoreCase(errorType)) {
             url = "http://localhost:8080/not_existed?t=";
         }
@@ -95,7 +100,12 @@ public class FileErrorGenerator implements Runnable {
                 InputStream input = null;
 
                 try {
-                  Thread.sleep( (long)((1000.00/this.valuelist.get(i))) );
+                    double v = this.valuelist.get(i);
+                    long sleepTime = v > 0 ? (long)(1000.00/v) : 500;
+                    if (sleepTime > 5000) {
+                        sleepTime = 5000;
+                    }
+                  Thread.sleep(sleepTime);
                     URL u = new URL(url);
                     input = u.openStream();
                 } catch (Exception ex) {

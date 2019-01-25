@@ -1,7 +1,7 @@
-package com.intuit.dev.containers.metrics;
+package ai.foremast.metrics.demo;
 
-import com.intuit.dev.containers.metrics.error.ErrorGenerator;
-import com.intuit.dev.containers.metrics.error.FileErrorGenerator;
+import ai.foremast.metrics.demo.error.ErrorGenerator;
+import ai.foremast.metrics.demo.error.FileErrorGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
