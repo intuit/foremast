@@ -23,7 +23,7 @@ public class K8sMetricsDemoApp {
 
             String fileName = System.getProperty("filename");
             if (fileName != null) {
-                FileErrorGenerator fileErrorGenerator = new FileErrorGenerator(countPerSecond, System.getProperty("user.dir") + fileName, errorType);
+                FileErrorGenerator fileErrorGenerator = new FileErrorGenerator(countPerSecond, errorType, System.getProperty("user.dir") + fileName);
                 fileErrorGenerator.init();
             }
             else {

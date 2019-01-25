@@ -70,19 +70,26 @@ public class FileErrorGenerator implements Runnable {
                     }
                     long sleepTime = (long)(1000.00/v);
                     if (v > 1) {
-                        for(int j = 0; j < v; j ++) {
-
-                            URL u = new URL(url);
-                            try (InputStream input = u.openStream()) {
+                        for(int k = 0; k < 15; k ++) {
+                            for (int j = 0; j < v; j++) {
+                                URL u = new URL(url);
+                                try (InputStream input = u.openStream()) {
+                                } catch (Exception ex) {
+                                } finally {
+                                    Thread.sleep(sleepTime);
+                                }
                             }
-                            Thread.sleep(sleepTime);
                         }
                     }
                     else {
                         URL u = new URL(url);
                         try (InputStream input = u.openStream()) {
                         }
-                        Thread.sleep(sleepTime);
+                        catch(Exception ex) {
+                        }
+                        finally {
+                            Thread.sleep(sleepTime);
+                        }
                     }
                 } catch (Exception ex) {
                 }
