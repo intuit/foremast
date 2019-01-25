@@ -1,6 +1,7 @@
-package ai.foremast.metrics.demo;
+package com.intuit.dev.containers.metrics;
 
-import ai.foremast.metrics.demo.error.ErrorGenerator;
+import com.intuit.dev.containers.metrics.error.ErrorGenerator;
+import com.intuit.dev.containers.metrics.error.FileErrorGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -19,8 +20,10 @@ public class K8sMetricsDemoApp {
             if (env != null) {
                 countPerSecond = Integer.parseInt(env);
             }
-            errorGenerator = new ErrorGenerator(countPerSecond, errorType);
-            errorGenerator.init();
+            // errorGenerator = new ErrorGenerator(countPerSecond, errorType);
+            // errorGenerator.init();
+            FileErrorGenerator fileErrorGenerator = new FileErrorGenerator(countPerSecond, errorType, System.getProperty("user.dir") + System.getProperty("filename"), System.getProperty("threshold"));
+            fileErrorGenerator.init();
         }
     }
 }
