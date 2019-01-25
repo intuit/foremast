@@ -17,15 +17,14 @@
 package securitycenter
 
 import (
+	"context"
 	"math"
 	"time"
 
-	"cloud.google.com/go/internal/version"
 	"cloud.google.com/go/longrunning"
 	lroauto "cloud.google.com/go/longrunning/autogen"
 	"github.com/golang/protobuf/proto"
 	gax "github.com/googleapis/gax-go"
-	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/api/transport"
@@ -169,8 +168,8 @@ func (c *Client) Close() error {
 // the `x-goog-api-client` header passed on each request. Intended for
 // use by Google-written clients.
 func (c *Client) setGoogleClientInfo(keyval ...string) {
-	kv := append([]string{"gl-go", version.Go()}, keyval...)
-	kv = append(kv, "gapic", version.Repo, "gax", gax.Version, "grpc", grpc.Version)
+	kv := append([]string{"gl-go", versionGo()}, keyval...)
+	kv = append(kv, "gapic", versionClient, "gax", gax.Version, "grpc", grpc.Version)
 	c.xGoogMetadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
 }
 
@@ -371,7 +370,7 @@ func (c *Client) ListAssets(ctx context.Context, req *securitycenterpb.ListAsset
 	return it
 }
 
-// ListFindings lists an organization or source's assets.
+// ListFindings lists an organization or source's findings.
 //
 // To list across all sources provide a - as the source id.
 // Example: /v1beta1/organizations/123/sources/-/findings

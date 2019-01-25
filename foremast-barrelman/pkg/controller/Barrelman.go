@@ -577,8 +577,15 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 						}
 					}
 				} else if item.Spec.Continuous {
-					//Trigger a continuous monitoring
-					go c.monitorContinuously(&item)
+					if item.Status.Phase == v1alpha1.MonitorPhaseUnhealthy {
+						d, err := time.Parse(time.RFC3339, item.Status.Timestamp)
+						if err == nil && (time.Now().Unix()-d.Unix()) > 60 {
+							//Trigger a continuous monitoring
+							go c.monitorContinuously(&item)
+						}
+					} else {
+						go c.monitorContinuously(&item)
+					}
 				}
 			}
 		}

@@ -15,13 +15,13 @@
 package bigquery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"cloud.google.com/go/internal/optional"
 	"cloud.google.com/go/internal/trace"
-	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 )
 

@@ -10,7 +10,7 @@ package main
 func f(spilled, unspilled int) {
 	_ = /*@UnOp*/ (spilled)
 	_ = /*@Parameter*/ (unspilled)
-	_ = /*@<nil>*/ (1 + 2) // (constant)
+	_ = /*@nil*/ (1 + 2) // (constant)
 	i := 0
 
 	f := func() (int, int) { return 0, 0 }
@@ -44,7 +44,7 @@ func f(spilled, unspilled int) {
 	sl := []int{}
 	_ = /*@Slice*/ (sl[:0])
 
-	_ = /*@<nil>*/ (new(int)) // optimized away
+	_ = /*@nil*/ (new(int)) // optimized away
 	tmp := /*@Alloc*/ (new(int))
 	_ = tmp
 	var iface interface{}
@@ -89,7 +89,7 @@ func complit() {
 	_, _, _ = sl1, sl2, sl3
 
 	_ = /*@Slice*/ ([]int{})
-	_ = /*@<nil>*/ (& /*@Slice*/ ([]int{})) // & optimized away
+	_ = /*@nil*/ (& /*@Slice*/ ([]int{})) // & optimized away
 	_ = & /*@Slice*/ ([]int{})
 
 	// 2. Arrays
@@ -118,7 +118,7 @@ func complit() {
 	_, _, _ = m1, m2, m3
 
 	_ = /*@MakeMap*/ (M{})
-	_ = /*@<nil>*/ (& /*@MakeMap*/ (M{})) // & optimized away
+	_ = /*@nil*/ (& /*@MakeMap*/ (M{})) // & optimized away
 	_ = & /*@MakeMap*/ (M{})
 
 	// 4. Structs

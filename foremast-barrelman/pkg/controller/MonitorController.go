@@ -99,6 +99,7 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 				if continuousChange {
 					if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
 						go barrelman.monitorContinuously(newMonitor)
+						return
 					}
 				} else {
 					glog.V(10).Infof("There is no status change, skipping this event[%v:%v] new[%v:%v",
@@ -109,31 +110,39 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			}
 
 			if newPhase == d.MonitorPhaseUnhealthy && !newMonitor.Status.RemediationTaken {
-				if !newMonitor.Spec.Continuous {
-					var action func(monitor *d.DeploymentMonitor) error
-					switch newMonitor.Spec.Remediation.Option {
-					case d.RemediationAutoRollback:
-						action = controller.remediationOptions.rollback
-						break
-					case d.RemediationAutoPause:
-						action = controller.remediationOptions.pause
-						break
-					case d.RemediationAuto:
-						action = controller.remediationOptions.auto
-						break
-					}
-					if action != nil {
-						newMonitor.Status.RemediationTaken = true
-						controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newMonitor.Namespace).Update(newMonitor)
-
-						go action(newMonitor)
-					}
+				//if !newMonitor.Spec.Continuous {
+				var action func(monitor *d.DeploymentMonitor) error
+				switch newMonitor.Spec.Remediation.Option {
+				case d.RemediationAutoRollback:
+					action = controller.remediationOptions.rollback
+					break
+				case d.RemediationAutoPause:
+					action = controller.remediationOptions.pause
+					break
+				case d.RemediationAuto:
+					action = controller.remediationOptions.auto
+					break
 				}
+				if action != nil {
+					newMonitor.Status.RemediationTaken = true
+					controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newMonitor.Namespace).Update(newMonitor)
+
+					go action(newMonitor)
+					return
+				}
+				//}
 			}
 
 			// Got a newPhase
 			if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
-				go barrelman.monitorContinuously(newMonitor)
+				if newPhase == d.MonitorPhaseUnhealthy {
+					dura, err := time.Parse(time.RFC3339, newMonitor.Status.Timestamp)
+					if err == nil && (time.Now().Unix()-dura.Unix()) > 60 { //Make sure the new job w
+						go barrelman.monitorContinuously(newMonitor)
+					}
+				} else {
+					go barrelman.monitorContinuously(newMonitor)
+				}
 			}
 		},
 	})

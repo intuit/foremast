@@ -792,6 +792,13 @@ rules:
     resources:
       - group: "" # core
         resources: ["namespaces", "namespaces/status", "namespaces/finalize"]
+  - level: None
+    users: ["cluster-autoscaler"]
+    verbs: ["get", "update"]
+    namespaces: ["kube-system"]
+    resources:
+      - group: "" # core
+        resources: ["configmaps", "endpoints"]
   # Don't log HPA fetching metrics.
   - level: None
     users:
@@ -1046,6 +1053,11 @@ EOF
 }
 
 function create-node-problem-detector-kubeconfig {
+  local apiserver_address="${1}"
+  if [[ -z "${apiserver_address}" ]]; then
+    echo "Must provide API server address to create node-problem-detector kubeconfig file!"
+    exit 1
+  fi
   echo "Creating node-problem-detector kubeconfig file"
   mkdir -p /var/lib/node-problem-detector
   cat <<EOF >/var/lib/node-problem-detector/kubeconfig
@@ -1058,6 +1070,7 @@ users:
 clusters:
 - name: local
   cluster:
+    server: https://${apiserver_address}
     certificate-authority-data: ${CA_CERT}
 contexts:
 - context:
@@ -1187,7 +1200,7 @@ function start-node-problem-detector {
   local -r km_config="${KUBE_HOME}/node-problem-detector/config/kernel-monitor.json"
   # TODO(random-liu): Handle this for alternative container runtime.
   local -r dm_config="${KUBE_HOME}/node-problem-detector/config/docker-monitor.json"
-  local -r custom_km_config="${KUBE_HOME}/node-problem-detector/config/kernel-monitor-counter.json"
+  local -r custom_km_config="${KUBE_HOME}/node-problem-detector/config/kernel-monitor-counter.json,${KUBE_HOME}/node-problem-detector/config/systemd-monitor-counter.json,${KUBE_HOME}/node-problem-detector/config/docker-monitor-counter.json"
   echo "Using node problem detector binary at ${npd_bin}"
   local flags="${NPD_TEST_LOG_LEVEL:-"--v=2"} ${NPD_TEST_ARGS:-}"
   flags+=" --logtostderr"
@@ -2174,14 +2187,14 @@ function start-fluentd-resource-update {
   wait-for-apiserver-and-update-fluentd &
 }
 
-# Update {{ container-runtime }} with actual container runtime name,
-# and {{ container-runtime-endpoint }} with actual container runtime
+# Update {{ fluentd_container_runtime_service }} with actual container runtime name,
+# and {{ container_runtime_endpoint }} with actual container runtime
 # endpoint.
 function update-container-runtime {
   local -r file="$1"
   local -r container_runtime_endpoint="${CONTAINER_RUNTIME_ENDPOINT:-unix:///var/run/dockershim.sock}"
   sed -i \
-    -e "s@{{ *container_runtime *}}@${CONTAINER_RUNTIME_NAME:-docker}@g" \
+    -e "s@{{ *fluentd_container_runtime_service *}}@${FLUENTD_CONTAINER_RUNTIME_SERVICE:-${CONTAINER_RUNTIME_NAME:-docker}}@g" \
     -e "s@{{ *container_runtime_endpoint *}}@${container_runtime_endpoint#unix://}@g" \
     "${file}"
 }
@@ -2252,10 +2265,10 @@ function setup-fluentd {
     fluentd_gcp_configmap_name="fluentd-gcp-config-old"
   fi
   sed -i -e "s@{{ fluentd_gcp_configmap_name }}@${fluentd_gcp_configmap_name}@g" "${fluentd_gcp_yaml}"
-  fluentd_gcp_yaml_version="${FLUENTD_GCP_YAML_VERSION:-v3.1.0}"
+  fluentd_gcp_yaml_version="${FLUENTD_GCP_YAML_VERSION:-v3.2.0}"
   sed -i -e "s@{{ fluentd_gcp_yaml_version }}@${fluentd_gcp_yaml_version}@g" "${fluentd_gcp_yaml}"
   sed -i -e "s@{{ fluentd_gcp_yaml_version }}@${fluentd_gcp_yaml_version}@g" "${fluentd_gcp_scaler_yaml}"
-  fluentd_gcp_version="${FLUENTD_GCP_VERSION:-0.3-1.5.34-1-k8s-1}"
+  fluentd_gcp_version="${FLUENTD_GCP_VERSION:-0.6-1.6.0-1}"
   sed -i -e "s@{{ fluentd_gcp_version }}@${fluentd_gcp_version}@g" "${fluentd_gcp_yaml}"
   update-prometheus-to-sd-parameters ${fluentd_gcp_yaml}
   start-fluentd-resource-update ${fluentd_gcp_yaml}
@@ -2706,7 +2719,7 @@ function main() {
       create-kubeproxy-user-kubeconfig
     fi
     if [[ "${ENABLE_NODE_PROBLEM_DETECTOR:-}" == "standalone" ]]; then
-      create-node-problem-detector-kubeconfig
+      create-node-problem-detector-kubeconfig ${KUBERNETES_MASTER_NAME}
     fi
   fi
 
