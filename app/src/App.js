@@ -85,11 +85,11 @@ const metricNameMap = {
     name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_anomaly',
     tags: '{exported_namespace="foremast-examples",app="foo"}',
   }],
-  'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})': [{
-    type: BASE,
-    name: 'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})',
-    tags: ''
-  }]
+  // 'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})': [{
+  //   type: BASE,
+  //   name: 'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})',
+  //   tags: ''
+  // }]
 };
 const dataQueryParam = '?query=';
 const dataStartParam = '&start=';
