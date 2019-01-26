@@ -4,6 +4,7 @@ metadata:
   name: foo
   labels:
     app: foo
+    appType: spring-boot
 spec:
   type: NodePort
   ports:
@@ -13,22 +14,6 @@ spec:
     name: http
   selector:
     app: foo
----
-# Configuration to let prometheus discover this service
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: foo
-  labels:
-    service-monitor: foo
-spec:
-  selector:
-    matchLabels:
-      app: foo
-  endpoints:
-  - port: http
-    # Metrics URL, since it is using actuator, the following path is the default prometheus metrics path
-    path: /actuator/prometheus
 ---
 apiVersion: deployment.foremast.ai/v1alpha1
 kind: DeploymentMonitor

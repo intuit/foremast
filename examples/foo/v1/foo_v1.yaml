@@ -14,8 +14,7 @@ spec:
     metadata:
       labels:
         app: foo
-      annotations:
-        version: "v1" # Information for demo
+        version: v1
     spec:
       containers:
       - name: app
