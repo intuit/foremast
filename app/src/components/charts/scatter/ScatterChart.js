@@ -90,8 +90,8 @@ class ScatterChart extends React.Component {
         animation: false,
         options3d: {
           enabled: true,
-          beta: 90,
-          depth: 800,
+          //beta: 90,
+          depth: 750,
           viewDistance: 5,
           fitToPlot: false,
           frame: {
@@ -102,7 +102,7 @@ class ScatterChart extends React.Component {
         }
       },
       title: {
-        text: 'Memory vs CPU'
+        text: 'Time vs CPU vs Memory'
       },
       // subtitle: {
       //   text: document.ontouchstart === undefined ?

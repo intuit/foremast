@@ -144,7 +144,7 @@ class App extends React.Component {
   fetchData = () => {
     //API can't provide more than roughly 7 days of data at 60sec granularity
     const endTimestamp = moment().subtract(0, 'minutes').unix();
-    const startTimestamp = moment().subtract(20, 'minutes').unix();
+    const startTimestamp = moment().subtract(30, 'minutes').unix();
 
     // const pathParam = this.props.match.params.metricName;
     // this.setState({metricName: pathParam});
