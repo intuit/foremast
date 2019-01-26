@@ -12,7 +12,7 @@ render(
   <Provider store={store}>
     <BrowserRouter>
       <Switch>
-        <Route path="/:metricName" component={App} />
+        <Route path="/" component={App} />
       </Switch>
     </BrowserRouter>
   </Provider>,

@@ -2,48 +2,103 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
+import Highcharts from 'highcharts';
 import HighchartsMore from 'highcharts/highcharts-more'; //necessary for 'arearange' series type
-import Highstock from 'highcharts/highstock';
 import HighchartsReact from 'highcharts-react-official';
 
 import * as highlightActions from '../../../actions/highlightActions';
 
-HighchartsMore(Highstock);
+HighchartsMore(Highcharts);
+
+(function(H) {
+  H.Pointer.prototype.reset = function() {
+    return undefined;
+  };
+
+  /**
+   * Highlight a point by showing tooltip, setting hover state and draw crosshair
+   */
+  H.Point.prototype.highlight = function(event) {
+    event = this.series.chart.pointer.normalize(event);
+    this.onMouseOver(); // Show the hover marker
+    //this.series.chart.tooltip.refresh(this); // Show the tooltip
+    this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
+  };
+
+  H.syncExtremes = function(e) {
+    var thisChart = this.chart;
+
+    if (e.trigger !== "syncExtremes") {
+      // Prevent feedback loop
+      Highcharts.each(Highcharts.charts, function(chart) {
+        if (chart && chart !== thisChart) {
+          if (chart.xAxis[0].setExtremes) {
+            // It is null while updating
+            chart.xAxis[0].setExtremes(e.min, e.max, undefined, false, {
+              trigger: "syncExtremes"
+            });
+          }
+        }
+      });
+    }
+  };
+})(Highcharts);
 
 class TimeseriesChart extends React.Component {
   render() {
-    const { highlightActions } = this.props;
     const timeseriesOptions = {
       chart: {
-        zoomType: 'x'
+        zoomType: 'x',
+        type: 'line',
+        height: 180,
       },
       title: {
-        text: this.props.metricName + ' Metric + Modeled Range',
+        text: this.props.metricName.split(':')[1],// + ' Metric + Modeled Range',
+        style: {"fontSize": "12px"}
       },
-      subtitle: {
-        text: document.ontouchstart === undefined ?
-          'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
-      },
+      // subtitle: {
+      //   text: document.ontouchstart === undefined ?
+      //     'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in',
+      //   style: {"fontSize": "8px"}
+      // },
       xAxis: {
-        type: 'datetime'
+        type: 'datetime',
+        events: {
+          setExtremes: function(e) {
+            Highcharts.syncExtremes(e);
+          }
+        }
       },
       yAxis: {
         title: {
           //TODO:DM - change this based on metric name selected, may need to hard-code unit with rest of data in App.js
-          text: 'Seconds'
+          //text: 'Seconds'
         }
       },
       series: this.buildSeries(),
       tooltip: {
-        valueDecimals: 5
+        valueDecimals: 5,
+        split: true,
+        distance: 30,
+        padding: 5
       },
       legend: {
-        layout: 'vertical',
-        align: 'right',
-        verticalAlign: 'middle'
+        enabled: false
       },
-
+      navigator: {
+        enabled: false
+      },
       plotOptions: {
+        line: {
+          marker: {
+            enabled: false
+          }
+        },
+        arearange: {
+          marker: {
+            enabled: false
+          }
+        },
         series: {
           label: {
             connectorAllowed: false
@@ -51,7 +106,6 @@ class TimeseriesChart extends React.Component {
           point: {
             events: {
               mouseOver: function () {
-                console.log(this.x);
                 //highlightActions.updateHighlightTimestamp(this.x);
               }
             }
@@ -69,13 +123,6 @@ class TimeseriesChart extends React.Component {
           condition: {
             maxWidth: 500
           },
-          chartOptions: {
-            legend: {
-              layout: 'horizontal',
-              align: 'center',
-              verticalAlign: 'bottom'
-            }
-          }
         }]
       },
 
@@ -104,8 +151,7 @@ class TimeseriesChart extends React.Component {
 
     return (
       <HighchartsReact
-        highcharts={Highstock}
-        constructorType={'stockChart'}
+        highcharts={Highcharts}
         options={timeseriesOptions}
       />
     );
@@ -124,15 +170,14 @@ class TimeseriesChart extends React.Component {
           upperSeries.data[i][1]
         ]);
       }
-    } else {
-      console.warn('Upper and Lower series of different lengths, cannot build range series.')
     }
     let rangeSeries = {
       type: 'arearange',
       showInLegend: false,
       name: 'Model Range',
       data: rangeData,
-      fillOpacity: 0.1
+      fillOpacity: 0.1,
+      color: '#A6EA8A'
     };
     return [baseSeries, anomalySeries, rangeSeries];
   }
