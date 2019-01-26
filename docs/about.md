@@ -14,4 +14,4 @@ Please [create an issue](https://github.com/intuit/foremast/issues) in our GitHu
 
 ## Contacting
 
-[Contact information]({{ site.baseurl }}/contact) for the Foremast team.
+[Contact information]({{ site.baseurl }}/community) for the Foremast team.
