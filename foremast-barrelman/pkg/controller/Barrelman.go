@@ -255,9 +255,10 @@ func (c *Barrelman) monitorDeployment(appName string, oldDepl, newDepl *appsv1.D
 			}
 
 			//begin monitoring new deployment
-			glog.Info("Starting to monitor new deployment...")
-
-			go c.monitorNewDeployment(appName, oldDepl, newDepl, deploymentMetadata, oldMonitor, monitorNotFound, m.StrategyRollingUpdate)
+			if !oldMonitor.Spec.Continuous { //Only generates job when the continuous monitoring is not running
+				glog.Info("Starting to monitor new deployment...")
+				go c.monitorNewDeployment(appName, oldDepl, newDepl, deploymentMetadata, oldMonitor, monitorNotFound, m.StrategyRollingUpdate)
+			}
 
 			c.handleObject(newDepl)
 			return
@@ -785,8 +786,8 @@ func (c *Barrelman) getPodNames(oldDepl, newDepl *appsv1.Deployment, kubeclients
 //monitorNewDeployment loops, checking the new deployment metrics against those from the old deployment, rolling back if need be
 func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv1.Deployment, deploymentMetadata *v1alpha1.DeploymentMetadata,
 	oldMonitor *v1alpha1.DeploymentMonitor, monitorNotFound bool, strategy string) {
-	glog.Infof("Beginning to monitor new deployment %v vs. old deployment %v",
-		newDepl.Spec.Template.Spec.Containers[0].Image, oldDepl.Spec.Template.Spec.Containers[0].Image)
+	glog.Infof("Beginning to monitor new deployment %v vs. old deployment %v, strategy %s",
+		newDepl.Spec.Template.Spec.Containers[0].Image, oldDepl.Spec.Template.Spec.Containers[0].Image, strategy)
 	glog.Infof("Beginning to monitor new env %v vs. old env %v",
 		newDepl.Spec.Template.Spec.Containers[0].Env, oldDepl.Spec.Template.Spec.Containers[0].Env)
 
