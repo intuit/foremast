@@ -7,7 +7,7 @@
 
 ## Foremast
 
-![](docs/assets/images/foremast-logo.png)
+![](docs/assets/images/logos/Foremast/foremast-logo-blue.png)
 
 Foremast is a service health detection and canary analysis system for Kubernetes.
 
