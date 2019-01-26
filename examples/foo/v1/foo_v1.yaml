@@ -18,14 +18,14 @@ spec:
     spec:
       containers:
       - name: app
-        image: docker.io/foremast/k8s-metrics-demo:0.1.4
+        image: docker.io/foremast/k8s-metrics-demo:0.1.5
         imagePullPolicy: Always
         env:
         - name: APP_NAME
           value: foo
         - name: JAVA_OPTS
           # value: "-Dfilename=/resources/data.txt"
-          value: "-DerrorType=5xx -Dfrequency=6 -Dfilename=/resources/data2.txt -Dthreshold=200"
+          value: "-DerrorType=5xx -Dfrequency=6 -Dfilename=/resources/data3.txt -Dthreshold=200"
         ports:
         - name: web
           containerPort: 8080

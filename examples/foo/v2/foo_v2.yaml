@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: docker.io/foremast/k8s-metrics-demo:0.1.4
+        image: docker.io/foremast/k8s-metrics-demo:0.1.5
         imagePullPolicy: Always
         env:
         - name: APP_NAME

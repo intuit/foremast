@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+    <servers>
+        <!-- Must set the Snapshot or Release credentials as environment variables in order publish to Nexus -->
+        <server>
+            <id>scm.dev.snap.repo</id>
+            <username>${env.NEXUS_SNAPSHOT_REPO_USERNAME}</username>
+            <password>${env.NEXUS_SNAPSHOT_REPO_PASSWORD}</password>
+        </server>
+        <server>
+            <id>scm.int.rel.repo</id>
+            <username>${env.NEXUS_RELEASE_REPO_USERNAME}</username>
+            <password>${env.NEXUS_RELEASE_REPO_PASSWORD}</password>
+        </server>
+    </servers>
+    <mirrors>
+        <mirror>
+            <id>central-mirror</id>
+            <url>http://nexus.intuit.net/nexus/content/groups/public</url>
+            <!-- same value as ${central.repo} from (jsk-internal-parent) POM -->
+            <mirrorOf>*</mirrorOf>
+        </mirror>
+    </mirrors>
+</settings>
