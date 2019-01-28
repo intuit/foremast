@@ -18,6 +18,7 @@ const dataEndParam = '&end=';
 const dataStepParam = '&step=';
 const dataStepValSec = 15; //data granularity
 
+//TODO:DM move me to metrics config... generate based on config object keys
 let seriesTemplate = {
   'namespace_app_per_pod:http_server_requests_latency':{data:[]},
   'namespace_app_per_pod:http_server_requests_error_5xx':{data:[]},
@@ -28,6 +29,8 @@ let seriesTemplate = {
 
 class App extends React.Component {
   state = {
+    namespace: '',
+    appName: '',
     baseSeries: {...seriesTemplate},
     upperSeries: {...seriesTemplate},
     lowerSeries: {...seriesTemplate},
@@ -65,10 +68,14 @@ class App extends React.Component {
   fetchData = () => {
     //API can't provide more than roughly 7 days of data at 60sec granularity
     const endTimestamp = moment().subtract(0, 'minutes').unix();
-    const startTimestamp = moment().subtract(30, 'minutes').unix();
+    const startTimestamp = moment().subtract(15, 'minutes').unix();
 
-    // const pathParam = this.props.match.params.metricName;
-    // this.setState({metricName: pathParam});
+    const { namespace, appName } = this.props.match.params;
+    this.setState({
+      namespace,
+      appName
+    });
+
     //
     // const queryParams = new URLSearchParams(this.props.location.search);
     // const namespaceParam = queryParams.get('namespace') || 'foremast-examples';
@@ -126,7 +133,7 @@ class App extends React.Component {
 
   render() {
     let { baseSeries, upperSeries, lowerSeries,
-      anomalySeries, xSeries, ySeries } = this.state;
+      anomalySeries, xSeries, ySeries, namespace, appName } = this.state;
     return (
       <div className="App">
         <SplitterLayout vertical={true}>
@@ -136,7 +143,8 @@ class App extends React.Component {
                 return (
                   <TimeseriesChart
                     key={key}
-                    metricName={METRICS_MAP[key].commonName}
+                    metricName={namespace + ' : ' + appName + ' : ' +
+                      METRICS_MAP[key].commonName}
                     unit={METRICS_MAP[key].unit}
                     baseSeries={baseSeries[key]}
                     upperSeries={upperSeries[key]}

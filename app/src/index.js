@@ -12,7 +12,7 @@ render(
   <Provider store={store}>
     <BrowserRouter>
       <Switch>
-        <Route path="/" component={App} />
+        <Route path="/:namespace/:appName" component={App} />
       </Switch>
     </BrowserRouter>
   </Provider>,
