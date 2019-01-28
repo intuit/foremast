@@ -125,6 +125,7 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 				}
 				if action != nil {
 					newMonitor.Status.RemediationTaken = true
+
 					controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newMonitor.Namespace).Update(newMonitor)
 
 					go action(newMonitor)
@@ -180,6 +181,7 @@ func (c *MonitorController) rollback(monitor *d.DeploymentMonitor) error {
 	}
 
 	revision, err := deploymentutil.Revision(depl)
+	var rollbackRevision = monitor.Spec.RollbackRevision
 	if revision == monitor.Spec.RollbackRevision {
 		glog.Infof("Rolled back already %d", monitor.Spec.RollbackRevision)
 		return nil
@@ -198,18 +200,12 @@ func (c *MonitorController) rollback(monitor *d.DeploymentMonitor) error {
 		Message:            "Foremast detected unhealthy, so roll it back automatically to revision:" + strconv.FormatInt(monitor.Spec.RollbackRevision, 10),
 	})
 
-	glog.Infof("Rolling back to %d", monitor.Spec.RollbackRevision)
+	glog.Infof("Rolling back to %d", rollbackRevision)
 
 	// Update messages
 	if _, err := c.kubeclientset.ExtensionsV1beta1().Deployments(depl.Namespace).Update(depl); err != nil {
 		glog.Infof("Updating existing deployment error %v %v", depl, err)
-		return err
 	}
-
-	//rollbacker, err := kubectl.RollbackerFor(schema.GroupKind{
-	//	Kind:  "Deployment",
-	//	Group: "apps",
-	//}, c.kubeclientset)
 
 	if depl.Spec.Paused {
 		return fmt.Errorf("you cannot rollback a paused deployment; resume it first with 'kubectl rollout resume deployment/%s' and try again", deploymentName)
@@ -221,18 +217,22 @@ func (c *MonitorController) rollback(monitor *d.DeploymentMonitor) error {
 			AnnotationDeploymentRollbackMessage: "Foremast detected unhealthy, so roll it back automatically to revision:" + strconv.FormatInt(monitor.Spec.RollbackRevision, 10),
 		},
 		RollbackTo: v1beta1.RollbackConfig{
-			Revision: monitor.Spec.RollbackRevision,
+			Revision: rollbackRevision,
 		},
 	}
 
-	glog.Infof("Rolling back to %d", monitor.Spec.RollbackRevision)
+	glog.Infof("Rolling back to %d", rollbackRevision)
 	// Do the rollback
 	if err := c.kubeclientset.ExtensionsV1beta1().Deployments(depl.Namespace).Rollback(deploymentRollback); err != nil {
 		glog.Infof("Rolling back existing deployment error %v %v", depl, err)
 		return err
 	}
 
-	glog.Infof("Rolled back to %d", monitor.Spec.RollbackRevision)
+	glog.Infof("Rolled back to %d", rollbackRevision)
+	//rollbacker, err := kubectl.RollbackerFor(schema.GroupKind{
+	//	Kind:  "Deployment",
+	//	Group: "apps",
+	//}, c.kubeclientset)
 	//msg, err := rollbacker.Rollback(depl, nil, monitor.Spec.RollbackRevision, false)
 	return err
 }

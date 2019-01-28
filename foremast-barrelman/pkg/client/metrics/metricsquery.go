@@ -50,8 +50,9 @@ func createMap(namespace string, appName string, podNames []string, metrics d.Me
 		var podCount = len(podNames)
 
 		if category == CategoryCurrent {
-			p["start"] = nowUnix
-			p["end"] = (now.Add(timeWindow*time.Minute).Unix() / step) * step
+			//Since prometheus has 1 minutes latency, add one minute to make sure prometheus won't get metrics from previous version
+			p["start"] = nowUnix + step
+			p["end"] = (now.Add((timeWindow+1)*time.Minute).Unix() / step) * step
 			if strategy == StrategyContinuous {
 				p["query"] = "namespace_app_per_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",app=\"" + appName + "\"}"
 			} else {

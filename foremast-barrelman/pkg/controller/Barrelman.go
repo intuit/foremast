@@ -240,7 +240,6 @@ func (c *Barrelman) monitorDeployment(appName string, oldDepl, newDepl *appsv1.D
 			if err == nil {
 				if oldMonitor.Spec.Continuous {
 					glog.Infof("The deployment is watching continuously:%s", newDepl.Name)
-					return
 				}
 				monitorNotFound = false
 				newRevision, err := deploymentutil.Revision(newDepl)
@@ -254,11 +253,8 @@ func (c *Barrelman) monitorDeployment(appName string, oldDepl, newDepl *appsv1.D
 				}
 			}
 
-			//begin monitoring new deployment
-			if !oldMonitor.Spec.Continuous { //Only generates job when the continuous monitoring is not running
-				glog.Info("Starting to monitor new deployment...")
-				go c.monitorNewDeployment(appName, oldDepl, newDepl, deploymentMetadata, oldMonitor, monitorNotFound, m.StrategyRollingUpdate)
-			}
+			glog.Info("Starting to monitor new deployment...")
+			go c.monitorNewDeployment(appName, oldDepl, newDepl, deploymentMetadata, oldMonitor, monitorNotFound, m.StrategyRollingUpdate)
 
 			c.handleObject(newDepl)
 			return
@@ -803,27 +799,40 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 		glog.Infof("Found pod names: %s, %d", podNames[0], len(podNames))
 	}
 
-	analystClient, err := a.NewClient(nil, deploymentMetadata.Spec.Analyst.Endpoint)
-	if err != nil {
-		glog.Infof("Creating judgement error %v %s", newDepl, err)
-		return
+	var jobId string
+	var phase string
+	var oldMonitor2, er = c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
+	if er == nil {
+		oldMonitor = oldMonitor2
 	}
 
-	var jobId string
-	jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
-
-	if err != nil {
-		glog.Infof("Starting analyzing error, try it again: %v", err)
-		jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
+	//begin monitoring new deployment
+	if strategy == m.StrategyContinuous || (oldMonitor != nil && !oldMonitor.Spec.Continuous) { //Only generates job when the continuous monitoring is not running
+		analystClient, err := a.NewClient(nil, deploymentMetadata.Spec.Analyst.Endpoint)
 		if err != nil {
-			glog.Infof("Tried twice to analyzing error: %v", err)
+			glog.Infof("Creating judgement error %v %s", newDepl, err)
 			return
 		}
+
+		jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
+
+		if err != nil {
+			glog.Infof("Starting analyzing error, try it again: %v", err)
+			jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
+			if err != nil {
+				glog.Infof("Tried twice to analyzing error: %v", err)
+				return
+			}
+		}
+		phase = v1alpha1.MonitorPhaseRunning
+	} else { //Take the old jobId
+		jobId = oldMonitor.Status.JobId
+		phase = oldMonitor.Status.Phase
 	}
 
 	//Create deployment analysis object if it doesn't exist
-
 	if oldMonitor != nil {
+
 		var t = time.Now()
 		var start = t.Format(time.RFC3339)
 		t = t.Add(waitUntilMax * time.Minute)
@@ -841,7 +850,10 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 		}
 
 		// default is 0
-		var oldRevision, _ = deploymentutil.Revision(oldDepl)
+		var oldRevision = oldMonitor.Spec.RollbackRevision
+		if strategy == m.StrategyRollingUpdate {
+			oldRevision, _ = deploymentutil.Revision(oldDepl)
+		}
 
 		oldMonitor.Annotations[DeploymentName] = newDepl.Name
 		var remediationOption = v1alpha1.RemediationNone
@@ -863,18 +875,10 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 			RollbackRevision: oldRevision,
 		}
 
-		//Set default Remediation to RemediationAutoRollback
-		if monitorNotFound {
-			oldMonitor.Spec.Remediation = v1alpha1.RemediationAction{
-				Option: v1alpha1.RemediationAutoRollback,
-			}
-		}
-
 		oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{
 			JobId:     jobId,
-			Phase:     v1alpha1.MonitorPhaseRunning,
+			Phase:     phase,
 			Timestamp: start,
-			//CurrentRevision: newRevision,
 		}
 	}
 	if monitorNotFound { //Not found
