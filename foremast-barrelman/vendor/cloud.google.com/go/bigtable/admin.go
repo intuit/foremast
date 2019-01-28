@@ -17,6 +17,7 @@ limitations under the License.
 package bigtable
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -32,7 +33,6 @@ import (
 	lroauto "cloud.google.com/go/longrunning/autogen"
 	"github.com/golang/protobuf/ptypes"
 	durpb "github.com/golang/protobuf/ptypes/duration"
-	"golang.org/x/net/context"
 	"google.golang.org/api/cloudresourcemanager/v1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"

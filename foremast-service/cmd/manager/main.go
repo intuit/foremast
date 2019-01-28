@@ -1,13 +1,6 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"os"
-	"reflect"
-	"strings"
-	"time"
-
 	common "foremast.ai/foremast/foremast-service/pkg/common"
 	converter "foremast.ai/foremast/foremast-service/pkg/converter"
 	models "foremast.ai/foremast/foremast-service/pkg/models"
@@ -15,14 +8,24 @@ import (
 	search "foremast.ai/foremast/foremast-service/pkg/search"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"reflect"
+	"strings"
+	"time"
 )
 
 var (
 	elasticClient *elastic.Client
 )
+// query service endpoint
+var QueryEndpoint string
 
 // ConfigSeparator .... constant variable based on to separate the queries
-const ConfigSeparator  = " ||"
+const ConfigSeparator = " ||"
+
 // KvSeparator   .... used for key and value separate
 const KvSeparator = "== "
 
@@ -51,10 +54,10 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string) {
 			return 404, ""
 		}
 		if co == 1 {
-			output.WriteString(ConfigSeparator )
+			output.WriteString(ConfigSeparator)
 		}
 		output.WriteString(key)
-		output.WriteString(KvSeparator )
+		output.WriteString(KvSeparator)
 		output.WriteString(retstr)
 		co = 1
 	}
@@ -166,11 +169,61 @@ func SearchByID(context *gin.Context) {
 
 }
 
+/*
+func ProxyQuery(context *gin.Context) {
+	var myquery models.QueryRequest
+	//check bad request
+	if err := context.BindJSON(&myquery); err != nil {
+		log.Println("Error: encounter context error ", err, " detail ", reflect.TypeOf(err))
+		common.ErrorResponse(context, http.StatusBadRequest, "Bad request")
+		return
+	}
+	httpclient := http.Client{
+		Timeout: time.Duration(90000 * time.Millisecond),
+	}
+	resp, err := httpclient.Get(myquery.QueryString)
+	if err != nil {
+		common.ErrorResponse(context, http.StatusBadRequest, "invoke query "+myquery.QueryString+" failed " )
+		return
+	}
+	defer resp.Body.Close()
+	contents, err := ioutil.ReadAll(resp.Body)
+	if err!= nil{
+		common.ErrorResponse(context, http.StatusBadRequest, "failed to retrieve contents "+string(contents))
+	}
+	context.JSON(http.StatusOK, string(contents))
+}*/
+// QueryProxy .... Acting as proxy for different cluster of  query service (for example prometheus)
+//                 assume service only access global query service
+func QueryProxy(context *gin.Context) {
+	//allow crqs
+	context.Header("Access-Control-Allow-Origin", "*")
+	queryMaps := context.Request.URL.RawQuery
+	targeturl := QueryEndpoint +"api/v1/query_range?"+queryMaps
+	httpclient := http.Client{
+		Timeout: time.Duration(90000 * time.Millisecond),
+	}
+	resp, err := httpclient.Get(targeturl)
+	if err != nil {
+		common.ErrorResponse(context, http.StatusBadRequest, "invoke query "+targeturl+" failed " )
+		return
+	}
+	defer resp.Body.Close()
+	contents, err := ioutil.ReadAll(resp.Body)
+	if err!= nil{
+		common.ErrorResponse(context, http.StatusBadRequest, "failed to retrieve contents "+string(contents))
+	}
+	context.JSON(http.StatusOK, string(contents))
+}
 // main .... program entry
 func main() {
 	var esURL = os.Getenv("ELASTIC_URL")
+	QueryEndpoint  = os.Getenv("QUERY_SERVICE_ENDPOINT")
 	if esURL == "" {
 		esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
+	}
+	if QueryEndpoint  ==""{
+		QueryEndpoint  = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
 	}
 
 	var err error
@@ -195,6 +248,13 @@ func main() {
 		v1.GET("/id/:id", SearchByID)
 		//create request
 		v1.POST("/create", RegisterEntry)
+
+		//v1.POST("/proxyquery", ProxyQuery)
+	}
+	v2 := router.Group("/api/")
+	{
+		//query proxy
+		v2.GET("/v1/:queryproxy", QueryProxy)
 	}
 	if err = router.Run(":8099"); err != nil {
 		log.Fatal(err)

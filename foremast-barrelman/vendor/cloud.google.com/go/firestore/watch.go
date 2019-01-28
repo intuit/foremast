@@ -15,6 +15,7 @@
 package firestore
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -25,7 +26,6 @@ import (
 	"cloud.google.com/go/internal/btree"
 	"github.com/golang/protobuf/ptypes"
 	gax "github.com/googleapis/gax-go"
-	"golang.org/x/net/context"
 	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

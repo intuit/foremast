@@ -1,0 +1,9 @@
+#!/bin/bash
+echo "Foremast stops watching applicatoin $1"
+echo "Job:"
+kubectl get deploymentmonitor foo -o=jsonpath='{.status.jobId}' -n foremast-examples
+echo ""
+echo "Phase:"
+kubectl get deploymentmonitor foo -o=jsonpath='{.status.phase}' -n foremast-examples
+echo ""
+kubectl patch deploymentmonitor $1 --type="merge" -p '{"spec":{"continuous":false}}' $2 $3 $4 $5 $6 $7 $8 $9 > /dev/null

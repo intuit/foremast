@@ -23,6 +23,7 @@
 set -ex
 
 APIS=(
+google/api/expr/artman_cel.yaml
 google/iam/artman_iam_admin.yaml
 google/cloud/asset/artman_cloudasset_v1beta1.yaml
 google/iam/credentials/artman_iamcredentials_v1.yaml
@@ -37,6 +38,7 @@ google/cloud/oslogin/artman_oslogin_v1.yaml
 google/cloud/oslogin/artman_oslogin_v1beta.yaml
 google/cloud/redis/artman_redis_v1beta1.yaml
 google/cloud/redis/artman_redis_v1.yaml
+google/cloud/scheduler/artman_cloudscheduler_v1beta1.yaml
 google/cloud/securitycenter/artman_securitycenter_v1beta1.yaml
 google/cloud/speech/artman_speech_v1.yaml
 google/cloud/speech/artman_speech_v1p1beta1.yaml
@@ -48,7 +50,6 @@ google/cloud/videointelligence/artman_videointelligence_v1beta1.yaml
 google/cloud/videointelligence/artman_videointelligence_v1beta2.yaml
 google/cloud/vision/artman_vision_v1.yaml
 google/cloud/vision/artman_vision_v1p1beta1.yaml
-google/container/artman_container.yaml
 google/devtools/artman_clouddebugger.yaml
 google/devtools/clouderrorreporting/artman_errorreporting.yaml
 google/devtools/cloudtrace/artman_cloudtrace_v1.yaml

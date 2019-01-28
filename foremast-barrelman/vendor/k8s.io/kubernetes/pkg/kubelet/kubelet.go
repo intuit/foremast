@@ -493,46 +493,46 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 	parsedNodeIP := net.ParseIP(nodeIP)
 
 	klet := &Kubelet{
-		hostname:                       hostname,
-		nodeName:                       nodeName,
-		kubeClient:                     kubeDeps.KubeClient,
-		heartbeatClient:                kubeDeps.HeartbeatClient,
-		onRepeatedHeartbeatFailure:     kubeDeps.OnHeartbeatFailure,
-		rootDirectory:                  rootDirectory,
-		resyncInterval:                 kubeCfg.SyncFrequency.Duration,
-		sourcesReady:                   config.NewSourcesReady(kubeDeps.PodConfig.SeenAllSources),
-		registerNode:                   registerNode,
-		registerWithTaints:             registerWithTaints,
-		registerSchedulable:            registerSchedulable,
-		dnsConfigurer:                  dns.NewConfigurer(kubeDeps.Recorder, nodeRef, parsedNodeIP, clusterDNS, kubeCfg.ClusterDomain, kubeCfg.ResolverConfig),
-		serviceLister:                  serviceLister,
-		nodeInfo:                       nodeInfo,
-		masterServiceNamespace:         masterServiceNamespace,
-		streamingConnectionIdleTimeout: kubeCfg.StreamingConnectionIdleTimeout.Duration,
-		recorder:                       kubeDeps.Recorder,
-		cadvisor:                       kubeDeps.CAdvisorInterface,
-		cloud:                          kubeDeps.Cloud,
-		externalCloudProvider:     cloudprovider.IsExternal(cloudProvider),
-		providerID:                providerID,
-		nodeRef:                   nodeRef,
-		nodeLabels:                nodeLabels,
-		nodeStatusUpdateFrequency: kubeCfg.NodeStatusUpdateFrequency.Duration,
-		os:                         kubeDeps.OSInterface,
-		oomWatcher:                 oomWatcher,
-		cgroupsPerQOS:              kubeCfg.CgroupsPerQOS,
-		cgroupRoot:                 kubeCfg.CgroupRoot,
-		mounter:                    kubeDeps.Mounter,
-		writer:                     kubeDeps.Writer,
-		maxPods:                    int(kubeCfg.MaxPods),
-		podsPerCore:                int(kubeCfg.PodsPerCore),
-		syncLoopMonitor:            atomic.Value{},
-		daemonEndpoints:            daemonEndpoints,
-		containerManager:           kubeDeps.ContainerManager,
-		containerRuntimeName:       containerRuntime,
-		redirectContainerStreaming: crOptions.RedirectContainerStreaming,
-		nodeIP:          parsedNodeIP,
-		nodeIPValidator: validateNodeIP,
-		clock:           clock.RealClock{},
+		hostname:                                hostname,
+		nodeName:                                nodeName,
+		kubeClient:                              kubeDeps.KubeClient,
+		heartbeatClient:                         kubeDeps.HeartbeatClient,
+		onRepeatedHeartbeatFailure:              kubeDeps.OnHeartbeatFailure,
+		rootDirectory:                           rootDirectory,
+		resyncInterval:                          kubeCfg.SyncFrequency.Duration,
+		sourcesReady:                            config.NewSourcesReady(kubeDeps.PodConfig.SeenAllSources),
+		registerNode:                            registerNode,
+		registerWithTaints:                      registerWithTaints,
+		registerSchedulable:                     registerSchedulable,
+		dnsConfigurer:                           dns.NewConfigurer(kubeDeps.Recorder, nodeRef, parsedNodeIP, clusterDNS, kubeCfg.ClusterDomain, kubeCfg.ResolverConfig),
+		serviceLister:                           serviceLister,
+		nodeInfo:                                nodeInfo,
+		masterServiceNamespace:                  masterServiceNamespace,
+		streamingConnectionIdleTimeout:          kubeCfg.StreamingConnectionIdleTimeout.Duration,
+		recorder:                                kubeDeps.Recorder,
+		cadvisor:                                kubeDeps.CAdvisorInterface,
+		cloud:                                   kubeDeps.Cloud,
+		externalCloudProvider:                   cloudprovider.IsExternal(cloudProvider),
+		providerID:                              providerID,
+		nodeRef:                                 nodeRef,
+		nodeLabels:                              nodeLabels,
+		nodeStatusUpdateFrequency:               kubeCfg.NodeStatusUpdateFrequency.Duration,
+		os:                                      kubeDeps.OSInterface,
+		oomWatcher:                              oomWatcher,
+		cgroupsPerQOS:                           kubeCfg.CgroupsPerQOS,
+		cgroupRoot:                              kubeCfg.CgroupRoot,
+		mounter:                                 kubeDeps.Mounter,
+		writer:                                  kubeDeps.Writer,
+		maxPods:                                 int(kubeCfg.MaxPods),
+		podsPerCore:                             int(kubeCfg.PodsPerCore),
+		syncLoopMonitor:                         atomic.Value{},
+		daemonEndpoints:                         daemonEndpoints,
+		containerManager:                        kubeDeps.ContainerManager,
+		containerRuntimeName:                    containerRuntime,
+		redirectContainerStreaming:              crOptions.RedirectContainerStreaming,
+		nodeIP:                                  parsedNodeIP,
+		nodeIPValidator:                         validateNodeIP,
+		clock:                                   clock.RealClock{},
 		enableControllerAttachDetach:            kubeCfg.EnableControllerAttachDetach,
 		iptClient:                               utilipt.New(utilexec.New(), utildbus.New(), utilipt.ProtocolIpv4),
 		makeIPTablesUtilChains:                  kubeCfg.MakeIPTablesUtilChains,
@@ -545,10 +545,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 	}
 
 	if klet.cloud != nil {
-		klet.cloudproviderRequestParallelism = make(chan int, 1)
-		klet.cloudproviderRequestSync = make(chan int)
-		// TODO(jchaloup): Make it configurable via --cloud-provider-request-timeout
-		klet.cloudproviderRequestTimeout = 10 * time.Second
+		klet.cloudResourceSyncManager = NewCloudResourceSyncManager(klet.cloud, nodeName, klet.nodeStatusUpdateFrequency)
 	}
 
 	secretManager := secret.NewCachingSecretManager(
@@ -994,14 +991,8 @@ type Kubelet struct {
 
 	// Cloud provider interface.
 	cloud cloudprovider.Interface
-	// To keep exclusive access to the cloudproviderRequestParallelism
-	cloudproviderRequestMux sync.Mutex
-	// Keep the count of requests processed in parallel (expected to be 1 at most at a given time)
-	cloudproviderRequestParallelism chan int
-	// Sync with finished requests
-	cloudproviderRequestSync chan int
-	// Request timeout
-	cloudproviderRequestTimeout time.Duration
+	// Handles requests to cloud provider with timeout
+	cloudResourceSyncManager *cloudResourceSyncManager
 
 	// Indicates that the node initialization happens in an external cloud controller
 	externalCloudProvider bool
@@ -1385,6 +1376,11 @@ func (kl *Kubelet) Run(updates <-chan kubetypes.PodUpdate) {
 	// Start gorouting responsible for checking limits in resolv.conf
 	if kl.dnsConfigurer.ResolverConfig != "" {
 		go wait.Until(func() { kl.dnsConfigurer.CheckLimitsForResolvConf() }, 30*time.Second, wait.NeverStop)
+	}
+
+	// Start the cloud provider sync manager
+	if kl.cloudResourceSyncManager != nil {
+		go kl.cloudResourceSyncManager.Run(wait.NeverStop)
 	}
 
 	// Start component sync loops.

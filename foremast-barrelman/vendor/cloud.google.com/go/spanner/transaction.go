@@ -17,11 +17,11 @@ limitations under the License.
 package spanner
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	sppb "google.golang.org/genproto/googleapis/spanner/v1"
 	"google.golang.org/grpc"
@@ -217,15 +217,18 @@ func (t *txReadOnly) prepareExecuteSQL(ctx context.Context, stmt Statement, mode
 		// Might happen if transaction is closed in the middle of a API call.
 		return nil, nil, errSessionClosed(sh)
 	}
+	params, paramTypes, err := stmt.convertParams()
+	if err != nil {
+		return nil, nil, err
+	}
 	req := &sppb.ExecuteSqlRequest{
 		Session:     sid,
 		Transaction: ts,
 		Sql:         stmt.SQL,
 		QueryMode:   mode,
 		Seqno:       atomic.AddInt64(&t.sequenceNumber, 1),
-	}
-	if err := stmt.bindParams(req); err != nil {
-		return nil, nil, err
+		Params:      params,
+		ParamTypes:  paramTypes,
 	}
 	return req, sh, nil
 }

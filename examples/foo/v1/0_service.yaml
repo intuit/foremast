@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: foo
+  namespace: foremast-examples
   labels:
     app: foo
     appType: spring-boot
@@ -15,10 +16,14 @@ spec:
   selector:
     app: foo
 ---
+## kubectl patch deploymentmonitor foo --type="merge" -p '{"spec":{"continuous":true}}' -n foremast-examples
 apiVersion: deployment.foremast.ai/v1alpha1
 kind: DeploymentMonitor
 metadata:
   name: foo
+  namespace: foremast-examples
 spec:
   # Auto rollback or not when unhealthy detected
-  autoRollback: true
+  remediation:
+    option: AutoRollback
+

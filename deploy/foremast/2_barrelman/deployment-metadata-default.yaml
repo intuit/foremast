@@ -11,6 +11,9 @@ spec:
     - metricName: http_server_requests_error_5xx
       metricType: counter
       metricAlias: error5xx
+#    - metricName: http_server_requests_count
+#      metricType: counter
+#      metricAlias: traffic
 #    - metricName: http_server_requests_error_4xx
 #      metricType: counter
 #      metricAlias: error4xx
