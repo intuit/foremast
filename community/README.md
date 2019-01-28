@@ -1,16 +1,18 @@
 # Foremast Community
 
-Welcome to the Foremast community! Thank you very much for yoru interest in the project and we hope that you will help evolve it to the next level.
+Welcome to the Foremast community! Thank you very much for your interest in the project and we hope that you will help evolve it to the next level.
 
 This section will provide all the information you need to become a contributor into the Foremast project. We will provide links to the code, guidelines, documentation etc.
 
 ## Introduction
 
-Foremast is an open platform that enables an application centric observability for Kubernetes applications. The goal of the Foremast project is to be able to enable Kubernetes applications to run healthy and thereby reduce TTD and TTR of any application incidents.
+Foremast is an open platform that enables an application centric observability for Kubernetes applications. The goal of the Foremast project is to enable Kubernetes applications to run healthy and thereby reduce the Time to Detect (TTD) and Time to Recover (TTR) when an application incident occurs.
 
 ## How did Foremast come to be?
 
-The Foremast project was initially built for and used at Intuit for their internal applications that run on a Kubernetes based platform. As the platform evolved, the authors recognized a broader need for application health management and evolved Foremast into a generic platform that can run on, and manage applications running on any Kubernetes cluster. 
+The Foremast project was started in 2018, and initially built for and used at Intuit for their internal applications that run on a Kubernetes based platform. 
+
+As the platform evolved, the authors recognized a broader need for application health management and evolved Foremast into a generic platform that can run on, and manage, applications running on any Kubernetes cluster. 
 
 The project is now being stewarded by Intuit, with contributions from other companies.
 
