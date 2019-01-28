@@ -21,7 +21,7 @@ To sign and submit a CLA, see the [CLA doc](https://git.k8s.io/community/CLA.md)
 
    The code style of java is the default IDE java code style in [Intellij IDEA](https://www.jetbrains.com/idea/).
 
-### Projects
+### Components
 1. Foremast-barrelman
 
    Barrelman is a component to integrate with kubernetes. It watches the changes in K8s and trigger job for foremast-brain.
