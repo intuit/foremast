@@ -64,7 +64,7 @@ To sign and submit a CLA, see the [CLA doc](https://git.k8s.io/community/CLA.md)
 
 - Fork the repo.
 
-Do changes in your local repo, before committing your changes, make sure the compilation is green.
+  - Do changes in your local repo, before committing your changes, make sure the compilation is green.
 
 - Create your PR.
 
