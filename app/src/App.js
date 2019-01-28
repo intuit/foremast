@@ -7,90 +7,11 @@ import Highcharts from 'highcharts';
 import './App.css';
 import TimeseriesChart from './components/charts/timeseries/TimeseriesChart';
 import ScatterChart from './components/charts/scatter/ScatterChart';
+import { METRICS_MAP, BASE, UPPER, LOWER, ANOMALY } from './config/metrics';
 
-const BASE = 'base';
-const UPPER = 'upper';
-const LOWER = 'lower';
-const ANOMALY = 'anomaly';
-
+//TODO:DM - put into api config file
 const dataDomain = 'http://foremast-api-service.foremast.svc.cluster.local:8099';
 const dataPath = '/api/v1/query_range';
-
-const metricNameMap = {
-  'namespace_app_per_pod:http_server_requests_error_5xx': [{
-    type: BASE,
-    name: 'namespace_app_per_pod:http_server_requests_error_5xx',
-    tags: '{namespace="foremast-examples",app="foo"}',
-  },{
-    type: UPPER,
-    name: 'foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_upper',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: LOWER,
-    name: 'foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_lower',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: ANOMALY,
-    name: 'foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_anomaly',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  }],
-  'namespace_app_per_pod:http_server_requests_latency': [{
-    type: BASE,
-    name: 'namespace_app_per_pod:http_server_requests_latency',
-    tags: '{namespace="foremast-examples",app="foo"}',
-  },{
-    type: UPPER,
-    name: 'foremastbrain:namespace_app_per_pod:http_server_requests_latency_upper',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: LOWER,
-    name: 'foremastbrain:namespace_app_per_pod:http_server_requests_latency_lower',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: ANOMALY,
-    name: 'foremastbrain:namespace_app_per_pod:http_server_requests_latency_anomaly',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  }],
-  'namespace_app_per_pod:cpu_usage_seconds_total': [{
-    type: BASE,
-    name: 'namespace_app_per_pod:cpu_usage_seconds_total',
-    tags: '{namespace="foremast-examples",app="foo"}',
-  },{
-    type: UPPER,
-    name: 'foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_upper',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: LOWER,
-    name: 'foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_lower',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: ANOMALY,
-    name: 'foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_anomaly',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  }],
-  'namespace_app_per_pod:memory_usage_bytes': [{
-    type: BASE,
-    name: 'namespace_app_per_pod:memory_usage_bytes',
-    tags: '{namespace="foremast-examples",app="foo"}',
-  },{
-    type: UPPER,
-    name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_upper',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: LOWER,
-    name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_lower',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  },{
-    type: ANOMALY,
-    name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_anomaly',
-    tags: '{exported_namespace="foremast-examples",app="foo"}',
-  }],
-  // 'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})': [{
-  //   type: BASE,
-  //   name: 'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})',
-  //   tags: ''
-  // }]
-};
 const dataQueryParam = '?query=';
 const dataStartParam = '&start=';
 const dataEndParam = '&end=';
@@ -155,8 +76,9 @@ class App extends React.Component {
     // const tagsStr = `{namespace="${namespaceParam}",app="${appNameParam}"}`;
     //TODO:DM - would like to use namespace/app from query params, however, diff series currently use diff tag names (ex: 'namespace' vs 'exported_namespace')
 
-    Object.keys(metricNameMap).forEach(key => {
-      metricNameMap[key].forEach(metric => {
+    Object.keys(METRICS_MAP).forEach(key => {
+      METRICS_MAP[key].metrics.forEach(metric => {
+        let scale = METRICS_MAP[key].scale;
         let uri = dataDomain + dataPath + dataQueryParam +
           encodeURIComponent(metric.name + metric.tags) +
           dataStartParam + startTimestamp + dataEndParam + endTimestamp +
@@ -164,13 +86,13 @@ class App extends React.Component {
         let responsePromise = fetch(uri);
         switch (metric.type) {
           case BASE:
-            responsePromise.then(resp => this.processBaseResponse(resp, key));
+            responsePromise.then(resp => this.processBaseResponse(resp, key, scale));
             break;
           case UPPER:
-            responsePromise.then(resp => this.processUpperResponse(resp, key));
+            responsePromise.then(resp => this.processUpperResponse(resp, key, scale));
             break;
           case LOWER:
-            responsePromise.then(resp => this.processLowerResponse(resp, key));
+            responsePromise.then(resp => this.processLowerResponse(resp, key, scale));
             break;
           case ANOMALY:
             responsePromise.then(resp => {
@@ -185,7 +107,7 @@ class App extends React.Component {
     });
 
     //now force requests for Mem v CPU
-    let cpuMetric = metricNameMap['namespace_app_per_pod:cpu_usage_seconds_total'][0];
+    let cpuMetric = METRICS_MAP['namespace_app_per_pod:cpu_usage_seconds_total'].metrics[0];
     let cpuUri = dataDomain + dataPath + dataQueryParam +
       encodeURIComponent(cpuMetric.name + cpuMetric.tags) +
       dataStartParam + startTimestamp + dataEndParam + endTimestamp +
@@ -193,7 +115,7 @@ class App extends React.Component {
     fetch(cpuUri)
       .then(resp => this.processYResponse(resp));
 
-    let memMetric = metricNameMap['namespace_app_per_pod:memory_usage_bytes'][0];
+    let memMetric = METRICS_MAP['namespace_app_per_pod:memory_usage_bytes'].metrics[0];
     let memUri = dataDomain + dataPath + dataQueryParam +
       encodeURIComponent(memMetric.name + memMetric.tags) +
       dataStartParam + startTimestamp + dataEndParam + endTimestamp +
@@ -210,11 +132,12 @@ class App extends React.Component {
         <SplitterLayout vertical={true}>
           <div id="container">
             {
-              Object.keys(metricNameMap).map(key => {
+              Object.keys(METRICS_MAP).map(key => {
                 return (
                   <TimeseriesChart
                     key={key}
-                    metricName={key}
+                    metricName={METRICS_MAP[key].commonName}
+                    unit={METRICS_MAP[key].unit}
                     baseSeries={baseSeries[key]}
                     upperSeries={upperSeries[key]}
                     lowerSeries={lowerSeries[key]}
@@ -250,9 +173,9 @@ class App extends React.Component {
     });
 
   }
-  processBaseResponse(resp, key) {
+  processBaseResponse(resp, key, scale) {
     this.processResponse(resp).then(result => {
-      let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])]);
+      let data = result.values.map(point => [1000 * point[0], scale * parseFloat(point[1])]);
       let name = (result.metric ? result.metric.__name__ : null);
       let newState = {
           ...this.state.baseSeries,
@@ -262,9 +185,9 @@ class App extends React.Component {
     });
 
   }
-  processUpperResponse(resp, key) {
+  processUpperResponse(resp, key, scale) {
     this.processResponse(resp).then(result => {
-      let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])]);
+      let data = result.values.map(point => [1000 * point[0], scale * parseFloat(point[1])]);
       let name = (result.metric ? result.metric.__name__ : null);
       let newState = {
         ...this.state.upperSeries,
@@ -273,9 +196,9 @@ class App extends React.Component {
       this.setState({upperSeries: newState});
     });
   }
-  processLowerResponse(resp, key) {
+  processLowerResponse(resp, key, scale) {
     this.processResponse(resp).then(result => {
-      let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])]);
+      let data = result.values.map(point => [1000 * point[0], scale * parseFloat(point[1])]);
       let name = (result.metric ? result.metric.__name__ : null);
       let newState = {
         ...this.state.lowerSeries,
@@ -303,7 +226,7 @@ class App extends React.Component {
         this.state.baseSeries[key].data.forEach(basePoint => {
           let timeDiff = anomalyTimestamp - basePoint[0];
           //use this point if it's within a minute (data resolution requested), but only if BEFORE anomaly stamp
-          if(timeDiff < dataStepValSec * 1000 && timeDiff > 0) {
+          if(timeDiff < 2 * dataStepValSec * 1000 && timeDiff > 0) {
             //NOTE: using base point here will allow for anomolous points to fall directly on top of measured series BUT does therefore indicate slightly different timing than the anaomalies may be marked with
             //NOTE: also, this strategy allows for out of order points to be added, highcharts will warn about this with error #15, but it doesn't stop it from rendering as expected
             data.push(basePoint);

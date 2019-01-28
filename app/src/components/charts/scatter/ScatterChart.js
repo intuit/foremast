@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
 import Highcharts from 'highcharts';
-import Highcharts3d from 'highcharts/highcharts-3d'; //necessary for 'arearange' series type
+import Highcharts3d from 'highcharts/highcharts-3d'; //necessary for 'scatter3d' series type
 import HighchartsReact from 'highcharts-react-official';
 
 import * as highlightActions from '../../../actions/highlightActions';
@@ -63,7 +63,7 @@ setTimeout(function () {
 
     }
   }
-}, 1000);
+}, 1000); //1000 ms is totally arbitrary and really a hack to make sure the event binders occur after charts are loaded
 
 // Give the points a 3D feel by adding a radial gradient
 Highcharts.setOptions({
@@ -91,7 +91,7 @@ class ScatterChart extends React.Component {
         options3d: {
           enabled: true,
           //beta: 90,
-          depth: 750,
+          depth: 400,
           viewDistance: 5,
           fitToPlot: false,
           frame: {
@@ -113,6 +113,9 @@ class ScatterChart extends React.Component {
           text: 'Time'
         },
         type: 'datetime'
+      },
+      time: {
+        timezoneOffset: 8 * 60, //TODO: CONSTANTIZE me
       },
       yAxis: {
         title: {

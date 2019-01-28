@@ -53,7 +53,7 @@ class TimeseriesChart extends React.Component {
         height: 180,
       },
       title: {
-        text: this.props.metricName.split(':')[1],// + ' Metric + Modeled Range',
+        text: this.props.metricName,// + ' Metric + Modeled Range',
         style: {"fontSize": "12px"}
       },
       // subtitle: {
@@ -69,11 +69,15 @@ class TimeseriesChart extends React.Component {
           }
         }
       },
+      time: {
+        timezoneOffset: 8 * 60, //TODO: CONSTANTIZE me //8hrs offset, will need to be changed on DST shifts
+      },
       yAxis: {
         title: {
           //TODO:DM - change this based on metric name selected, may need to hard-code unit with rest of data in App.js
-          //text: 'Seconds'
-        }
+          text: this.props.unit,
+        },
+        min: 0,
       },
       series: this.buildSeries(),
       tooltip: {
