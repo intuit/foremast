@@ -42,7 +42,7 @@ spec:
         - name: metric_type1
           value: "error4xx"
         - name: threshold1
-          value: "2"
+          value: "3"
         - name: bound1
           value: "1"
         - name: min_lower_bound1
@@ -50,7 +50,7 @@ spec:
         - name: metric_type2
           value: "latency"
         - name: threshold2
-          value: "3"
+          value: "4"
         - name: bound2
           value: "1"
         - name: min_lower_bound2
@@ -58,7 +58,7 @@ spec:
         - name: metric_type3
           value: "cpu"
         - name: threshold3
-          value: "3"
+          value: "5"
         - name: bound3
           value: "1"
         - name: min_lower_bound3
@@ -66,7 +66,7 @@ spec:
         - name: metric_type4
           value: "memory"
         - name: threshold4
-          value: "3"
+          value: "5"
         - name: bound4
           value: "1"
         - name: min_lower_bound4
