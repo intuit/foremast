@@ -9,19 +9,19 @@ export const METRICS_MAP = {
     metrics: [{
       type: BASE,
       name: 'namespace_app_per_pod:http_server_requests_error_5xx',
-      tags: '{namespace="foremast-examples",app="foo"}',
+      tags: '{namespace="foremast-examples",app="demo"}',
     }, {
       type: UPPER,
       name: 'foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_upper',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: LOWER,
       name: 'foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_lower',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: ANOMALY,
       name: 'foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_anomaly',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }],
     scale: 1, //multiply by data value
     unit: 'count',
@@ -31,19 +31,19 @@ export const METRICS_MAP = {
     metrics: [{
       type: BASE,
       name: 'namespace_app_per_pod:http_server_requests_latency',
-      tags: '{namespace="foremast-examples",app="foo"}',
+      tags: '{namespace="foremast-examples",app="demo"}',
     }, {
       type: UPPER,
       name: 'foremastbrain:namespace_app_per_pod:http_server_requests_latency_upper',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: LOWER,
       name: 'foremastbrain:namespace_app_per_pod:http_server_requests_latency_lower',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: ANOMALY,
       name: 'foremastbrain:namespace_app_per_pod:http_server_requests_latency_anomaly',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }],
     scale: 1000,
     unit: 'ms',
@@ -53,19 +53,19 @@ export const METRICS_MAP = {
     metrics: [{
       type: BASE,
       name: 'namespace_app_per_pod:cpu_usage_seconds_total',
-      tags: '{namespace="foremast-examples",app="foo"}',
+      tags: '{namespace="foremast-examples",app="demo"}',
     }, {
       type: UPPER,
       name: 'foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_upper',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: LOWER,
       name: 'foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_lower',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: ANOMALY,
       name: 'foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_anomaly',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }],
     scale: 100,
     unit: '%',
@@ -75,19 +75,19 @@ export const METRICS_MAP = {
     metrics: [{
       type: BASE,
       name: 'namespace_app_per_pod:memory_usage_bytes',
-      tags: '{namespace="foremast-examples",app="foo"}',
+      tags: '{namespace="foremast-examples",app="demo"}',
     }, {
       type: UPPER,
       name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_upper',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: LOWER,
       name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_lower',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }, {
       type: ANOMALY,
       name: 'foremastbrain:namespace_app_per_pod:memory_usage_bytes_anomaly',
-      tags: '{exported_namespace="foremast-examples",app="foo"}',
+      tags: '{exported_namespace="foremast-examples",app="demo"}',
     }],
     scale: 0.000001,
     unit: 'MB',
