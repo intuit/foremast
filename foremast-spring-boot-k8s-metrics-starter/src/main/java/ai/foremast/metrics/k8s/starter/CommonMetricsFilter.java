@@ -53,18 +53,25 @@ public class CommonMetricsFilter implements MeterFilter {
         this.properties = properties;
         this.k8sMetricsProperties = k8sMetricsProperties;
         String list = k8sMetricsProperties.getCommonMetricsBlacklist();
-        if (list != null) {
-            String[] array = StringUtils.split(list, ",");
+        if (list != null && !list.isEmpty()) {
+            String[] array = StringUtils.tokenizeToStringArray(list, ",", true, true);
             for(String str: array) {
-                blacklist.add(str.trim());
+                str = filter(str.trim());
+                blacklist.add(str);
             }
         }
         list = k8sMetricsProperties.getCommonMetricsWhitelist();
-        if (list != null) {
-            String[] array = StringUtils.split(list, ",");
+        if (list != null && !list.isEmpty()) {
+            String[] array = StringUtils.tokenizeToStringArray(list, ",", true, true);
             for(String str: array) {
-                whitelist.add(str.trim());
+                str = filter(str.trim());
+                whitelist.add(str);
             }
+        }
+
+        list = k8sMetricsProperties.getCommonMetricsPrefix();
+        if (list != null && !list.isEmpty()) {
+            prefixes = StringUtils.tokenizeToStringArray(list, ",", true, true);
         }
     }
 
@@ -98,10 +105,17 @@ public class CommonMetricsFilter implements MeterFilter {
                 return MeterFilterReply.ACCEPT;
             }
         }
+
         return MeterFilterReply.DENY;
     }
 
+    protected String filter(String metricName) {
+        return metricName.replace('_', '.');
+    }
+
     public void enableMetric(String metricName) {
+        metricName = filter(metricName);
+
         if (blacklist.contains(metricName)) {
             blacklist.remove(metricName);
         }
@@ -111,6 +125,8 @@ public class CommonMetricsFilter implements MeterFilter {
     }
 
     public void disableMetric(String metricName) {
+        metricName = filter(metricName);
+
         if (whitelist.contains(metricName)) {
             whitelist.remove(metricName);
         }

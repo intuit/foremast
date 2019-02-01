@@ -28,6 +28,7 @@ public class ExposePrometheusAutoConfiguration {
                 set.add("health");
             }
             set.add("prometheus");
+            set.add("k8s_metrics");
         }
     }
 
