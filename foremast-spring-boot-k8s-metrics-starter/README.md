@@ -11,6 +11,7 @@ Metrics and custom metrics setup for spring boot application on K8s
 6. Add caller as a tag on http_server_request (Since 0.1.1)
 7. Allow to read app name from application.properties (Since 0.1.3)
 8. Allow to disable CSRF (Since 0.1.4)
+9. Hide metrics by default, allow to enable/disable metrics in runtime. (0.1.5)
 
 #### Properties
 ```properties
