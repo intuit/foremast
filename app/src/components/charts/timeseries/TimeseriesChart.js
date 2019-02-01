@@ -1,12 +1,7 @@
 import React from 'react';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import PropTypes from 'prop-types';
 import Highcharts from 'highcharts';
 import HighchartsMore from 'highcharts/highcharts-more'; //necessary for 'arearange' series type
 import HighchartsReact from 'highcharts-react-official';
-
-import * as highlightActions from '../../../actions/highlightActions';
 
 HighchartsMore(Highcharts);
 
@@ -44,7 +39,7 @@ HighchartsMore(Highcharts);
   };
 })(Highcharts);
 
-class TimeseriesChart extends React.Component {
+export default class TimeseriesChart extends React.Component {
   render() {
     const timeseriesOptions = {
       chart: {
@@ -53,16 +48,14 @@ class TimeseriesChart extends React.Component {
         height: 180,
       },
       title: {
-        text: this.props.metricName,// + ' Metric + Modeled Range',
+        text: this.props.metricName,
         style: {"fontSize": "12px"}
       },
-      // subtitle: {
-      //   text: document.ontouchstart === undefined ?
-      //     'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in',
-      //   style: {"fontSize": "8px"}
-      // },
       xAxis: {
         type: 'datetime',
+        crosshair: {
+          enabled: true
+        },
         events: {
           setExtremes: function(e) {
             Highcharts.syncExtremes(e);
@@ -106,47 +99,15 @@ class TimeseriesChart extends React.Component {
         series: {
           label: {
             connectorAllowed: false
-          },
-          point: {
-            events: {
-              mouseOver: function () {
-                //highlightActions.updateHighlightTimestamp(this.x);
-              }
-            }
-          },
-          events: {
-            mouseOut: function () {
-              //highlightActions.clearHighlightTimestamp();
-            }
           }
         }
       },
-
       responsive: {
         rules: [{
           condition: {
             maxWidth: 500
           },
         }]
-      },
-
-      rangeSelector: {
-        buttons: [{
-          type: 'day',
-          count: 1,
-          text: '1d',
-        }, {
-          type: 'day',
-          count: 3,
-          text: '3d',
-        }, {
-          type: 'week',
-          count: 1,
-          text: '1w',
-        }, {
-          type: 'all',
-          text: 'all',
-        }],
       },
       credits: {
         enabled: false
@@ -186,19 +147,3 @@ class TimeseriesChart extends React.Component {
     return [baseSeries, anomalySeries, rangeSeries];
   }
 }
-
-TimeseriesChart.propTypes = {
-  highlightActions: PropTypes.object,
-  highlight: PropTypes.object
-};
-
-const mapStoreToProps = store => ({highlight: store.highlight});
-
-const mapDispatchToProps = dispatch => ({
-  highlightActions: bindActionCreators(highlightActions, dispatch)
-});
-
-export default connect(
-  mapStoreToProps,
-  mapDispatchToProps
-)(TimeseriesChart);

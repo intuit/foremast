@@ -5,6 +5,7 @@ import moment from 'moment';
 import Highcharts from 'highcharts';
 
 import './App.css';
+import Header from './components/header/Header';
 import TimeseriesChart from './components/charts/timeseries/TimeseriesChart';
 import ScatterChart from './components/charts/scatter/ScatterChart';
 import { METRICS_MAP, BASE, UPPER, LOWER, ANOMALY } from './config/metrics';
@@ -48,8 +49,7 @@ class App extends React.Component {
 
           for (i = 0; i < Highcharts.charts.length; i = i + 1) {
             chart = Highcharts.charts[i];
-            //filter out scatter charts... or handle them differently
-            if (chart) {// && chart.options.chart.type === 'line') {
+            if (chart) {
               // Find coordinates within the chart
               event = chart.pointer.normalize(e);
               // Get the hovered point
@@ -61,6 +61,18 @@ class App extends React.Component {
           }
         });
     });
+
+    //this next listener allows for tooltips to be hidden once no longer mousing over points
+    document.getElementById("container")
+      .addEventListener('mouseleave', function (e) {
+        for (let j = 0; j < Highcharts.charts.length; j++) {
+            let chart = Highcharts.charts[j];
+            if (chart) {
+              chart.tooltip.hide();
+              chart.xAxis[0].hideCrosshair();
+            }
+          }
+      });
     this.fetchData();
     setInterval(this.fetchData, dataStepValSec * 1000);
   }
@@ -114,7 +126,7 @@ class App extends React.Component {
     });
 
     //now force requests for Mem v CPU
-    let cpuMetric = METRICS_MAP['namespace_app_per_pod:cpu_usage_seconds_total'].metrics[0];
+    let cpuMetric = METRICS_MAP['namespace_app_per_pod:http_server_requests_error_5xx'].metrics[0];
     let cpuUri = dataDomain + dataPath + dataQueryParam +
       encodeURIComponent(cpuMetric.name + cpuMetric.tags) +
       dataStartParam + startTimestamp + dataEndParam + endTimestamp +
@@ -122,7 +134,7 @@ class App extends React.Component {
     fetch(cpuUri)
       .then(resp => this.processYResponse(resp));
 
-    let memMetric = METRICS_MAP['namespace_app_per_pod:memory_usage_bytes'].metrics[0];
+    let memMetric = METRICS_MAP['namespace_app_per_pod:http_server_requests_latency'].metrics[0];
     let memUri = dataDomain + dataPath + dataQueryParam +
       encodeURIComponent(memMetric.name + memMetric.tags) +
       dataStartParam + startTimestamp + dataEndParam + endTimestamp +
@@ -136,6 +148,7 @@ class App extends React.Component {
       anomalySeries, xSeries, ySeries, namespace, appName } = this.state;
     return (
       <div className="App">
+        <Header/>
         <SplitterLayout vertical={true}>
           <div id="container">
             {
@@ -167,7 +180,7 @@ class App extends React.Component {
   //TODO:DM - how to clean-up copy/paste of next 5 fns? notice sometimes diff scaling
   processXResponse(resp) {
     this.processResponse(resp).then(result => {
-      let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])/1000000]);
+      let data = result.values.map(point => [1000 * point[0], 1000 * parseFloat(point[1])]);
       let name = (result.metric ? result.metric.__name__ : null);
       this.setState({xSeries: {name, data}});
     });
@@ -175,7 +188,7 @@ class App extends React.Component {
   }
   processYResponse(resp) {
     this.processResponse(resp).then(result => {
-      let data = result.values.map(point => [1000 * point[0], 100 * parseFloat(point[1])]);
+      let data = result.values.map(point => [1000 * point[0], parseFloat(point[1])]);
       let name = (result.metric ? result.metric.__name__ : null);
       this.setState({ySeries: {name, data}});
     });
@@ -234,7 +247,7 @@ class App extends React.Component {
         this.state.baseSeries[key].data.forEach(basePoint => {
           let timeDiff = anomalyTimestamp - basePoint[0];
           //use this point if it's within a minute (data resolution requested), but only if BEFORE anomaly stamp
-          if(timeDiff < 2 * dataStepValSec * 1000 && timeDiff > 0) {
+          if(timeDiff < dataStepValSec * 1000 && timeDiff > 0) {
             //NOTE: using base point here will allow for anomolous points to fall directly on top of measured series BUT does therefore indicate slightly different timing than the anaomalies may be marked with
             //NOTE: also, this strategy allows for out of order points to be added, highcharts will warn about this with error #15, but it doesn't stop it from rendering as expected
             data.push(basePoint);
