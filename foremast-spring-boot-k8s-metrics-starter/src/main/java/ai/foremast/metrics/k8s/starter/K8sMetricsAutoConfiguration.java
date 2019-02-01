@@ -3,6 +3,7 @@ package ai.foremast.metrics.k8s.starter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider;
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,7 +18,7 @@ import java.util.regex.Pattern;
  * Auto metrics configurations
  */
 @Configuration
-@EnableConfigurationProperties({K8sMetricsProperties.class})
+@EnableConfigurationProperties({K8sMetricsProperties.class, MetricsProperties.class})
 public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
 
     @Autowired
@@ -28,10 +29,19 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
 
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
 
+    private K8sMetricsFilter k8sMetricsFilter;
+
+    private CommonMetricsFilter commonMetricsFilter;
+
     @Bean
     public FilterRegistrationBean filterRegistrationBean() {
-        FilterRegistrationBean bean = new FilterRegistrationBean(new K8sMetricsFilter());
-        bean.addUrlPatterns("/metrics");
+        k8sMetricsFilter = new K8sMetricsFilter();
+        if (commonMetricsFilter != null) {
+            k8sMetricsFilter.setCommonMetricsFilter(commonMetricsFilter);
+        }
+
+        FilterRegistrationBean bean = new FilterRegistrationBean(k8sMetricsFilter);
+        bean.addUrlPatterns("/metrics", "/metrics/*");
         return bean;
     }
 
@@ -43,6 +53,15 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
         else {
             return new DefaultWebMvcTagsProvider();
         }
+    }
+
+    @Bean
+    public CommonMetricsFilter commonMetricsFilter(MetricsProperties properties) {
+        commonMetricsFilter = new CommonMetricsFilter(metricsProperties, properties);
+        if (k8sMetricsFilter != null) {
+            k8sMetricsFilter.setCommonMetricsFilter(commonMetricsFilter);
+        }
+        return commonMetricsFilter;
     }
 
     @Override

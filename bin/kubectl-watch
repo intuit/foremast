@@ -4,6 +4,3 @@ kubectl patch deploymentmonitor $1 --type="merge" -p '{"spec":{"continuous":true
 echo "Job:"
 kubectl get deploymentmonitor foo -o=jsonpath='{.status.jobId}' -n foremast-examples
 echo ""
-echo "Phase:"
-kubectl get deploymentmonitor foo -o=jsonpath='{.status.phase}' -n foremast-examples
-echo ""

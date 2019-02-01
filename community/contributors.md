@@ -13,3 +13,5 @@ Foremast was created at Intuit by this team:
 - [Ping Zou](https://github.com/pzou1974), Intuit
 - [Srivathsan Canchi](https://github.com/srivathsanvc), Intuit
 - [Debashis Saha](https://github.com/debashissaha), Intuit
+- [Dave Masselink](https://github.com/davemasselink), Intuit
+- [Kian Jones](https://github.com/kianjones4), Intuit
