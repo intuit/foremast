@@ -7,7 +7,6 @@ import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider;
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,20 +28,17 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
 
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
 
-    private K8sMetricsFilter k8sMetricsFilter;
+    private K8sMetricsEndpoint k8sMetricsEndpoint;
 
     private CommonMetricsFilter commonMetricsFilter;
 
     @Bean
-    public FilterRegistrationBean filterRegistrationBean() {
-        k8sMetricsFilter = new K8sMetricsFilter();
+    public K8sMetricsEndpoint k8sMetricsEndpoint() {
+        k8sMetricsEndpoint = new K8sMetricsEndpoint();
         if (commonMetricsFilter != null) {
-            k8sMetricsFilter.setCommonMetricsFilter(commonMetricsFilter);
+            k8sMetricsEndpoint.setCommonMetricsFilter(commonMetricsFilter);
         }
-
-        FilterRegistrationBean bean = new FilterRegistrationBean(k8sMetricsFilter);
-        bean.addUrlPatterns("/metrics", "/metrics/*");
-        return bean;
+        return k8sMetricsEndpoint;
     }
 
     @Bean
@@ -58,8 +54,8 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
     @Bean
     public CommonMetricsFilter commonMetricsFilter(MetricsProperties properties) {
         commonMetricsFilter = new CommonMetricsFilter(metricsProperties, properties);
-        if (k8sMetricsFilter != null) {
-            k8sMetricsFilter.setCommonMetricsFilter(commonMetricsFilter);
+        if (k8sMetricsEndpoint != null) {
+            k8sMetricsEndpoint.setCommonMetricsFilter(commonMetricsFilter);
         }
         return commonMetricsFilter;
     }
