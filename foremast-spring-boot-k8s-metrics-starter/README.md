@@ -34,7 +34,7 @@ k8s.metrics.callerHeader=X-CALLER
 #### How to use in your spring boot application?
 ```xml
     <properties>
-      <foremast-spring-boot-k8s-metrics-starter>0.1.3</foremast-spring-boot-k8s-metrics-starter>
+      <foremast-spring-boot-k8s-metrics-starter>0.1.5</foremast-spring-boot-k8s-metrics-starter>
     </properties>
 
     <dependencies>

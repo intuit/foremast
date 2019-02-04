@@ -19,7 +19,8 @@ public class ActuatorSecurityConfig extends WebSecurityConfigurerAdapter {
     /*
         This spring security configuration does the following
 
-        1. Allow access to the all APIs (/info /health /prometheus).
+        1. Allow access to specific APIs (/info /health /prometheus).
+        2. Allow access to "/actuator/k8s-metrics/*"
      */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -27,7 +28,7 @@ public class ActuatorSecurityConfig extends WebSecurityConfigurerAdapter {
             http.csrf().disable();
         }
         http.authorizeRequests()
-                .antMatchers("/actuator/info", "/actuator/health", "/actuator/prometheus", "/metrics")
+                .antMatchers("/actuator/info", "/actuator/health", "/actuator/prometheus", "/metrics", "/actuator/k8s-metrics/*")
                 .permitAll();
     }
 }
