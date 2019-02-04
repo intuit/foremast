@@ -45,6 +45,10 @@ Make sure you have the following prerequisites:
 
 The [Set Up](docs/guides/installation.md) documentation has step by step instructions on how to setup and run Foremast.
 
+### Running Foremast-Browser UI
+
+Documentation for running the front-end portion of the project can be found [here](foremast-browser/README.md).
+
 ## Roadmap
 
 - January 2019 [v0.5](https://github.com/intuit/foremast/issues?q=is%3Aopen+is%3Aissue+milestone%3A0.5)
