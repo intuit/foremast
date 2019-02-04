@@ -7,12 +7,12 @@ import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 /**
  *
  *
- * /k8s_metrics/enable/sample_metric_name
- * /k8s_metrics/disable/sample_metric_name
+ * /k8s-metrics/enable/sample_metric_name
+ * /k8s-metrics/disable/sample_metric_name
  *
  */
 @WebEndpoint(
-        id = "k8s_metrics"
+        id = "k8s-metrics"
 )
 public class K8sMetricsEndpoint {
 
