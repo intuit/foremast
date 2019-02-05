@@ -144,6 +144,12 @@ export default class ScatterChart extends React.Component {
   buildSeries() {
     let xytData = [];
     let { xSeries, ySeries } = this.props;
+    //immediately enforce the same lengths
+    if(xSeries.data.length !== 0 && ySeries.data.length !== 0){
+      xSeries.data.length = Math.min(xSeries.data.length, ySeries.data.length);
+      ySeries.data.length = Math.min(xSeries.data.length, ySeries.data.length);
+    }
+    //NOTE: this causes us to either LOSE data (from longer series) or create data (for shorter series)
     //series lengths may differ as they are loaded asynchronously, only build series once they are the same length
     if (xSeries.data.length === ySeries.data.length) {
       //TODO:DM - seems fragile to just presume that the points in both series have same sequence of timestamps
