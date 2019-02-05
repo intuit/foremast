@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: demo # Application Name
+    appType: spring-boot # Application Type
+    version: v1
+  name: demo
+  namespace: foremast-examples
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/scheme: "http"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+      - name: app
+        image: docker.io/foremast/k8s-metrics-demo:0.1.5
+        env:
+        - name: APP_NAME
+          value: demo
+        - name: JAVA_OPTS
+          value: "-DerrorType=5xx -Dfrequency=6 -Dfilename=/resources/data3.txt"
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
