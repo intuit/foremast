@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: brain
-        image: docker.io/foremast/foremast-brain:0.0.17-snapshot
+        image: docker.io/foremast/foremast-brain:0.0.18
         imagePullPolicy: Always
         env:
         - name: ES_ENDPOINT
@@ -50,9 +50,9 @@ spec:
         - name: metric_type2
           value: "latency"
         - name: threshold2
-          value: "3"
+          value: "10"
         - name: bound2
-          value: "1"
+          value: "3"
         - name: min_lower_bound2
           value: "0"
         - name: metric_type3
