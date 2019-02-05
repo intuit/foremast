@@ -24,12 +24,13 @@ spec:
     spec:
       containers:
       - name: app
-        image: docker.io/foremast/k8s-metrics-demo:0.1.0
+        image: docker.io/foremast/k8s-metrics-demo:0.1.5
+        imagePullPolicy: Always
         env:
         - name: APP_NAME
           value: demo
         - name: JAVA_OPTS
-          value: "-DerrorType=5xx -Dfrequency=4"
+          value: "-DerrorType=5xx -Dfrequency=6"
         ports:
         - name: http
           containerPort: 8080

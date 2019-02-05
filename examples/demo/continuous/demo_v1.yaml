@@ -30,7 +30,7 @@ spec:
         - name: APP_NAME
           value: demo
         - name: JAVA_OPTS
-          value: "-DerrorType=5xx -Dfrequency=6 -Dfilename=/resources/data3.txt"
+          value: "-DerrorType=5xx -Dfilename=/app/resources/data1.txt"
         imagePullPolicy: Always
         ports:
         - name: http

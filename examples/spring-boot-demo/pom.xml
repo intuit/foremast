@@ -2,13 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
-	<groupId>ai.foremast.metrics</groupId>
-	<artifactId>foremast-spring-boot-demo</artifactId>
-	<version>0.1.0-SNAPSHOT</version>
+	<groupId>ai.foremast.metrics.demo</groupId>
+	<artifactId>k8s-metrics-demo</artifactId>
+	<version>0.1.3</version>
 	<packaging>jar</packaging>
 
-	<name>foremast-spring-boot-demo</name>
+	<name>k8s-metrics-demo</name>
 	<description>Spring Boot Metrics on K8s Demo Project</description>
 
 	<parent>
@@ -24,8 +23,9 @@
 		<java.version>1.8</java.version>
 		<metrics.version>4.0.2</metrics.version>
 		<start-class>ai.foremast.metrics.demo.K8sMetricsDemoApp</start-class>
-		<foremast-spring-boot-k8s-metrics-starter>0.1.3</foremast-spring-boot-k8s-metrics-starter>
+		<jsk-spring-boot-starter-k8s-metrics>0.1.3</jsk-spring-boot-starter-k8s-metrics>
 	</properties>
+
 
 	<dependencies>
 
@@ -36,9 +36,9 @@
 
 		<!-- K8s Metrics Starter which is to simplify the metrics usage on K8s -->
 		<dependency>
-			<groupId>ai.foremast.metrics</groupId>
-			<artifactId>foremast-spring-boot-k8s-metrics-starter</artifactId>
-			<version>${foremast-spring-boot-k8s-metrics-starter}</version>
+			<groupId>com.intuit.platform.jsk.spring</groupId>
+			<artifactId>jsk-spring-boot-starter-k8s-metrics</artifactId>
+			<version>${jsk-spring-boot-starter-k8s-metrics}</version>
 		</dependency>
 
 		<dependency>
@@ -65,5 +65,21 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<uniqueVersion>false</uniqueVersion>
+			<id>scm.dev.snap.repo</id>
+			<name>SNAPSHOT REPO</name>
+			<url>http://nexus.intuit.com/nexus/content/repositories/Intuit.Snapshots</url>
+			<layout>default</layout>
+		</snapshotRepository>
+		<repository>
+			<id>scm.int.rel.repo</id>
+			<name>RELEASE REPO</name>
+			<url>http://nexus.intuit.com/nexus/content/repositories/Intuit.Releases</url>
+			<layout>default</layout>
+		</repository>
+	</distributionManagement>
 
 </project>
