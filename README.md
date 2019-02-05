@@ -1,7 +1,6 @@
 # Foremast
 [![Build Status](https://api.travis-ci.org/intuit/foremast.svg?branch=master)](https://www.travis-ci.org/intuit/foremast)
 [![Go Report Card](https://goreportcard.com/badge/github.com/intuit/foremast)](https://goreportcard.com/report/github.com/intuit/foremast)
-[![Coverage Status](https://coveralls.io/repos/github/intuit/foremast/badge.svg?branch=master)](https://coveralls.io/github/intuit/foremast?branch=master)
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
 
@@ -27,6 +26,8 @@ It addresses following problems in an enterprise environment of Kubernetes:
 * Metrics anomaly aggregated at service or API level
 * Aggregate service health check across multiple K8s clusters
 
+![](docs/guides/foremast_arch.png)
+
 The [architecture and design](docs/guides/design.md) documentation provide a detailed overview of the system and an under the hood view of how Foremast works.
 
 ## Running Foremast
@@ -45,6 +46,10 @@ Make sure you have the following prerequisites:
 ### Setup Steps
 
 The [Set Up](docs/guides/installation.md) documentation has step by step instructions on how to setup and run Foremast.
+
+### Running Foremast-Browser UI
+
+Documentation for running the front-end portion of the project can be found [here](foremast-browser/README.md).
 
 ## Roadmap
 

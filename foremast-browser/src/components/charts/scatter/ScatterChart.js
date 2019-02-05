@@ -1,12 +1,7 @@
 import React from 'react';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import PropTypes from 'prop-types';
 import Highcharts from 'highcharts';
 import Highcharts3d from 'highcharts/highcharts-3d'; //necessary for 'scatter3d' series type
 import HighchartsReact from 'highcharts-react-official';
-
-import * as highlightActions from '../../../actions/highlightActions';
 
 Highcharts3d(Highcharts);
 
@@ -82,7 +77,7 @@ Highcharts.setOptions({
     })
 });
 
-class ScatterChart extends React.Component {
+export default class ScatterChart extends React.Component {
   render() {
     let options = {
       chart: {
@@ -90,7 +85,6 @@ class ScatterChart extends React.Component {
         animation: false,
         options3d: {
           enabled: true,
-          //beta: 90,
           depth: 400,
           viewDistance: 5,
           fitToPlot: false,
@@ -102,12 +96,8 @@ class ScatterChart extends React.Component {
         }
       },
       title: {
-        text: 'Time vs CPU vs Memory'
+        text: 'Time by 5XX Errors by Latency'
       },
-      // subtitle: {
-      //   text: document.ontouchstart === undefined ?
-      //     'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
-      // },
       xAxis: {
         title: {
           text: 'Time'
@@ -119,20 +109,19 @@ class ScatterChart extends React.Component {
       },
       yAxis: {
         title: {
-          text: 'CPU %'
+          text: 'Error Count'
         }
       },
       zAxis:{
         title: {
-          text: 'Memory (MB)'
+          text: 'Latency (ms)'
         }
       },
       tooltip: {
         formatter: function() {
-          return  ('<b>' + this.series.name +'</b><br/>' +
-            Highcharts.dateFormat('%e%b%Y %H:%M:%S', new Date(this.x)) +
-            '<br/>CPU: ' + this.y.toFixed(5) + ' %' +
-            '<br/>Memory:' + this.point.z.toFixed(2) + ' MB');
+          return  (Highcharts.dateFormat('%e%b%Y %H:%M:%S', new Date(this.x)) +
+            '<br/>Error Count: ' + this.y.toFixed(0) +
+            '<br/>Latency:' + this.point.z.toFixed(2) + ' ms');
         }
       },
       series: this.buildSeries(),
@@ -161,14 +150,12 @@ class ScatterChart extends React.Component {
       ySeries.data.length = Math.min(xSeries.data.length, ySeries.data.length);
     }
     //NOTE: this causes us to either LOSE data (from longer series) or create data (for shorter series)
-    //let timeDiffMs = +Infinity;
     //series lengths may differ as they are loaded asynchronously, only build series once they are the same length
     if (xSeries.data.length === ySeries.data.length) {
       //TODO:DM - seems fragile to just presume that the points in both series have same sequence of timestamps
       for(let i = 0; i < xSeries.data.length; i++){
-        //timeDiffMs = highlight.timestamp - xSeries.data[i][0];
         xytData.push([
-          xSeries.data[i][0],
+          ySeries.data[i][0],
           ySeries.data[i][1],
           xSeries.data[i][1],
         ]);
@@ -176,7 +163,7 @@ class ScatterChart extends React.Component {
     }
     let xytSeries = {
       type: 'scatter3d',
-      name: 'Memory vs CPU',
+      name: 'Errors by Latency',
       data: xytData,
       marker: {
         radius: 2
@@ -185,19 +172,3 @@ class ScatterChart extends React.Component {
     return [xytSeries];
   }
 }
-
-ScatterChart.propTypes = {
-  highlightActions: PropTypes.object,
-  highlight: PropTypes.object
-};
-
-const mapStoreToProps = store => ({highlight: store.highlight});
-
-const mapDispatchToProps = dispatch => ({
-  highlightActions: bindActionCreators(highlightActions, dispatch)
-});
-
-export default connect(
-  mapStoreToProps,
-  mapDispatchToProps
-)(ScatterChart);
