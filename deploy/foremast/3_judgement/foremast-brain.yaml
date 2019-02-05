@@ -84,3 +84,39 @@ spec:
             cpu: 100m
           requests:
             cpu: 100m
+        ports:
+        - containerPort: 8000
+          name: metrics
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foremast-brain
+  namespace: foremast
+  labels:
+    app: foremast-brain
+spec:
+  selector:
+    app: foremast-brain
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: metrics
+    protocol: TCP
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: foremast-brain
+  namespace: foremast
+spec:
+  selector:
+    matchLabels:
+      app: foremast-brain
+  endpoints:
+  - port: metrics
+    targetPort: 8000
+    scheme: http
+    path: /metrics
