@@ -37,7 +37,7 @@ public class FileErrorGenerator implements Runnable {
     @PostConstruct
     public void init() {
         if (url != null) {
-            try (FileInputStream fstream = new FileInputStream(filename)){
+            try (FileInputStream fstream = new FileInputStream(filename)) {
               BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
 
               String strLine;

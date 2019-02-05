@@ -1,1 +1,1 @@
-mvn clean install --settings settings.xml
+mvn clean install
