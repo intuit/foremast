@@ -26,6 +26,8 @@ It addresses following problems in an enterprise environment of Kubernetes:
 * Metrics anomaly aggregated at service or API level
 * Aggregate service health check across multiple K8s clusters
 
+![](docs/guides/foremast_arch.png)
+
 The [architecture and design](docs/guides/design.md) documentation provide a detailed overview of the system and an under the hood view of how Foremast works.
 
 ## Running Foremast
