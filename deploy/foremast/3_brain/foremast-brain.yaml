@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: brain
-        image: docker.io/foremast/foremast-brain:0.0.18
+        image: docker.io/foremast/foremast-brain:0.0.19-snapshot
         imagePullPolicy: Always
         env:
         - name: ES_ENDPOINT
