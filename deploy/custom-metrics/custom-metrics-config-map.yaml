@@ -6,6 +6,24 @@ metadata:
 data:
   config.yaml: |
     rules:
+    - seriesQuery: '{__name__=~"^namespace_app.*",namespace!="",app!=""}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          app:
+            {group: "apps", resource: "deployment"}
+      metricsQuery: sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)
+    - seriesQuery: '{__name__=~"^namespace_app_per_pod.*",namespace!="",app!=""}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          app:
+            {group: "apps", resource: "deployment"}
+      metricsQuery: sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)
     - seriesQuery: '{__name__=~"^container_.*",container_name!="POD",namespace!="",pod_name!=""}'
       seriesFilters: []
       resources:
@@ -49,6 +67,7 @@ data:
     - seriesQuery: '{namespace!="",__name__!~"^container_.*"}'
       seriesFilters:
       - isNot: .*_total$
+      - isNot: ^namespace_app.*$
       resources:
         template: <<.Resource>>
       name:
@@ -58,6 +77,7 @@ data:
     - seriesQuery: '{namespace!="",__name__!~"^container_.*"}'
       seriesFilters:
       - isNot: .*_seconds_total
+      - isNot: ^namespace_app.*$
       resources:
         template: <<.Resource>>
       name:
@@ -65,7 +85,8 @@ data:
         as: ""
       metricsQuery: sum(rate(<<.Series>>{<<.LabelMatchers>>}[5m])) by (<<.GroupBy>>)
     - seriesQuery: '{namespace!="",__name__!~"^container_.*"}'
-      seriesFilters: []
+      seriesFilters:
+      - isNot: ^namespace_app.*$
       resources:
         template: <<.Resource>>
       name:

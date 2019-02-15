@@ -35,9 +35,18 @@ public class LoadGenerator implements Runnable {
 
     private Runner[] runners;
 
-    private String url = "http://localhost:8080/load?";
+    private String url = "http://localhost:8080/load";
 
     private Thread mainThread;
+
+
+    public LoadGenerator() {
+
+    }
+
+    public LoadGenerator(String url) {
+        this.url = url;
+    }
 
     private static class DataPoint {
         int traffic;
@@ -53,7 +62,7 @@ public class LoadGenerator implements Runnable {
             if (vals.length == 3) {
                 traffic = Integer.parseInt(vals[0]);
                 latency = Float.parseFloat(vals[1]);
-                error = Float.parseFloat(vals[1]);
+                error = Float.parseFloat(vals[2]);
             }
         }
     }
@@ -96,12 +105,15 @@ public class LoadGenerator implements Runnable {
         protected void doRun() {
             try {
                 DataPoint point = this.point;
-                int count = (int) (1000.00 / point.latency);
-                for (int j = 0; j < count; j++) {
-                    URL u = new URL(url + "?latency=" + point.latency + "&errorRate=" + point.error);
-                    try (InputStream input = u.openStream()) {
-                    } catch (Exception ex) {
-                    }
+                int expectedTime = 1000;
+                URL u = new URL(url + "?latency=" + point.latency + "&errorRate=" + point.error);
+                long start = System.currentTimeMillis();
+                try (InputStream input = u.openStream()) {
+                } catch (Exception ex) {
+                }
+                long time = System.currentTimeMillis() - start;
+                if (time < expectedTime) {
+                    Thread.sleep(expectedTime-time);
                 }
             } catch (Exception ex) {
             }
@@ -134,7 +146,7 @@ public class LoadGenerator implements Runnable {
     public void init() {
         if (url != null) {
             int maxThreads = 10;
-            try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("/load.txt")) {
+            try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("load.txt")) {
                 BufferedReader br = new BufferedReader(new InputStreamReader(input));
 
                 String strLine = br.readLine(); //Header
@@ -171,6 +183,7 @@ public class LoadGenerator implements Runnable {
 
                 for(int i = 0; i < runners.length; i ++) {
                     if (i < currentThreads) {
+                        runners[i].setPoint(point);
                         runners[i].setEnabled(true);
                     }
                     else {
@@ -186,5 +199,14 @@ public class LoadGenerator implements Runnable {
                 }
             }
         }
+    }
+
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.out.println("Usage: java LoadGenerator <base_url>");
+            System.exit(0);
+        }
+        LoadGenerator loadGenerator = new LoadGenerator(args[0]);
+        loadGenerator.init();
     }
 }

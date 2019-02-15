@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Random;
 
 @RestController
@@ -28,19 +30,18 @@ public class QueueController {
 
 
     @GetMapping("/error5xx")
-    public void error5xx() {
-        throw new IllegalStateException("5xx");
+    public void error5xx(HttpServletResponse response) throws IOException {
+        response.sendError(501, "Internal error");
     }
 
 
     @GetMapping("/load")
-    public void load(@RequestParam("latency") float latency, @RequestParam("errorRate") float errorRate) {
-
+    public void load(@RequestParam("latency") float latency, @RequestParam("errorRate") float errorRate, HttpServletResponse response) throws IOException {
         float error = errorRate * 100;
         if (error > 0.1) {
-            int random = random.nextInt(1000);
-            if (error * 10 < random) {
-                throw new IllegalStateException("5xx");
+            int r = random.nextInt(1000);
+            if (r < error * 10) {
+                response.sendError(501, "Internal error");
             }
         }
 
