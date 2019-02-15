@@ -2,28 +2,33 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: foo # Application Name
+    app: demo # Application Name
     appType: spring-boot # Application Type
-  name: foo
+  name: demo
   namespace: foremast-examples
 spec:
   replicas: 5
   selector:
     matchLabels:
-      app: foo
+      app: demo
   template:
     metadata:
       labels:
-        app: foo
+        app: demo
         version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/scheme: "http"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: app
-        image: docker.io/foremast/k8s-metrics-demo:0.1.0
+        image: docker.io/foremast/k8s-metrics-demo:0.1.5
         imagePullPolicy: Always
         env:
         - name: APP_NAME
-          value: foo
+          value: demo
         ports:
-        - name: web
+        - name: http
           containerPort: 8080

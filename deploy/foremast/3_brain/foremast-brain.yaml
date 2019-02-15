@@ -50,9 +50,9 @@ spec:
         - name: metric_type2
           value: "latency"
         - name: threshold2
-          value: "4"
+          value: "10"
         - name: bound2
-          value: "1"
+          value: "3"
         - name: min_lower_bound2
           value: "0"
         - name: metric_type3
@@ -84,3 +84,39 @@ spec:
             cpu: 100m
           requests:
             cpu: 100m
+        ports:
+        - containerPort: 8000
+          name: metrics
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foremast-brain
+  namespace: foremast
+  labels:
+    app: foremast-brain
+spec:
+  selector:
+    app: foremast-brain
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: metrics
+    protocol: TCP
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: foremast-brain
+  namespace: foremast
+spec:
+  selector:
+    matchLabels:
+      app: foremast-brain
+  endpoints:
+  - port: metrics
+    targetPort: 8000
+    scheme: http
+    path: /metrics
