@@ -1,15 +1,20 @@
 import React from 'react';
+import { Provider } from 'react-redux';
 import { render } from 'react-dom';
-import { BrowserRouter, Route, Switch } from 'react-router-dom';
+import { Router, Route, Switch } from 'react-router-dom';
 
 import App from './App';
+import store from './store';
+import history from './history';
 
 render(
-  <BrowserRouter>
-    <Switch>
-      <Route path="/:namespace/:appName" component={App} />
-    </Switch>
-  </BrowserRouter>,
+  <Provider store={store}>
+      <Router history={history}>
+        <Switch>
+          <Route path="/:namespace/:appName" component={App} />
+        </Switch>
+    </Router>
+  </Provider>,
   document.getElementById('root')
 );
 

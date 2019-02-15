@@ -5,6 +5,7 @@ import HighchartsReact from 'highcharts-react-official';
 
 HighchartsMore(Highcharts);
 
+//TODO:DM - how to better encapsulate this in a react friendly way?
 (function(H) {
   H.Pointer.prototype.reset = function() {
     return undefined;
@@ -53,6 +54,7 @@ export default class TimeseriesChart extends React.Component {
       },
       xAxis: {
         type: 'datetime',
+        plotLines: this.buildAnnotations(),
         crosshair: {
           enabled: true
         },
@@ -67,7 +69,6 @@ export default class TimeseriesChart extends React.Component {
       },
       yAxis: {
         title: {
-          //TODO:DM - change this based on metric name selected, may need to hard-code unit with rest of data in App.js
           text: this.props.unit,
         },
         min: 0,
@@ -113,7 +114,6 @@ export default class TimeseriesChart extends React.Component {
         enabled: false
       },
     };
-
     return (
       <HighchartsReact
         highcharts={Highcharts}
@@ -126,13 +126,13 @@ export default class TimeseriesChart extends React.Component {
     let rangeData = [];
     const { baseSeries, upperSeries, lowerSeries, anomalySeries } = this.props;
     //series lengths may differ as they are loaded asynchronously, only build series once they are the same length
-    if (upperSeries.data.length === lowerSeries.data.length) {
+    if (upperSeries.length === lowerSeries.length) {
       //TODO:DM - seems fragile to just presume that the points in both series have same sequence of timestamps
-      for(let i = 0; i < upperSeries.data.length; i++){
+      for(let i = 0; i < upperSeries.length; i++){
         rangeData.push([
-          upperSeries.data[i][0],
-          lowerSeries.data[i][1],
-          upperSeries.data[i][1]
+          upperSeries[i][0],
+          lowerSeries[i][1],
+          upperSeries[i][1]
         ]);
       }
     }
@@ -144,6 +144,25 @@ export default class TimeseriesChart extends React.Component {
       fillOpacity: 0.1,
       color: '#A6EA8A'
     };
-    return [baseSeries, anomalySeries, rangeSeries];
+    return [
+      {name: 'Measured', data: baseSeries},
+      anomalySeries, rangeSeries
+    ];
+  }
+
+  buildAnnotations() {
+    const { annotations } = this.props;
+    let plotLines = [];
+    annotations.forEach(annotation => {
+      plotLines.push({
+        color: 'grey',
+        width: 2,
+        value: annotation.timestamp,
+        label: {
+          text: annotation.name
+        }
+      });
+    });
+    return plotLines;
   }
 }

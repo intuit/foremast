@@ -94,8 +94,5 @@ export const METRICS_MAP = {
   }
 };
 
-  // 'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})': [{
-  //   type: BASE,
-  //   name: 'sum by (label_version) (kube_pod_labels{label_app="foo", namespace="foremast-examples"})',
-  //   tags: ''
-  // }]
+export const ANNOTATION_QUERY =
+  'sum by (label_version) (kube_pod_labels{label_app="demo", namespace="foremast-examples"})';
