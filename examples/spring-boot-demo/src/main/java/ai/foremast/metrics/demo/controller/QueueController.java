@@ -36,12 +36,13 @@ public class QueueController {
 
 
     @GetMapping("/load")
-    public void load(@RequestParam("latency") float latency, @RequestParam("errorRate") float errorRate, HttpServletResponse response) throws IOException {
+    public String load(@RequestParam("latency") float latency, @RequestParam("errorRate") float errorRate, HttpServletResponse response) throws IOException {
         float error = errorRate * 100;
         if (error > 0.1) {
             int r = random.nextInt(1000);
             if (r < error * 10) {
                 response.sendError(501, "Internal error");
+                return "Error";
             }
         }
 
@@ -53,5 +54,6 @@ public class QueueController {
         }
         catch(Exception ex) {
         }
+        return "OK";
     }
 }
