@@ -12,6 +12,7 @@ render(
       <Router history={history}>
         <Switch>
           <Route path="/:namespace/:appName" component={App} />
+          <Route path="/" component={App} />
         </Switch>
     </Router>
   </Provider>,
