@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 import initialState from '../store/initialState';
 import {
   ADD_BASE_METRIC, RECEIVE_METRIC_DATA,
@@ -52,7 +54,9 @@ const parseMetricData = (data, type, scale, baseSeries) => {
     case UPPER:
     case LOWER:
       //each of these series provides just 1 data series, use 0th index of data arr
-      return data[0].values.map(point => [1000 * point[0], scale * parseFloat(point[1])]);
+      return data[0] && _.isArray(data[0].values) ?
+        data[0].values.map(point => [1000 * point[0], scale * parseFloat(point[1])]) :
+        [];
     case ANOMALY:
       return parseAnomalyData(data[0], baseSeries);
     default:
@@ -111,32 +115,45 @@ const parseAnnotationData = (data) => {
   let min, nextIdcs;
   let allPointsExhausted = false;
   let anyNotExhausted;
+
+  //helper function to be used below; avoids creating function in while loop
+  //need to define in parse func to have closure over necessary fn state
+  const checkMetricArray = (val, idx) => {
+    //compare nextIdc timestamp values to find min
+    //ensure our indices don't grow larger than arrs
+    if(val.values.length > nextIdcs[idx]){
+      //if this is the new min value (earliest time) seen
+      if(val.values[nextIdcs[idx]][0] < min.val){
+        min.val = val.values[nextIdcs[idx]][0];
+        min.idx = idx;
+      }
+      //multiple at same timestamp
+      else if (val.values[nextIdcs[idx]][0] === min.val){
+        //increment past this effectively duplicate timestamp
+        nextIdcs[idx]++;
+      }
+      anyNotExhausted = true;
+    }
+  };
+
+  //only parse to find transition when there are 2 or more arrays in resp
   if(data.length >= 2) {
-    nextIdcs = new Array(data.length).fill(0); //create array of zeros of same length
-    //while not done with arrays O(N) where N is the total number of timesteps across all arrs
+    //create array of zeros of same length
+    nextIdcs = new Array(data.length).fill(0);
+    //while not done with arrays O(N) where N is the total number of timesteps
+    //across all arrs
     while(!allPointsExhausted){
       min = {val: Infinity, idx: -1};
       anyNotExhausted = false;
       //for each arr
-      data.forEach((val, idx) => {
-        //compare nextIdc timestamp values to find min
-        if(val.values.length > nextIdcs[idx]){ //our indices don't grow larger than arrs
-          if(val.values[nextIdcs[idx]][0] < min.val){ //if this is the new min value (earliest time) seen
-            min.val = val.values[nextIdcs[idx]][0];
-            min.idx = idx;
-          } else if (val.values[nextIdcs[idx]][0] === min.val){ //multiple at same timestamp
-            //increment past this effectively duplicate timestamp
-            nextIdcs[idx]++;
-          }
-          anyNotExhausted = true;
-        }
-      });
+      data.forEach(checkMetricArray);
       //incr that arr's idx
       nextIdcs[min.idx]++;
       //decide active name
       newName = data[min.idx] ? data[min.idx].metric.label_version : '';
       if(newName && activeName !== newName){
-        //ensure we're changing from a non-empty name and this time doesn't represent the same as an earlier annotation
+        //ensure we're changing from a non-empty name and this time doesn't
+        //represent the same as an earlier annotation
         if(activeName){
           annotations.push({timestamp: min.val * 1000, name: newName})
         }
