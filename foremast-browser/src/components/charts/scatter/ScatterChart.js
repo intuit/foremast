@@ -5,6 +5,7 @@ import HighchartsReact from 'highcharts-react-official';
 
 Highcharts3d(Highcharts);
 
+//TODO:DM - how to make this next block of Highcharts event grabbing better fit into react app
 setTimeout(function () {
   let chart;
 
@@ -145,19 +146,19 @@ export default class ScatterChart extends React.Component {
     let xytData = [];
     let { xSeries, ySeries } = this.props;
     //immediately enforce the same lengths
-    if(xSeries.data.length !== 0 && ySeries.data.length !== 0){
-      xSeries.data.length = Math.min(xSeries.data.length, ySeries.data.length);
-      ySeries.data.length = Math.min(xSeries.data.length, ySeries.data.length);
+    if(xSeries.length !== 0 && ySeries.length !== 0){
+      xSeries.length = Math.min(xSeries.length, ySeries.length);
+      ySeries.length = Math.min(xSeries.length, ySeries.length);
     }
     //NOTE: this causes us to either LOSE data (from longer series) or create data (for shorter series)
     //series lengths may differ as they are loaded asynchronously, only build series once they are the same length
-    if (xSeries.data.length === ySeries.data.length) {
+    if (xSeries.length === ySeries.length) {
       //TODO:DM - seems fragile to just presume that the points in both series have same sequence of timestamps
-      for(let i = 0; i < xSeries.data.length; i++){
+      for(let i = 0; i < xSeries.length; i++){
         xytData.push([
-          ySeries.data[i][0],
-          ySeries.data[i][1],
-          xSeries.data[i][1],
+          ySeries[i][0],
+          ySeries[i][1],
+          xSeries[i][1],
         ]);
       }
     }
