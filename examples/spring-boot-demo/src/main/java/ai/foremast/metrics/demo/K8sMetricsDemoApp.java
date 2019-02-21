@@ -2,6 +2,7 @@ package ai.foremast.metrics.demo;
 
 import ai.foremast.metrics.demo.error.ErrorGenerator;
 import ai.foremast.metrics.demo.error.FileErrorGenerator;
+import ai.foremast.metrics.demo.load.LoadGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -9,6 +10,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class K8sMetricsDemoApp {
 
     private static ErrorGenerator errorGenerator;
+
+    private static LoadGenerator loadGenerator;
 
     public static void main(String[] args) {
         SpringApplication.run(K8sMetricsDemoApp.class, args);
@@ -30,7 +33,10 @@ public class K8sMetricsDemoApp {
                  errorGenerator = new ErrorGenerator(countPerSecond, errorType);
                  errorGenerator.init();
             }
-
+        }
+        else if ("load".equalsIgnoreCase(errorType)) {
+            loadGenerator = new LoadGenerator();
+            loadGenerator.init();
         }
     }
 }
