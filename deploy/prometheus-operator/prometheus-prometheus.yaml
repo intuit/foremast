@@ -11,7 +11,7 @@ spec:
     - name: alertmanager-main
       namespace: monitoring
       port: web
-  baseImage: docker.intuit.com/dev/containers/prometheus/prometheus
+  baseImage: quay.io/prometheus/prometheus
   nodeSelector:
     beta.kubernetes.io/os: linux
   replicas: 2
@@ -26,7 +26,7 @@ spec:
   serviceAccountName: prometheus-k8s
   serviceMonitorNamespaceSelector: {}
   serviceMonitorSelector: {}
-  version: v2.4.5
+  version: v2.4.3
   additionalScrapeConfigs:
     # Example scrape config for pods
     #
