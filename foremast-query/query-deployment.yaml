@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foremast-query
+  namespace: foremast
+  labels:
+    app: foremast-query
+spec:
+  selector:
+    matchLabels:
+      app: foremast-query
+  template:
+    metadata:
+      labels:
+        app: foremast-query
+    spec:
+      containers:
+      - image: docker.io/kjones43/foremast-query:1.7
+        imagePullPolicy: Always
+        name: query
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+        ports:
+        - containerPort: 8011
+          name: http
+        env:
+          - name: ENDPOINT
+            # value: http://foremast-service.foremast.
+            value: http://10.97.93.44:8099/v1/healthcheck/create
+      terminationGracePeriodSeconds: 10
