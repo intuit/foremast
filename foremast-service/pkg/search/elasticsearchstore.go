@@ -44,6 +44,9 @@ func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc model
 			CurrentConfig:    doc.CurrentConfig,
 			BaselineConfig:   doc.BaselineConfig,
 			HistoricalConfig: doc.HistoricalConfig,
+			CurrentMetricStore:    doc.CurrentMetricStore,
+			BaselineMetricStore:   doc.BaselineMetricStore,
+			HistoricalMetricStore: doc.HistoricalMetricStore,
 			Status:           "initial",
 			StatusCode:       doc.StatusCode,
 			Strategy:         doc.Strategy,
@@ -154,6 +157,9 @@ func ConvertDocumentRequestToString(doc models.DocumentRequest) string {
 	buffer.WriteString(string(doc.CurrentConfig))
 	buffer.WriteString(string(doc.BaselineConfig))
 	buffer.WriteString(string(doc.HistoricalConfig))
+	buffer.WriteString(string(doc.CurrentMetricStore))
+	buffer.WriteString(string(doc.BaselineMetricStore))
+	buffer.WriteString(string(doc.HistoricalMetricStore))
 	buffer.WriteString(doc.Strategy)
 	log.Print("create document request :", buffer.String())
 	return buffer.String()
