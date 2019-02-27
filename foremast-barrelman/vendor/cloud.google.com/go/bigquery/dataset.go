@@ -15,13 +15,13 @@
 package bigquery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"cloud.google.com/go/internal/optional"
 	"cloud.google.com/go/internal/trace"
-	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 	"google.golang.org/api/iterator"
 )
@@ -59,7 +59,7 @@ type DatasetMetadataToUpdate struct {
 	Description optional.String // The user-friendly description of this table.
 	Name        optional.String // The user-friendly name for this dataset.
 
-	// DefaultTableExpiration is the the default expiration time for new tables.
+	// DefaultTableExpiration is the default expiration time for new tables.
 	// If set to time.Duration(0), new tables never expire.
 	DefaultTableExpiration optional.Duration
 

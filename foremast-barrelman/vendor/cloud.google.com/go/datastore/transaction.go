@@ -15,10 +15,10 @@
 package datastore
 
 import (
+	"context"
 	"errors"
 
 	"cloud.google.com/go/internal/trace"
-	"golang.org/x/net/context"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

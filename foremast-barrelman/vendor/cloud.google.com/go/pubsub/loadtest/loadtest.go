@@ -20,6 +20,7 @@ package loadtest
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"log"
 	"runtime"
@@ -31,7 +32,6 @@ import (
 	"cloud.google.com/go/pubsub"
 	pb "cloud.google.com/go/pubsub/loadtest/pb"
 	"github.com/golang/protobuf/ptypes"
-	"golang.org/x/net/context"
 	"golang.org/x/time/rate"
 )
 

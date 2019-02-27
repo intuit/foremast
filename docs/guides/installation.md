@@ -83,14 +83,15 @@ foremast-engine-748d45cc98-qph54   1/1     Running   0          5h
 
 Foo is a spring boot application with a metric "http\_server\_requests\_errors", the metric shows the errors happen during the http requests.  **V1** is a normal application, the error count is always **ZERO. V2** is an error generator version, it can generate 5xx error based on the environment settings. This example is to simulate a typical deployment error, then foremast helps to roll it back.
 
-#### Run foo v1
+#### Run demo v1
 
 ```text
-$ kubectl create -Rf examples/foo/v1/
-$ kubectl get pods
+$ kubectl create -f examples/demo/
+$ kubectl create -f examples/demo/rollingUpdate/demo_v1.yaml
+$ kubectl get pods -n foremast-examples
 
 NAME                   READY   STATUS    RESTARTS   AGE
-foo-6948547dcd-9dglf   1/1     Running   0          7m
+demo-6948547dcd-9dglf   1/1     Running   0          7m
 ```
 
 #### Metrics in prometheus
@@ -108,18 +109,18 @@ Handling connection for 9090
 You can type "[http://localhost:9090/graph](http://localhost:9090/graph)" in your browser after that.   
 Search for`namespace_app_per_pod:http_server_requests_errors` and display the metric with tab **Graph**, you are going to see a error chart.
 
-#### Run foo v2
+#### Run demo v2
 
 Wait at least **5 minutes** to let it have historical data. Then roll out V2 to see what will happen.
 
 ```text
-$ kubectl replace -f examples/foo/v2/foo_v2.yaml
+$ kubectl replace -f examples/demo/rollingUpdate/demo_v2.yaml
 ```
 
 Use following command to check the deployment status
 
 ```text
-$ kubectl get deploymentmonitor foo -o yaml
+$ kubectl get deploymentmonitor demo -o yaml -n foremast-examples
 ```
 
 It will show following information, if the deployment is considered as unhealthy, it will show "Unhealthy" and roll it back the v1.
@@ -135,7 +136,7 @@ status:
 Once you see the "Unhealthy" phase, foremast triggers a rollback, you can check the running version with following command, it should run the V1.
 
 ```text
-$ kubectl get deployment foo -o yaml
+$ kubectl get deployment demo -o yaml -n foremast-examples
 ```
 
 Within the prometheus metric chart, you can also see the error count trend after couple minutes.
@@ -149,7 +150,8 @@ Within the prometheus metric chart, you can also see the error count trend after
 ### Uninstall All-in-One
 
 ```text
-$ kubectl delete -Rf examples/foo/v1
+$ kubectl delete -f examples/demo/rollingUpdate/demo_v1.yaml
+# kubectl delete -f examples/demo/
 $ kubectl delete -Rf deploy/foremast/
 $ kubectl delete -Rf deploy/prometheus-operator/
 ```
@@ -157,7 +159,8 @@ $ kubectl delete -Rf deploy/prometheus-operator/
 ### Uninstall Foremast and example only
 
 ```text
-$ kubectl delete -Rf examples/foo/v1
+$ kubectl delete -f examples/demo/rollingUpdate/demo_v1.yaml
+# kubectl delete -Rf examples/demo/
 $ kubectl delete -Rf deploy/foremast/
 ```
 

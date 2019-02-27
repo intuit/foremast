@@ -17,13 +17,13 @@ limitations under the License.
 package spanner
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"golang.org/x/net/context"
 	edpb "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

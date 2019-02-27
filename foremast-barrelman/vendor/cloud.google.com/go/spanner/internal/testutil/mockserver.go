@@ -17,6 +17,7 @@ limitations under the License.
 package testutil
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -28,7 +29,6 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	proto3 "github.com/golang/protobuf/ptypes/struct"
 	pbt "github.com/golang/protobuf/ptypes/timestamp"
-	"golang.org/x/net/context"
 	sppb "google.golang.org/genproto/googleapis/spanner/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

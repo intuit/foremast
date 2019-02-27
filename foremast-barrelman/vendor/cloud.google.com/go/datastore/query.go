@@ -15,6 +15,7 @@
 package datastore
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -25,7 +26,6 @@ import (
 
 	"cloud.google.com/go/internal/trace"
 	wrapperspb "github.com/golang/protobuf/ptypes/wrappers"
-	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
 )

@@ -1,0 +1,21 @@
+.header {
+  background-color: #326CE5;
+  overflow: hidden;
+  height: 50px;
+}
+
+.header img {
+  height: 40px;
+  width: auto;
+  float: left;
+  padding: 5px 10px;
+}
+
+.header h1 {
+  color: #FFFFFF;
+  text-align: left;
+  font-size: 12pt;
+  font-family: 'Arial';
+  line-height: 20px;
+  padding: 5px 0;
+}

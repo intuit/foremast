@@ -15,6 +15,7 @@
 package bigquery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -22,7 +23,6 @@ import (
 	"cloud.google.com/go/internal"
 	"cloud.google.com/go/internal/trace"
 	gax "github.com/googleapis/gax-go"
-	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"

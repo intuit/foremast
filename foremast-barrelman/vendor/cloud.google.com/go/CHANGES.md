@@ -1,5 +1,60 @@
 # Changes
 
+## v0.34.0
+
+- functions/metadata:
+  - Switch to using JSON in context.
+  - Make Resource a value.
+- vision: Fix ProductSearch return type.
+- datastore: Add an example for how to handle MultiError.
+
+## v0.33.1
+
+- compute: Removes an erroneously added go.mod.
+- logging: Populate source location in fromLogEntry.
+
+## v0.33.0
+
+- bttest:
+  - Add support for apply_label_transformer.
+- expr:
+  - Add expr library.
+- firestore:
+  - Support retrieval of missing documents.
+- kms:
+  - Add IAM methods.
+- pubsub:
+  - Clarify extension documentation.
+- scheduler:
+  - Add v1beta1 client.
+- vision:
+  - Add product search helper.
+  - Add new product search client.
+
+## v0.32.0
+
+Note: This release is the last to support Go 1.6 and 1.8.
+
+- bigquery:
+    - Add support for removing an expiration.
+    - Ignore NeverExpire in Table.Create.
+    - Validate table expiration time.
+- cbt:
+    - Add note about not supporting arbitrary bytes.
+- datastore:
+    - Align key checks.
+- firestore:
+    - Return an error when using Start/End without providing values.
+- pubsub:
+    - Add pstest Close method.
+    - Clarify MaxExtension documentation.
+- securitycenter:
+    - Add v1beta1 client.
+- spanner:
+    - Allow nil in mutations.
+    - Improve doc of SessionPoolConfig.MaxOpened.
+    - Increase session deletion timeout from 5s to 15s.
+
 ## v0.31.0
 
 - bigtable:
