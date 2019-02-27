@@ -2,8 +2,9 @@ import { dataDomain, dataPath, dataQueryParam, dataStartParam,
   dataEndParam, dataStepParam, dataStepValSec } from '../config/api';
 
 export default class ApiService {
-  static getMetricData(metric, startTimestamp, endTimestamp) {
-    return ApiService.getData(metric.name + metric.tags,
+  static getMetricData(namespace, appName, metric, startTimestamp, endTimestamp) {
+    let tags = tagBuilder(namespace, appName, metric.namespace_key);
+    return ApiService.getData(metric.name + tags,
       startTimestamp, endTimestamp);
   }
   static getAnnotationData(query, startTimestamp, endTimestamp) {
@@ -52,4 +53,9 @@ const encodeParams = params => {
     paramStr = '?' + paramStr
   }
   return paramStr;
+};
+
+const tagBuilder = (namespace, appName, namespaceKey) => {
+  return '{' + namespaceKey + '="' + namespace +
+    '", app="' + appName + '"}';
 };
