@@ -86,6 +86,12 @@ export default class TimeseriesChart extends React.Component {
       navigator: {
         enabled: false
       },
+      rangeSelector:{
+        enabled:false
+      },
+      scrollbar: {
+        enabled: false
+      },
       plotOptions: {
         line: {
           marker: {
@@ -98,6 +104,7 @@ export default class TimeseriesChart extends React.Component {
           }
         },
         series: {
+          pointInterval: 15 * 1000,
           label: {
             connectorAllowed: false
           }
@@ -114,6 +121,7 @@ export default class TimeseriesChart extends React.Component {
         enabled: false
       },
     };
+
     return (
       <HighchartsReact
         highcharts={Highcharts}

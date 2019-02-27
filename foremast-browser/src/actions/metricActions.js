@@ -19,7 +19,7 @@ export const requestMetricData = (baseName, metric, scale, start, end) => {
 export const receiveMetricData = (baseName, metric, scale, results) => ({
   type: types.RECEIVE_METRIC_DATA,
   baseName,
-  metric,
+  metricType: metric.type,
   scale,
   results
 });

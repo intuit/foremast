@@ -72,9 +72,13 @@ class App extends React.Component {
   }
 
   fetchData = () => {
-    //API can't provide more than roughly 7 days of data at 60sec granularity
-    const endTimestamp = moment().subtract(0, 'minutes').unix();
-    const startTimestamp = moment().subtract(15, 'minutes').unix();
+    //API can't provide more than roughly 7 days of data at 60sec granularity,
+    //in practice we'll probably request even quite a bit less; 15min here
+    let endTimestamp = moment().subtract(0, 'minutes').unix();
+    //align requests with 15 sec boundaries to make responses more consistent
+    endTimestamp -= (endTimestamp % 15);
+    let startTimestamp = moment().subtract(15, 'minutes').unix();
+    startTimestamp -= (startTimestamp % 15);
 
     const { namespace, appName } = this.props.match.params;
     this.setState({
