@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foremast-brain
+  namespace: foremast
+  labels:
+    app: foremast-brain
+spec:
+  selector:
+    matchLabels:
+      app: foremast-brain
+  template:
+    metadata:
+      labels:
+        app: foremast-brain
+    spec:
+      containers:
+      - name: brain
+        image: docker.io/foremast/foremast-brain:0.0.18
+        imagePullPolicy: Always
+        env:
+        - name: ES_ENDPOINT
+          value: "http://elasticsearch-discovery.foremast.svc.cluster.local:9200"
+        - name: ML_ALGORITHM
+          value: moving_average_all
+        - name: threshold
+          value: "2.0"
+        - name: min_lower_bound
+          value: "0"
+        - name: bound
+          value: "1"
+        - name: metric_type_threshold_count
+          value: "5"
+        - name: metric_type0
+          value: "error5xx"
+        - name: threshold0
+          value: "2"
+        - name: bound0
+          value: "1"
+        - name: min_lower_bound0
+          value: "0"
+        - name: metric_type1
+          value: "error4xx"
+        - name: threshold1
+          value: "3"
+        - name: bound1
+          value: "1"
+        - name: min_lower_bound1
+          value: "0"
+        - name: metric_type2
+          value: "latency"
+        - name: threshold2
+          value: "10"
+        - name: bound2
+          value: "3"
+        - name: min_lower_bound2
+          value: "0"
+        - name: metric_type3
+          value: "cpu"
+        - name: threshold3
+          value: "5"
+        - name: bound3
+          value: "1"
+        - name: min_lower_bound3
+          value: "0"
+        - name: metric_type4
+          value: "memory"
+        - name: threshold4
+          value: "5"
+        - name: bound4
+          value: "1"
+        - name: min_lower_bound4
+          value: "0"
+        - name: MIN_MANN_WHITE_DATA_POINTS
+          value: "20"
+        - name: MIN_WILCOXON_DATA_POINTS
+          value: "20"
+        - name: MIN_KRUSKAL_DATA_POINTS
+          value: "5"
+        - name: MAX_STUCK_IN_SECONDS
+          value: "90"
+        resources:
+          limits:
+            cpu: 100m
+          requests:
+            cpu: 100m
+        ports:
+        - containerPort: 8000
+          name: metrics
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foremast-brain
+  namespace: foremast
+  labels:
+    app: foremast-brain
+spec:
+  selector:
+    app: foremast-brain
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: metrics
+    protocol: TCP
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: foremast-brain
+  namespace: foremast
+spec:
+  selector:
+    matchLabels:
+      app: foremast-brain
+  endpoints:
+  - port: metrics
+    targetPort: 8000
+    scheme: http
+    path: /metrics

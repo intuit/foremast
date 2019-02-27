@@ -207,8 +207,10 @@ type DeploymentMonitorSpec struct {
 	// Logs should be monitored by canary deployment
 	Logs []Logs `json:"logs,omitempty"`
 
-	AutoRollback bool `json:"autoRollback,omitempty"`
+	// Continuous monitoring or not
+	Continuous bool `json:"continuous,omitempty"`
 
+	// Remediation action
 	Remediation RemediationAction `json:"remediation,omitempty"`
 
 	// Rollback revision
@@ -261,7 +263,7 @@ const (
 	//Trigger a pause only to reduce the error rate
 	RemediationAutoPause = "AutoPause"
 	//Trigger an auto scaling for specific use cases, for example, connection stack or CPU bump up a lot
-	RemediationAutoScaling = "AutoScaling"
+	//RemediationAutoScaling = "AutoScaling"
 	//Let foremast take care everything for you
 	RemediationAuto = "Auto"
 )

@@ -1,56 +1,65 @@
 # Foremast
 [![Build Status](https://api.travis-ci.org/intuit/foremast.svg?branch=master)](https://www.travis-ci.org/intuit/foremast)
 [![Go Report Card](https://goreportcard.com/badge/github.com/intuit/foremast)](https://goreportcard.com/report/github.com/intuit/foremast)
-[![Coverage Status](https://coveralls.io/repos/github/intuit/foremast/badge.svg?branch=master)](https://coveralls.io/github/intuit/foremast?branch=master)
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
 
 ## Foremast
 
-![](docs/assets/images/foremast-logo.png)
+![](docs/assets/images/logos/Foremast/foremast-logo-blue.png)
 
-Foremast is a service health detection and canary analysis system for Kubernetes.
+Foremast is a cloud native application health manager for Kubernetes. Foremast leverages observability signals from platforms such as Prometheus, Fluentd and Jaeger and provides timely application health alerts. These alerts are especially important during deployments and other changes that alter application state. This information is then leveraged by Foremast’s action framework - which allows developers and operators to take actions based on the state of the application.
 
-Foremast is an early warning system for detecting problems with the deployment of a new version of a service or component. Production deployments have used manual canary analysis for a few years now in various forms, be it A/B testing, phased rollout, or incremental rollout.
+**_How can developers reliably know that changes made to running software have not degraded the application?_**
 
-Foremast enables automated canary analysis that scores the health of new deployments on the basis of performance, functionality, and quality. In the case of rolling updates, the analysis should also be performed for the cluster as a whole to confirm the success of the upgrade for the whole application.
+Foremast provides early warnings for detecting problems with the deployment of a new version of a service or application on Kubernetes. 
+
+Traditionally, production deployments have used manual canary analysis as the standard mechanism for evaluating application health. Various types of canary analysis exist, such as: A/B testing, phased rollout, or incremental rollout.
+
+Foremast automates the analysis of an application health, by scoring the health of new deployments on the basis of performance, functionality, and quality. This analysis provides a comprehensive picture of an application's health and enables corrective action if a deterioration in health is detected.
 
 It addresses following problems in an enterprise environment of Kubernetes:
 
 * Detect metrics spike or drop due to a deployment
 * Detect impact to downstream services
 * Automated remediation including alert, rollback etc
-* Metrics anomaly Aggregated at service or API level
+* Metrics anomaly aggregated at service or API level
 * Aggregate service health check across multiple K8s clusters
 
-Check out the [architecture and design](docs/guides/design.md).
+![](docs/guides/foremast_arch.png)
 
-## Deploying to a Cluster
+The [architecture and design](docs/guides/design.md) documentation provide a detailed overview of the system and an under the hood view of how Foremast works.
+
+## Running Foremast
+
+Foremast can be run in multiple modes
+- On Minikube
+- On a remote K8s cluster
 
 ### Technical Requirements
 
 Make sure you have the following prerequisites:
 
-* A local Go 1.7+ development environment.
-* Admin access to a Kubernetes cluster.
+* A local Go 1.7+ development environment
+* Admin access to a Kubernetes cluster - this could either be Minikube or a remote cluster.
 
 ### Setup Steps
 
-How to [Set Up](docs/guides/installation.md).
+The [Set Up](docs/guides/installation.md) documentation has step by step instructions on how to setup and run Foremast.
+
+### Running Foremast-Browser UI
+
+Documentation for running the front-end portion of the project can be found [here](foremast-browser/README.md).
 
 ## Roadmap
 
-#### v0.5
-
-*  Controller/CRD with time series modeling
-*  Multi-metrices support
-*  More machine learning models for different time series data behavior
-
+- January 2019 [v0.5](https://github.com/intuit/foremast/issues?utf8=%E2%9C%93&q=is%3Aclosed+is%3Aissue+milestone%3A0.5+)
+- February 2019 [v0.6](https://github.com/intuit/foremast/issues?q=is%3Aopen+is%3Aissue+milestone%3A0.6)
+- March 2019 [v0.7](https://github.com/intuit/foremast/issues?q=is%3Aopen+is%3Aissue+milestone%3A0.7)
 
 
 ## Contributing
 
-We encourage you to get involved with Foremast, as users or contributors and help with code reviews.
+We welcome you to get involved with Foremast. You can contribute either by using Foremast and providing feedback, or contribute to our code, participate in our code and design reviews etc.
 
 Read the [contributing guidelines](docs/guides/contributing.md) to learn about building the project, the project structure, and the purpose of each package.
-

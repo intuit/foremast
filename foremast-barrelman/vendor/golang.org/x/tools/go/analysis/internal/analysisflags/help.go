@@ -3,39 +3,28 @@ package analysisflags
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
 )
 
-const usage = `PROGNAME is a tool for static analysis of Go programs.
+const help = `PROGNAME is a tool for static analysis of Go programs.
 
-PROGNAME examines Go source code and reports suspicious constructs, such as Printf
-calls whose arguments do not align with the format string. It uses heuristics
-that do not guarantee all reports are genuine problems, but it can find errors
-not caught by the compilers.
-
-Usage: PROGNAME [-flag] [package]
+PROGNAME examines Go source code and reports suspicious constructs,
+such as Printf calls whose arguments do not align with the format
+string. It uses heuristics that do not guarantee all reports are
+genuine problems, but it can find errors not caught by the compilers.
 `
 
-// PrintUsage prints the usage message to stderr.
-func PrintUsage(out io.Writer) {
-	progname := filepath.Base(os.Args[0])
-	fmt.Fprintln(out, strings.Replace(usage, "PROGNAME", progname, -1))
-}
-
-// Help implements the help subcommand for a multichecker or vet-lite
+// Help implements the help subcommand for a multichecker or unitchecker
 // style command. The optional args specify the analyzers to describe.
 // Help calls log.Fatal if no such analyzer exists.
 func Help(progname string, analyzers []*analysis.Analyzer, args []string) {
 	// No args: show summary of all analyzers.
 	if len(args) == 0 {
-		PrintUsage(os.Stdout)
+		fmt.Println(strings.Replace(help, "PROGNAME", progname, -1))
 		fmt.Println("Registered analyzers:")
 		fmt.Println()
 		sort.Slice(analyzers, func(i, j int) bool {
@@ -46,8 +35,8 @@ func Help(progname string, analyzers []*analysis.Analyzer, args []string) {
 			fmt.Printf("    %-12s %s\n", a.Name, title)
 		}
 		fmt.Println("\nBy default all analyzers are run.")
-		fmt.Println("To select specific analyzers, use the -NAME.enable flag for each one,")
-		fmt.Println(" or -NAME.enable=false to run all analyzers not explicitly disabled.")
+		fmt.Println("To select specific analyzers, use the -NAME flag for each one,")
+		fmt.Println(" or -NAME=false to run all analyzers not explicitly disabled.")
 
 		// Show only the core command-line flags.
 		fmt.Println("\nCore flags:")

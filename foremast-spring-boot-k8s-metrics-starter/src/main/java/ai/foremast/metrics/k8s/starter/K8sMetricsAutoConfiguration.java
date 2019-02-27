@@ -3,10 +3,10 @@ package ai.foremast.metrics.k8s.starter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider;
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * Auto metrics configurations
  */
 @Configuration
-@EnableConfigurationProperties({K8sMetricsProperties.class})
+@EnableConfigurationProperties({K8sMetricsProperties.class, MetricsProperties.class})
 public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
 
     @Autowired
@@ -28,11 +28,17 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
 
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
 
+    private K8sMetricsEndpoint k8sMetricsEndpoint;
+
+    private CommonMetricsFilter commonMetricsFilter;
+
     @Bean
-    public FilterRegistrationBean filterRegistrationBean() {
-        FilterRegistrationBean bean = new FilterRegistrationBean(new K8sMetricsFilter());
-        bean.addUrlPatterns("/metrics");
-        return bean;
+    public K8sMetricsEndpoint k8sMetricsEndpoint() {
+        k8sMetricsEndpoint = new K8sMetricsEndpoint();
+        if (commonMetricsFilter != null) {
+            k8sMetricsEndpoint.setCommonMetricsFilter(commonMetricsFilter);
+        }
+        return k8sMetricsEndpoint;
     }
 
     @Bean
@@ -43,6 +49,15 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
         else {
             return new DefaultWebMvcTagsProvider();
         }
+    }
+
+    @Bean
+    public CommonMetricsFilter commonMetricsFilter(MetricsProperties properties) {
+        commonMetricsFilter = new CommonMetricsFilter(metricsProperties, properties);
+        if (k8sMetricsEndpoint != null) {
+            k8sMetricsEndpoint.setCommonMetricsFilter(commonMetricsFilter);
+        }
+        return commonMetricsFilter;
     }
 
     @Override

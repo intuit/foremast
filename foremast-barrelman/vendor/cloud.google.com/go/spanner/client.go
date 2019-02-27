@@ -17,13 +17,13 @@ limitations under the License.
 package spanner
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/internal/version"
-	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 	gtransport "google.golang.org/api/transport/grpc"
 	sppb "google.golang.org/genproto/googleapis/spanner/v1"

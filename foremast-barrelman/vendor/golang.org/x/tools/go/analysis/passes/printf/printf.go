@@ -32,7 +32,7 @@ func init() {
 
 var Analyzer = &analysis.Analyzer{
 	Name:      "printf",
-	Doc:       "check printf-like invocations",
+	Doc:       doc,
 	Requires:  []*analysis.Analyzer{inspect.Analyzer},
 	Run:       run,
 	FactTypes: []analysis.Fact{new(isWrapper)},
@@ -43,12 +43,12 @@ const doc = `check consistency of Printf format strings and arguments
 The check applies to known functions (for example, those in package fmt)
 as well as any detected wrappers of known functions.
 
-A function that wants to avail itself of printf checking but does not
-get found by this analyzer's heuristics (for example, due to use of
+A function that wants to avail itself of printf checking but is not
+found by this analyzer's heuristics (for example, due to use of
 dynamic calls) can insert a bogus call:
 
 	if false {
-		fmt.Sprintf(format, args...) // enable printf checking
+		_ = fmt.Sprintf(format, args...) // enable printf checking
 	}
 
 The -funcs flag specifies a comma-separated list of names of additional
@@ -714,7 +714,7 @@ var printVerbs = []printVerb{
 	// '#' is alternate format for several verbs.
 	// ' ' is spacer for numbers
 	{'%', noFlag, 0},
-	{'b', numFlag, argInt | argFloat | argComplex},
+	{'b', numFlag, argInt | argFloat | argComplex | argPointer},
 	{'c', "-", argRune | argInt},
 	{'d', numFlag, argInt | argPointer},
 	{'e', sharpNumFlag, argFloat | argComplex},
@@ -723,7 +723,7 @@ var printVerbs = []printVerb{
 	{'F', sharpNumFlag, argFloat | argComplex},
 	{'g', sharpNumFlag, argFloat | argComplex},
 	{'G', sharpNumFlag, argFloat | argComplex},
-	{'o', sharpNumFlag, argInt},
+	{'o', sharpNumFlag, argInt | argPointer},
 	{'p', "-#", argPointer},
 	{'q', " -+.0#", argRune | argInt | argString},
 	{'s', " -+.0", argString},
@@ -843,7 +843,22 @@ func recursiveStringer(pass *analysis.Pass, e ast.Expr) bool {
 	}
 
 	// Is the expression e within the body of that String method?
-	return stringMethod.Pkg() == pass.Pkg && stringMethod.Scope().Contains(e.Pos())
+	if stringMethod.Pkg() != pass.Pkg || !stringMethod.Scope().Contains(e.Pos()) {
+		return false
+	}
+
+	// Is it the receiver r, or &r?
+	recv := stringMethod.Type().(*types.Signature).Recv()
+	if recv == nil {
+		return false
+	}
+	if u, ok := e.(*ast.UnaryExpr); ok && u.Op == token.AND {
+		e = u.X // strip off & from &r
+	}
+	if id, ok := e.(*ast.Ident); ok {
+		return pass.TypesInfo.Uses[id] == recv
+	}
+	return false
 }
 
 // isFunctionValue reports whether the expression is a function as opposed to a function call.

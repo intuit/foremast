@@ -26,6 +26,7 @@
 package logadmin // import "cloud.google.com/go/logging/logadmin"
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -39,7 +40,6 @@ import (
 	"cloud.google.com/go/logging/internal"
 	"github.com/golang/protobuf/ptypes"
 	gax "github.com/googleapis/gax-go"
-	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	_ "google.golang.org/genproto/googleapis/appengine/logging/v1" // Import the following so EntryIterator can unmarshal log protos.
@@ -324,16 +324,17 @@ func fromLogEntry(le *logpb.LogEntry) (*logging.Entry, error) {
 		return nil, err
 	}
 	return &logging.Entry{
-		Timestamp:   time,
-		Severity:    logging.Severity(le.Severity),
-		Payload:     payload,
-		Labels:      le.Labels,
-		InsertID:    le.InsertId,
-		HTTPRequest: hr,
-		Operation:   le.Operation,
-		LogName:     slashUnescaper.Replace(le.LogName),
-		Resource:    le.Resource,
-		Trace:       le.Trace,
+		Timestamp:      time,
+		Severity:       logging.Severity(le.Severity),
+		Payload:        payload,
+		Labels:         le.Labels,
+		InsertID:       le.InsertId,
+		HTTPRequest:    hr,
+		Operation:      le.Operation,
+		LogName:        slashUnescaper.Replace(le.LogName),
+		Resource:       le.Resource,
+		Trace:          le.Trace,
+		SourceLocation: le.SourceLocation,
 	}, nil
 }
 
