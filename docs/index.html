@@ -8,62 +8,98 @@ title: Home
     {% include nav.html %}
 
     <!-- Main jumbotron for a primary marketing message or call to action -->
-    <div class="jumbotron">
-      <div class="container">
-        <img src="{{ site.baseurl }}/guides/ForemastHighLevel.svg" class="img-fluid" alt="Foremast High Level Overview">
+    <div class="container" > 
+    <div class="jumbotron" >
+      
+        <!-- <img src="{{ site.baseurl }}/guides/ForemastHighLevel.svg" class="img-fluid" alt="Foremast High Level Overview">-->
         <!-- <div class="embed-responsive embed-responsive-16by9">
           <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" allowfullscreen></iframe>
         </div> -->
-        <p><i>Foremast</i> is an open-source platform for observability in order to maintain application health during deployments and in steady state operations running on Kubernetes.  
+
+        <p align="center"> Foremast is an open-source platform for observability in order to maintain application health during deployments and in steady state operations running on Kubernetes.
         </p>
-        <p><a class="btn btn-outline-inverse btn-lg" href="{{ site.baseurl }}/getting-started" role="button">Get Started</a></p>
-      </div>
+        <p ><a class="btn btn-lg" style="background-color:#1EC3FD; ；padding-bottom: 0px;padding-right: 0px;padding-left: 0px;width: 205px;" href="{{ site.baseurl }}/getting-started" role="button">Get Started</a></p>
+      
     </div>
+  </div>
     <div class="container">
       <div class="md-guide-feature">
-        <h1 class="no-anchor">Everything about Foremast</h1>
-        
-          <p class="lead" style="margin-bottom: 60px"><em>Foremast</em> is the intelligent application management platform of the future</p>
-        
-        <div class="row">
+        <h1 class="no-anchor">Everything About Foremast</h1>       
+        <p class="lead" style="margin-bottom: 60px">Foremast is the intelligent application management platform of the future</p>
 
+        <div class="row">
           <div class="col-sm-4">
-            <div class="icon">
-              <i class="fas fa-chart-area"></i>
+            <div class="icon" style="margin-bottom: 40px; padding-right: 0px">
+              <img src="{{ site.baseurl }}/assets/images/real-time-icon.png" height="135px" class="" alt="Real-time Icon" >
             </div>
-            <h3 class="no-anchor">Real-time Metrics Analysis</h3>
+            <h4 class="no-anchor">Real-time Metrics Analysis</h4>
             <p>Analyze application behavior and have a real-time view of application health</p>
           </div>
           <div class="col-sm-4">
-            <div class="icon">
-              <i class="fas fa-bug"></i>
+            <div class="icon" style="margin-bottom: 40px; padding-right: 0px">
+              <img src="{{ site.baseurl }}/assets/images/problems-icon.png" height="135px" class="" alt="Problems Icon" >
             </div>
-            <h3 class="no-anchor">Identify Problems Early</h3>
+            <h4 class="no-anchor">Identify Problems Early</h4>
             <p>Application problems get identified and alerted during deployment - allowing for timely fixes</p>
           </div>
           <div class="col-sm-4">
-            <div class="icon">
-              <i class="fas fa-brain"></i>
+            <div class="icon" style="margin-bottom: 40px; padding-right: 0px">
+              <img src="{{ site.baseurl }}/assets/images/machine-learnt-icon.png" height="135px" class="" alt="machine-learnt Icon" >
             </div>
-            <h3 class="no-anchor">Machine Learnt Application Patterns</h3>
+            <h4 class="no-anchor">Machine Learnt Application Patterns</h4>
             <p>Historical application performance and behavior is learnt using advanced machine learning algorithms</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!--
-    <hr>
-
-    <div class="container">
-      <div class="md-guide-feature">
-        <h1 class="no-anchor">Stay in the loop.</h1>
-        <p class="lead">Sign up now to get priority notifications about the <em>Markdown Guide</em>.</p>
-        <br/>
-        <a class="btn btn-default btn-lg" href="https://tinyletter.com/markdownguide" style="margin-top: -10px">Subscribe via Email</a>
+    <div class="container-fluid">
+      <div class="md-guide-feature" >
+        <h1 class="no-anchor">How Does Foremast Work?</h1>
+        <p class="lead" >Foremast leverages multiple components that work in harmony in order to ascertain, alert on and maintain application health. The key components are</p>
+      
+        <div class="container-fluid" style="background-color: #CCCDCF; max-width:100%; height:auto; margin-top:30px; padding:0px;">
+          <div class="container" style="background-color:#fff; max-width:100%; height:80px; margin:0px; padding:0px "></div>
+          <img src="{{ site.baseurl }}/guides/foremast-high-level.svg" class="img-fluid" style="margin-top:-75px; margin-bottom:50px" alt="Foremast High Level Overview">
+        </div>
+         <div class="down-arrow" style="margin-top:0px; margin-bottom:0px"></div>
       </div>
     </div>
-    -->
+
+    <div class="container" style="max-width:100%; height:100%; margin-bottom:10px;margin-top:20px">
+      <div class="md-guide-feature" style="max-width:100%; height:100%">
+
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="icon" style="margin-bottom: 40px; padding-right: 0px">
+              <img src="{{ site.baseurl }}/assets/images/barrelman-icon.svg" max-height="100px" class="" alt="Problems Icon" >
+            </div>
+              <h4 class="no-anchor">Barrelman</h4>
+              <p style="width:75%">Watch for deployment events, sxnd trigger application actions</p>
+          </div>
+          <div class="col-sm-4">
+            <div class="icon" style="margin-bottom: 40px; padding-right: 0px">
+              <img src="{{ site.baseurl }}/assets/images/brain-icon.svg" max-height="100px" class="" alt="Problems Icon" >
+            </div>
+              <h4 class="no-anchor">Brain</h4>
+              <p style="width:75%">Machine learning on application health metrics and triggering of anomalies</p>
+          </div>
+          <div class="col-sm-4">
+            <div class="icon" style="margin-bottom: 40px; padding-right: 0px">
+              <img src="{{ site.baseurl }}/assets/images/ui-icon.svg" max-height="100px" class="" alt="Problems Icon" >
+            </div>
+              <h4 class="no-anchor">UI</h4>
+              <p style="width:75%">Visually show the current state of applications, expected state and any remediations performed</p> 
+          </div>           
+        </div>
+      
+        <div class="container-fluid" >  
+          <p style="margin:auto; left:0; right:0; padding-bottom:10px; height:100%"><a style="background-color:#fff; border-width:2px；padding-bottom: 0px;padding-right: 0px;padding-left: 0px;width: 205px;" class="btn btn-outline-inverse btn-lg" href="{{ site.baseurl }}/getting-started" role="button">Get Started</a></p>
+        </div>
+      </div>
+    </div>
+    
+
     {% include footer.html %}
   </body>
 </html>

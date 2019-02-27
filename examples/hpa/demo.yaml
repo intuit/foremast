@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: hpa-demo # Application Name
+    appType: spring-boot # Application Type
+    version: v1
+  name: hpa-demo
+  namespace: foremast-examples
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hpa-demo
+  template:
+    metadata:
+      labels:
+        app: hpa-demo
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/scheme: "http"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+      - name: app
+        image: docker.io/foremast/k8s-metrics-demo:0.1.6-SNAPSHOT
+        env:
+        - name: APP_NAME
+          value: hpa-demo
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpa-demo
+  namespace: foremast-examples
+  labels:
+    app: hpa-demo
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: hpa-demo
+
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-demo
+  namespace: foremast-examples
+spec:
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Object
+    object:
+      metricName: namespace_app_per_pod:http_server_requests_count
+      target:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: hpa-demo
+      targetValue: 10
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpa-demo
