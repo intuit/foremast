@@ -100,6 +100,7 @@ export const METRICS_MAP = {
   }
 };
 
-//TODO:DM - make me param-able too!
-export const ANNOTATION_QUERY =
-  'sum by (label_version) (kube_pod_labels{label_app="demo", namespace="dev-container-foremast-examples-usw2-dev-dev"})';
+export const ANNOTATION_QUERY_A =
+  'sum by (label_version) (kube_pod_labels{label_app="';
+export const ANNOTATION_QUERY_B = '", namespace="';
+export const ANNOTATION_QUERY_C = '"})';

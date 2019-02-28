@@ -8,10 +8,9 @@ import Highcharts from 'highcharts';
 
 import './App.css';
 import * as metricActions from "./actions/metricActions";
-import { METRICS_MAP, ANNOTATION_QUERY,
-  BASE, UPPER, LOWER, ANOMALY,
-  X_METRIC_NAME, Y_METRIC_NAME,
-  DEFAULT_NAMESPACE, DEFAULT_APPNAME } from './config/metrics';
+import { METRICS_MAP, ANNOTATION_QUERY_A, ANNOTATION_QUERY_B,
+  ANNOTATION_QUERY_C, BASE, UPPER, LOWER, ANOMALY, X_METRIC_NAME,
+  Y_METRIC_NAME, DEFAULT_NAMESPACE, DEFAULT_APPNAME } from './config/metrics';
 import { dataStepValSec } from './config/api';
 import Header from './components/header/Header';
 import TimeseriesChart from './components/charts/timeseries/TimeseriesChart';
@@ -59,12 +58,19 @@ class App extends React.Component {
           }
       });
 
+    //TODO:DM - figure out how to make this more DRY wrt same block below
+    let { namespace, appName } = this.props.match.params;
+    //override these params if undefined
+    namespace = namespace || DEFAULT_NAMESPACE;
+    appName = appName || DEFAULT_APPNAME;
+
     //track base metrics and annotations based on config
     Object.keys(METRICS_MAP).forEach(key => {
       this.props.metricActions.addBaseMetric(key, METRICS_MAP[key]);
     });
 
-    this.props.metricActions.addAnnotationMetric(ANNOTATION_QUERY);
+    this.props.metricActions.addAnnotationMetric(ANNOTATION_QUERY_A + appName +
+      ANNOTATION_QUERY_B + namespace + ANNOTATION_QUERY_C);
 
     this.fetchData();
     setInterval(this.fetchData, dataStepValSec * 1000);
