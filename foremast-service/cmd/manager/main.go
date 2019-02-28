@@ -1,14 +1,6 @@
 package main
 
 import (
-	common "foremast.ai/foremast/foremast-service/pkg/common"
-	converter "foremast.ai/foremast/foremast-service/pkg/converter"
-	models "foremast.ai/foremast/foremast-service/pkg/models"
-	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
-	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
-	search "foremast.ai/foremast/foremast-service/pkg/search"
-	"github.com/gin-gonic/gin"
-	"github.com/olivere/elastic"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,11 +8,30 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	common "foremast.ai/foremast/foremast-service/pkg/common"
+	converter "foremast.ai/foremast/foremast-service/pkg/converter"
+	models "foremast.ai/foremast/foremast-service/pkg/models"
+	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
+	search "foremast.ai/foremast/foremast-service/pkg/search"
+	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
+	"github.com/gin-gonic/gin"
+	"github.com/olivere/elastic"
+
+	common "foremast.ai/foremast/foremast-service/pkg/common"
+	converter "foremast.ai/foremast/foremast-service/pkg/converter"
+	models "foremast.ai/foremast/foremast-service/pkg/models"
+	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
+	search "foremast.ai/foremast/foremast-service/pkg/search"
+	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
+	"github.com/gin-gonic/gin"
+	"github.com/olivere/elastic"
 )
 
 var (
 	elasticClient *elastic.Client
 )
+
 // query service endpoint
 var QueryEndpoint string
 
@@ -48,7 +59,7 @@ func constructURL(metricQuery models.MetricQuery) (int32, string, string) {
 
 func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, string) {
 	if len(metric) == 0 {
-		return 404, "",""
+		return 404, "", ""
 	}
 	output := strings.Builder{}
 	metricSourceOutput := strings.Builder{}
@@ -70,7 +81,7 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, s
 		metricSourceOutput.WriteString(metricSource)
 		co = 1
 	}
-	return 0, output.String(),metricSourceOutput.String()
+	return 0, output.String(), metricSourceOutput.String()
 }
 
 func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string, []string) {
@@ -78,7 +89,7 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 	configs := []string{"", "", ""}
 	mSources := []string{"", "", ""}
 	if m.Current == nil || len(m.Current) == 0 {
-		return 404, "MetricInfo current is empty ", configs,mSources
+		return 404, "MetricInfo current is empty ", configs, mSources
 	}
 	errorCode := 0
 	reason := strings.Builder{}
@@ -215,32 +226,33 @@ func QueryProxy(context *gin.Context) {
 	//allow crqs
 	context.Header("Access-Control-Allow-Origin", "*")
 	queryMaps := context.Request.URL.RawQuery
-	targeturl := QueryEndpoint +"api/v1/query_range?"+queryMaps
+	targeturl := QueryEndpoint + "api/v1/query_range?" + queryMaps
 	httpclient := http.Client{
 		Timeout: time.Duration(90000 * time.Millisecond),
 	}
 	resp, err := httpclient.Get(targeturl)
 	if err != nil {
-		common.ErrorResponse(context, http.StatusBadRequest, "invoke query "+targeturl+" failed " )
+		common.ErrorResponse(context, http.StatusBadRequest, "invoke query "+targeturl+" failed ")
 		return
 	}
 	defer resp.Body.Close()
 	contents, err := ioutil.ReadAll(resp.Body)
-	if err!= nil{
+	if err != nil {
 		common.ErrorResponse(context, http.StatusBadRequest, "failed to retrieve contents "+string(contents))
 	}
 	context.JSON(http.StatusOK, string(contents))
 }
+
 // main .... program entry
 func main() {
 	var esURL = os.Getenv("ELASTIC_URL")
-	QueryEndpoint  = os.Getenv("QUERY_SERVICE_ENDPOINT")
+	QueryEndpoint = os.Getenv("QUERY_SERVICE_ENDPOINT")
 	if esURL == "" {
 		//esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
 		esURL = "http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200/"
 	}
-	if QueryEndpoint  ==""{
-		QueryEndpoint  = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
+	if QueryEndpoint == "" {
+		QueryEndpoint = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
 	}
 
 	var err error

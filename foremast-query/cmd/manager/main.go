@@ -102,7 +102,7 @@ func CheckJobCompleted(jobID string) bool {
 
 func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string, error) {
 	//log.Printf("\n\nendpoint: %#v\n\n", analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"])
-	// log.Printf("\n\nendpoint: %#v\n\n", os.Getenv("ENDPOINT"))
+	log.Printf("\nendpoint: %#v\n", os.Getenv("ENDPOINT"))
 	c, err := fq.NewClient(nil, os.Getenv("ENDPOINT")) //analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"].(string))
 	b, err := json.Marshal(analyzingRequest)
 	if err != nil {
@@ -113,7 +113,7 @@ func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string
 	u := c.BaseURL.ResolveReference(rel)
 
 	// log.Printf("Request body: %v\n", string(b))
-	req, err := http.NewRequest("POST", u.String(), bytes.NewReader(b))
+	req, err := http.NewRequest("POST", os.Getenv("ENDPOINT"), bytes.NewReader(b))
 	if err != nil {
 
 		return "", err
@@ -123,7 +123,7 @@ func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string
 
 	resp, err := c.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("request err: %#v", err)
+		log.Printf("request err: %#v\n %s\n", err, err.Error())
 		return "", err
 	}
 
