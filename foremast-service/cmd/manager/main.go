@@ -5,6 +5,7 @@ import (
 	converter "foremast.ai/foremast/foremast-service/pkg/converter"
 	models "foremast.ai/foremast/foremast-service/pkg/models"
 	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
+	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
 	search "foremast.ai/foremast/foremast-service/pkg/search"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
@@ -29,50 +30,59 @@ const ConfigSeparator = " ||"
 // KvSeparator   .... used for key and value separate
 const KvSeparator = "== "
 
-func constructURL(metricQuery models.MetricQuery) (int32, string) {
+func constructURL(metricQuery models.MetricQuery) (int32, string, string) {
 	config := metricQuery.Parameters
 	if config == nil || len(config) == 0 {
-		return 404, ""
+		return 404, "", ""
 	}
 
 	if metricQuery.DataSourceType == "prometheus" {
-		return 0, prometheus.BuildURL(metricQuery)
+		return 0, "prometheus", prometheus.BuildURL(metricQuery)
+	}
+	if metricQuery.DataSourceType == "wavefront" {
+		return 0, "wavefront", wavefront.BuildURL(metricQuery)
 	}
 	//type is not supported
-	return 404, ""
+	return 404, metricQuery.DataSourceType, ""
 }
 
-func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string) {
+func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, string) {
 	if len(metric) == 0 {
-		return 404, ""
+		return 404, "",""
 	}
 	output := strings.Builder{}
+	metricSourceOutput := strings.Builder{}
 	var co int
 	for key, value := range metric {
-		errCode, retstr := constructURL(value)
+		errCode, metricSource, retstr := constructURL(value)
 		if errCode != 0 {
-			return 404, ""
+			return 404, retstr, metricSource
 		}
 		if co == 1 {
 			output.WriteString(ConfigSeparator)
+			metricSourceOutput.WriteString(ConfigSeparator)
 		}
 		output.WriteString(key)
+		metricSourceOutput.WriteString(key)
 		output.WriteString(KvSeparator)
+		metricSourceOutput.WriteString(KvSeparator)
 		output.WriteString(retstr)
+		metricSourceOutput.WriteString(metricSource)
 		co = 1
 	}
-	return 0, output.String()
+	return 0, output.String(),metricSourceOutput.String()
 }
 
-func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string) {
+func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string, []string) {
 
 	configs := []string{"", "", ""}
+	mSources := []string{"", "", ""}
 	if m.Current == nil || len(m.Current) == 0 {
-		return 404, "MetricInfo current is empty ", configs
+		return 404, "MetricInfo current is empty ", configs,mSources
 	}
 	errorCode := 0
 	reason := strings.Builder{}
-	errCode, ret := convertMetricQuerys(m.Current)
+	errCode, ret, mSource := convertMetricQuerys(m.Current)
 
 	if errCode != 0 {
 		log.Println("Error: current convertMetricQuerys ", m.Current, " failed. errorCode is ", errCode)
@@ -82,19 +92,21 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 		errorCode = 404
 	}
 	configs[0] = ret
+	mSources[0] = mSource
 
 	if m.Baseline != nil {
-		errCode, ret := convertMetricQuerys(m.Baseline)
+		errCode, ret, mSource := convertMetricQuerys(m.Baseline)
 		if errCode != 0 {
 			log.Println("Warning: baseline convertMetricQuerys ", m.Baseline, " failed. errorCode is ", errCode)
 			reason.WriteString(" baseline query encount error ")
 			reason.WriteString(ret)
 		}
 		configs[1] = ret
+		mSources[1] = mSource
 	}
 
 	if m.Historical != nil {
-		hErrCode, ret := convertMetricQuerys(m.Historical)
+		hErrCode, ret, mSource := convertMetricQuerys(m.Historical)
 		if hErrCode != 0 {
 			log.Println("Warning: historical convertMetricQuerys ", m.Historical, " failed. errorCode is ", hErrCode)
 			reason.WriteString(" historical query encount error ")
@@ -104,13 +116,14 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 			errorCode = 404
 		}
 		configs[2] = ret
+		mSources[2] = mSource
 	} else {
 		if errCode != 0 {
 			errorCode = 404
 		}
 	}
 
-	return errorCode, reason.String(), configs
+	return errorCode, reason.String(), configs, mSources
 }
 
 // RegisterEntry .... mapping input request to elasticserch structure
@@ -129,7 +142,7 @@ func RegisterEntry(context *gin.Context) {
 		return
 	}
 	//check metric query
-	errCode, reason, configs := convertMetricInfoString(appRequest.Metrics, appRequest.Strategy)
+	errCode, reason, configs, mSources := convertMetricInfoString(appRequest.Metrics, appRequest.Strategy)
 	if errCode != 0 {
 		log.Println("encount error while convertMetricInfoString ", reason)
 		common.ErrorResponse(context, http.StatusBadRequest, reason)
@@ -143,6 +156,9 @@ func RegisterEntry(context *gin.Context) {
 		configs[0],
 		configs[1],
 		configs[2],
+		mSources[0],
+		mSources[1],
+		mSources[2],
 		"200",
 		appRequest.Strategy,
 	}
@@ -220,7 +236,8 @@ func main() {
 	var esURL = os.Getenv("ELASTIC_URL")
 	QueryEndpoint  = os.Getenv("QUERY_SERVICE_ENDPOINT")
 	if esURL == "" {
-		esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
+		//esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
+		esURL = "http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200/"
 	}
 	if QueryEndpoint  ==""{
 		QueryEndpoint  = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"

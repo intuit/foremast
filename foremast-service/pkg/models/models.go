@@ -51,6 +51,11 @@ type ApplicationHealthAnalyzeRequest struct {
 	Strategy string `json:"strategy"`
 }
 
+
+type QueryRequest struct {
+	QueryString string `json:"queryString"`
+}
+
 // AnomalyInfo .... anomaly structures
 type AnomalyInfo struct {
 	Tags   string  `json:"tags"`
@@ -85,6 +90,9 @@ type Document struct {
 	CurrentConfig     string    `json:"currentConfig"`
 	BaselineConfig    string    `json:"baselineConfig",omitempty`
 	HistoricalConfig  string    `json:"historicalConfig",omitempty`
+	CurrentMetricStore     string    `json:"currentMetricStore",omitempty`
+	BaselineMetricStore    string    `json:"baselineMetricStore",omitempty`
+	HistoricalMetricStore  string    `json:"historicalMetricStore",omitempty`
 	Status            string    `json:"status"`
 	StatusCode        string    `json:"statusCode"`
 	Strategy          string    `json:"strategy"`
@@ -97,9 +105,12 @@ type DocumentRequest struct {
 	AppName          string `json:"appName"`
 	StartTime        string `json:"startTime"`
 	EndTime          string `json:"endTime"`
-	CurrentConfig    string `json:"contentConfig"`
+	CurrentConfig    string `json:"currentConfig"`
 	BaselineConfig   string `json:"baselineConfig",omitempty`
 	HistoricalConfig string `json:"historicalConfig",omitempty`
+	CurrentMetricStore    string `json:"currentMetricStore",omitempty`
+	BaselineMetricStore   string `json:"baselineMetricStore",omitempty`
+	HistoricalMetricStore string `json:"historicalMetricStore",omitempty`
 	StatusCode       string `json:"statusCode",omitempty`
 	Strategy         string `json:"strategy"`
 }
@@ -117,6 +128,9 @@ type DocumentResponse struct {
 	CurrentConfig     string `json:"currentConfig"`
 	BaselineConfig    string `json:"baselineConfig",omitempty`
 	HistoricConfig    string `json:"historicConfig",omitempty`
+	CurrentMetricStore     string `json:"currentMetricStore",omitempty`
+	BaselineMetricStore    string `json:"baselineMetricStore",omitempty`
+	HistoricMetricStore    string `json:"historicMetricStore",omitempty`
 	Status            string `json:"status"`
 	StatusCode        string `json:"statusCode"`
 	Reason            string `json:"reason",omitempty`

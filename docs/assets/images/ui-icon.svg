@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="110px" height="110px" viewBox="0 0 110 110" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.5 (67469) - http://www.bohemiancoding.com/sketch -->
+    <title>ui-icon</title>
+    <desc>Created with Sketch.</desc>
+    <g id="ui-icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-25">
+            <g id="Group-15-Copy-2" fill="#00ADEC">
+                <rect id="Rectangle" x="2.13162821e-14" y="2.13162821e-14" width="110" height="110" rx="29"></rect>
+            </g>
+            <g id="Group-16" transform="translate(28.000000, 20.000000)" fill="#FFFFFF">
+                <path d="M2.11320755,0 L2.11320755,51.5336357 C2.11320755,60.5782992 10.3917159,67.9104478 20.6037736,67.9104478 C30.8158312,67.9104478 39.0943396,60.5782992 39.0943396,51.5336357 C39.0943396,36.0851902 39.0943396,0.71000913 39.0943396,0 L41.2075472,0 C41.2075472,0.766368105 41.2075472,35.648523 41.2075472,52.3232323 C41.2075472,62.0858415 31.9829235,70 20.6037736,70 C9.22462364,70 0,62.0858415 0,52.3232323 L0,0 L2.11320755,0 Z" id="Combined-Shape"></path>
+                <rect id="Rectangle" x="53.8867925" y="0" width="2.11320755" height="70"></rect>
+            </g>
+        </g>
+    </g>
+</svg>
