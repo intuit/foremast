@@ -70,7 +70,7 @@ const parseMetricData = (data, type, scale, baseSeries) => {
     case ANOMALY:
       return parseAnomalyData(data, baseSeries);
     default:
-      break;
+      return;
   }
 };
 

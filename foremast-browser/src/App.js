@@ -139,9 +139,9 @@ class App extends React.Component {
           </div>
           <ScatterChart
             xSeries={metric.resultsByName[X_METRIC_NAME] ?
-              metric.resultsByName[X_METRIC_NAME][BASE] : []}
+              [...metric.resultsByName[X_METRIC_NAME][BASE]] : []}
             ySeries={metric.resultsByName[Y_METRIC_NAME] ?
-              metric.resultsByName[Y_METRIC_NAME][BASE] : []}
+              [...metric.resultsByName[Y_METRIC_NAME][BASE]] : []}
           />
         </SplitterLayout>
       </div>

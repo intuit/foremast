@@ -1,5 +1,3 @@
-// @flow
-
 import { dataDomain, dataPath, dataQueryParam, dataStartParam,
   dataEndParam, dataStepParam, dataStepValSec } from '../config/api';
 
