@@ -50,7 +50,7 @@ public class MetricsProperties {
      * global static registry on Metrics. For testing, set this to 'false' to maximize
      * test independence.
      */
-    @Value("${management.metrics.useGlobalRegistry}")
+    @Value("${management.metrics.use-global-registry}")
     private boolean useGlobalRegistry = true;
 
     public boolean isUseGlobalRegistry() {

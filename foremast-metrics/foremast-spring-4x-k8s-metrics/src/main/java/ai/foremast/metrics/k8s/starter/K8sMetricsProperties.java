@@ -4,7 +4,6 @@ package ai.foremast.metrics.k8s.starter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-//@ConfigurationProperties(prefix = "k8s.metrics")
 @Component
 public class K8sMetricsProperties {
 
@@ -12,7 +11,7 @@ public class K8sMetricsProperties {
     private String commonTagNameValuePairs = "app:ENV.APP_NAME|info.app.name";
 
     @Value("${k8s.metrics.initialize-for-statuses}")
-    private String initializeForStatuses = "403,404,501,502";
+    private String initializeForStatuses = "404,501";
 
     public static final String APP_ASSET_ALIAS_HEADER = "X-CALLER";
 

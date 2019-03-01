@@ -48,18 +48,6 @@ public final class WebMvcTags {
 
     private static final Tag STATUS_UNKNOWN = Tag.of("status", "UNKNOWN");
 
-//    private static final Tag OUTCOME_UNKNOWN = Tag.of("outcome", "UNKNOWN");
-
-//    private static final Tag OUTCOME_INFORMATIONAL = Tag.of("outcome", "INFORMATIONAL");
-//
-//    private static final Tag OUTCOME_SUCCESS = Tag.of("outcome", "SUCCESS");
-//
-//    private static final Tag OUTCOME_REDIRECTION = Tag.of("outcome", "REDIRECTION");
-//
-//    private static final Tag OUTCOME_CLIENT_ERROR = Tag.of("outcome", "CLIENT_ERROR");
-//
-//    private static final Tag OUTCOME_SERVER_ERROR = Tag.of("outcome", "SERVER_ERROR");
-
     private static final Tag METHOD_UNKNOWN = Tag.of("method", "UNKNOWN");
 
     private WebMvcTags() {
@@ -161,33 +149,5 @@ public final class WebMvcTags {
         String simpleName = exception.getClass().getSimpleName();
         return Tag.of("exception", simpleName.isEmpty() ? exception.getClass().getName() : simpleName);
     }
-
-//    /**
-//     * Creates an {@code outcome} tag based on the status of the given {@code response}.
-//     * @param response the HTTP response
-//     * @return the outcome tag derived from the status of the response
-//     * @since 1.1.0
-//     */
-//    public static Tag outcome(@Nullable HttpServletResponse response) {
-//        if (response != null) {
-//            HttpStatus status = extractStatus(response);
-//            if (status != null) {
-//                if (status.is1xxInformational()) {
-//                    return OUTCOME_INFORMATIONAL;
-//                }
-//                if (status.is2xxSuccessful()) {
-//                    return OUTCOME_SUCCESS;
-//                }
-//                if (status.is3xxRedirection()) {
-//                    return OUTCOME_REDIRECTION;
-//                }
-//                if (status.is4xxClientError()) {
-//                    return OUTCOME_CLIENT_ERROR;
-//                }
-//            }
-//            return OUTCOME_SERVER_ERROR;
-//        }
-//        return OUTCOME_UNKNOWN;
-//    }
 
 }

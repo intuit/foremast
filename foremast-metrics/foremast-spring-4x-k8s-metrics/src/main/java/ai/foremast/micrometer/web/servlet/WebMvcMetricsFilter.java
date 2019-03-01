@@ -15,26 +15,25 @@
  */
 package ai.foremast.micrometer.web.servlet;
 
+import ai.foremast.micrometer.autoconfigure.MetricsProperties;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.lang.NonNullApi;
 import ai.foremast.micrometer.TimedUtils;
+import io.micrometer.core.instrument.binder.tomcat.TomcatMetrics;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.util.NestedServletException;
 
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -48,37 +47,63 @@ import java.util.stream.Collectors;
  *
  * @author Jon Schneider
  */
-@NonNullApi
-@Order(Ordered.HIGHEST_PRECEDENCE + 1)
-public class WebMvcMetricsFilter extends OncePerRequestFilter {
+public class WebMvcMetricsFilter implements Filter {
     private static final String TIMING_SAMPLE = "micrometer.timingSample";
 
     private static final Log logger = LogFactory.getLog(WebMvcMetricsFilter.class);
 
-    private final MeterRegistry registry;
-    private final WebMvcTagsProvider tagsProvider;
-    private final String metricName;
-    private final boolean autoTimeRequests;
-    private final HandlerMappingIntrospector mappingIntrospector;
+    private MeterRegistry registry;
+    private MetricsProperties metricsProperties;
+    private WebMvcTagsProvider tagsProvider = new DefaultWebMvcTagsProvider();
+    private String metricName;
+    private boolean autoTimeRequests;
+    private HandlerMappingIntrospector mappingIntrospector;
 
-    public WebMvcMetricsFilter(MeterRegistry registry, WebMvcTagsProvider tagsProvider,
-                               String metricName, boolean autoTimeRequests,
-                               HandlerMappingIntrospector mappingIntrospector) {
-        this.registry = registry;
-        this.tagsProvider = tagsProvider;
-        this.metricName = metricName;
-        this.autoTimeRequests = autoTimeRequests;
-        this.mappingIntrospector = mappingIntrospector;
+    private void record(TimingSampleContext timingContext, HttpServletResponse response, HttpServletRequest request,
+                        Object handlerObject, Throwable e) {
+        for (Timed timedAnnotation : timingContext.timedAnnotations) {
+            timingContext.timerSample.stop(Timer.builder(timedAnnotation, metricName)
+                .tags(tagsProvider.httpRequestTags(request, response, handlerObject, e))
+                .register(registry));
+        }
+
+        if (timingContext.timedAnnotations.isEmpty() && autoTimeRequests) {
+            timingContext.timerSample.stop(Timer.builder(metricName)
+                .tags(tagsProvider.httpRequestTags(request, response, handlerObject, e))
+                .register(registry));
+        }
+
+        for (LongTaskTimer.Sample sample : timingContext.longTaskTimerSamples) {
+            sample.stop();
+        }
     }
 
     @Override
-    protected boolean shouldNotFilterAsyncDispatch() {
-        return false;
+    public void init(FilterConfig filterConfig) throws ServletException {
+        WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(filterConfig.getServletContext());
+
+        this.registry = ctx.getBean(MeterRegistry.class);
+        this.metricsProperties = ctx.getBean(MetricsProperties.class);
+        this.metricName = metricsProperties.getWeb().getServer().getRequestsMetricName();
+        this.autoTimeRequests = metricsProperties.getWeb().getServer().isAutoTimeRequests();
+        this.mappingIntrospector = new HandlerMappingIntrospector(ctx);
+
+
+        //Tomcat
+        try {
+            new TomcatMetrics(null, Collections.emptyList()).bindTo(this.registry);
+        }
+        catch(Throwable tx) {
+
+        }
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
+            throws IOException, ServletException {
+        HttpServletRequest request = (HttpServletRequest)servletRequest;
+        HttpServletResponse response = (HttpServletResponse)servletResponse;
+
         HandlerExecutionChain handler = null;
         try {
             handler = mappingIntrospector.getHandlerExecutionChain(request);
@@ -103,17 +128,8 @@ public class WebMvcMetricsFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, wrapper);
 
-//            if (request.isAsyncSupported()) {
-//                // this won't be "started" until after the first call to doFilter
-//                if (request.isAsyncStarted()) {
-//                    request.setAttribute(TIMING_SAMPLE, timingContext);
-//                }
-//            }
-
-//            if (!request.isAsyncStarted()) {
-                record(timingContext, wrapper, request,
+            record(timingContext, wrapper, request,
                     handlerObject, (Throwable) request.getAttribute(DispatcherServlet.EXCEPTION_ATTRIBUTE));
-//            }
         } catch (NestedServletException e) {
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             record(timingContext, response, request, handlerObject, e.getCause());
@@ -121,23 +137,9 @@ public class WebMvcMetricsFilter extends OncePerRequestFilter {
         }
     }
 
-    private void record(TimingSampleContext timingContext, HttpServletResponse response, HttpServletRequest request,
-                        Object handlerObject, Throwable e) {
-        for (Timed timedAnnotation : timingContext.timedAnnotations) {
-            timingContext.timerSample.stop(Timer.builder(timedAnnotation, metricName)
-                .tags(tagsProvider.httpRequestTags(request, response, handlerObject, e))
-                .register(registry));
-        }
+    @Override
+    public void destroy() {
 
-        if (timingContext.timedAnnotations.isEmpty() && autoTimeRequests) {
-            timingContext.timerSample.stop(Timer.builder(metricName)
-                .tags(tagsProvider.httpRequestTags(request, response, handlerObject, e))
-                .register(registry));
-        }
-
-        for (LongTaskTimer.Sample sample : timingContext.longTaskTimerSamples) {
-            sample.stop();
-        }
     }
 
     private class TimingSampleContext {

@@ -38,7 +38,6 @@ public class PrometheusProperties {
     /**
      * Step size (i.e. reporting frequency) to use.
      */
-    @Value("${management.metrics.export.prometheus.step}")
     private Duration step = Duration.ofMinutes(1);
 
     public boolean isDescriptions() {

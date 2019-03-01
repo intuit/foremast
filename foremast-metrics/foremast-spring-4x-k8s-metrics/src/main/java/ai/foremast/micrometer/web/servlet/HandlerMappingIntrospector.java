@@ -79,7 +79,6 @@ public class HandlerMappingIntrospector
      * "DispatcherServlet.properties" like the {@code DispatcherServlet}.
      * @deprecated as of 4.3.12, in favor of {@link #setApplicationContext}
      */
-    @Deprecated
     public HandlerMappingIntrospector(ApplicationContext context) {
         this.handlerMappings = initHandlerMappings(context);
     }
