@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,6 +59,11 @@ public class WebMvcMetricsFilter implements Filter {
     private String metricName;
     private boolean autoTimeRequests;
     private HandlerMappingIntrospector mappingIntrospector;
+
+    private boolean exposePrometheus = false;
+    private String prometheusPath = "/actuator/prometheus";
+
+    private PrometheusServlet prometheusServlet;
 
     private void record(TimingSampleContext timingContext, HttpServletResponse response, HttpServletRequest request,
                         Object handlerObject, Throwable e) {
@@ -79,7 +85,7 @@ public class WebMvcMetricsFilter implements Filter {
     }
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
+    public void init(final FilterConfig filterConfig) throws ServletException {
         WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(filterConfig.getServletContext());
 
         this.registry = ctx.getBean(MeterRegistry.class);
@@ -88,6 +94,36 @@ public class WebMvcMetricsFilter implements Filter {
         this.autoTimeRequests = metricsProperties.getWeb().getServer().isAutoTimeRequests();
         this.mappingIntrospector = new HandlerMappingIntrospector(ctx);
 
+        String path = filterConfig.getInitParameter("prometheus-path");
+        if (path != null) {
+            exposePrometheus = true;
+            this.prometheusPath = path;
+        }
+
+        if (exposePrometheus) {
+            prometheusServlet = new PrometheusServlet();
+            prometheusServlet.init(new ServletConfig() {
+                @Override
+                public String getServletName() {
+                    return "prometheus";
+                }
+
+                @Override
+                public ServletContext getServletContext() {
+                    return filterConfig.getServletContext();
+                }
+
+                @Override
+                public String getInitParameter(String s) {
+                    return filterConfig.getInitParameter(s);
+                }
+
+                @Override
+                public Enumeration getInitParameterNames() {
+                    return filterConfig.getInitParameterNames();
+                }
+            });
+        }
 
         //Tomcat
         try {
@@ -103,6 +139,12 @@ public class WebMvcMetricsFilter implements Filter {
             throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest)servletRequest;
         HttpServletResponse response = (HttpServletResponse)servletResponse;
+
+        String path = request.getServletPath();
+        if (exposePrometheus && prometheusPath.equals(path)) { // Handle /actuator/prometheus URL in this filter
+            prometheusServlet.doGet(request, response);
+            return;
+        }
 
         HandlerExecutionChain handler = null;
         try {

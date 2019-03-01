@@ -49,9 +49,13 @@ public class CommonMetricsFilter implements MeterFilter {
 
     private K8sMetricsProperties k8sMetricsProperties;
 
+    private boolean actionEnabled = false;
+
     public CommonMetricsFilter(K8sMetricsProperties k8sMetricsProperties, MetricsProperties properties) {
         this.properties = properties;
         this.k8sMetricsProperties = k8sMetricsProperties;
+        this.actionEnabled = k8sMetricsProperties.isEnableCommonMetricsFilterAction();
+
         String list = k8sMetricsProperties.getCommonMetricsBlacklist();
         if (list != null && !list.isEmpty()) {
             String[] array = StringUtils.tokenizeToStringArray(list, ",", true, true);
@@ -169,5 +173,9 @@ public class CommonMetricsFilter implements MeterFilter {
 
     public void setPrefixes(String[] prefixes) {
         this.prefixes = prefixes;
+    }
+
+    public boolean isActionEnabled() {
+        return actionEnabled;
     }
 }

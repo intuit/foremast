@@ -30,6 +30,9 @@ public class K8sMetricsProperties {
     @Value("${k8s.metrics.common-metrics-prefix}")
     private String commonMetricsPrefix = null;
 
+    @Value("${k8s.metrics.enable-common-metrics-filter-action}")
+    private boolean enableCommonMetricsFilterAction = false;
+
 
     public String getInitializeForStatuses() {
         return initializeForStatuses;
@@ -89,5 +92,13 @@ public class K8sMetricsProperties {
 
     public void setCommonMetricsPrefix(String commonMetricsPrefix) {
         this.commonMetricsPrefix = commonMetricsPrefix;
+    }
+
+    public boolean isEnableCommonMetricsFilterAction() {
+        return enableCommonMetricsFilterAction;
+    }
+
+    public void setEnableCommonMetricsFilterAction(boolean enableCommonMetricsFilterAction) {
+        this.enableCommonMetricsFilterAction = enableCommonMetricsFilterAction;
     }
 }

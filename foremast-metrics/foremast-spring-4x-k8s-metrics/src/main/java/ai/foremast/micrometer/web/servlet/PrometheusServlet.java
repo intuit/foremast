@@ -18,8 +18,6 @@ package ai.foremast.micrometer.web.servlet;
 
 
 import ai.foremast.metrics.k8s.starter.CommonMetricsFilter;
-import ai.foremast.metrics.k8s.starter.K8sMetricsProperties;
-import ai.foremast.micrometer.autoconfigure.MetricsProperties;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 
@@ -53,20 +51,20 @@ public class PrometheusServlet extends HttpServlet {
         super.init(config);
 
         WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(config.getServletContext());
-        this.collectorRegistry = ctx.getBean(CollectorRegistry.class);
-        this.commonMetricsFilter = ctx.getBean(CommonMetricsFilter.class);
+        this.setCollectorRegistry(ctx.getBean(CollectorRegistry.class));
+        this.setCommonMetricsFilter(ctx.getBean(CommonMetricsFilter.class));
     }
 
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String action = req.getParameter("action");
-        if (commonMetricsFilter != null && action != null) {
+        if (getCommonMetricsFilter() != null && getCommonMetricsFilter().isActionEnabled() && action != null) {
             String metricName = req.getParameter("metric");
             if ("enable".equalsIgnoreCase(action)) {
-                commonMetricsFilter.enableMetric(metricName);
+                getCommonMetricsFilter().enableMetric(metricName);
             }
             else if ("disable".equalsIgnoreCase(action)) {
-                commonMetricsFilter.disableMetric(metricName);
+                getCommonMetricsFilter().disableMetric(metricName);
             }
             resp.getWriter().write("OK");
             return;
@@ -74,7 +72,7 @@ public class PrometheusServlet extends HttpServlet {
 
         try {
             StringWriter writer = new StringWriter();
-            TextFormat.write004(writer, collectorRegistry.metricFamilySamples());
+            TextFormat.write004(writer, getCollectorRegistry().metricFamilySamples());
             resp.setContentType(TextFormat.CONTENT_TYPE_004);
             resp.getWriter().write(writer.toString());
         } catch (IOException e) {
@@ -83,4 +81,19 @@ public class PrometheusServlet extends HttpServlet {
         }
     }
 
+    public CollectorRegistry getCollectorRegistry() {
+        return collectorRegistry;
+    }
+
+    public void setCollectorRegistry(CollectorRegistry collectorRegistry) {
+        this.collectorRegistry = collectorRegistry;
+    }
+
+    public CommonMetricsFilter getCommonMetricsFilter() {
+        return commonMetricsFilter;
+    }
+
+    public void setCommonMetricsFilter(CommonMetricsFilter commonMetricsFilter) {
+        this.commonMetricsFilter = commonMetricsFilter;
+    }
 }
