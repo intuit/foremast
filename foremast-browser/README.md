@@ -1,6 +1,6 @@
 # Foremast Browser
 
-In addition to the details listed below, this app will require that you correctly configure `/etc/hosts` such that the domain name of `foremast-api-service.foremast.svc.cluster.local` can be used. Or you can change the code to make requests of the back-end of your choice.
+In addition to the details listed below, this app will require that you correctly configure `/etc/hosts` such that the domain name of `foremast-service` can be used and mapped to make requests of the back-end of your choice.
 
 ---
 
