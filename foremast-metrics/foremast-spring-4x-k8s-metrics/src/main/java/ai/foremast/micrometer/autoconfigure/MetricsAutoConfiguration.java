@@ -93,25 +93,6 @@ public class MetricsAutoConfiguration {
         return new CollectorRegistry(true);
     }
 
-
-
-//    @Bean
-//    public DefaultWebMvcTagsProvider servletTagsProvider() {
-//        return new DefaultWebMvcTagsProvider();
-//    }
-
-//    @SuppressWarnings("deprecation")
-//    @Bean
-//    public WebMvcMetricsFilter webMetricsFilter(MeterRegistry registry,
-//                                                WebMvcTagsProvider tagsProvider,
-//                                                WebApplicationContext ctx,
-//                                                MetricsProperties properties) {
-//        return new WebMvcMetricsFilter(registry, tagsProvider,
-//                properties.getWeb().getServer().getRequestsMetricName(),
-//                properties.getWeb().getServer().isAutoTimeRequests(),
-//                new HandlerMappingIntrospector(ctx));
-//    }
-
     @Bean
     @Order(0)
     public MeterFilter metricsHttpServerUriTagFilter(MetricsProperties properties) {
@@ -133,28 +114,17 @@ public class MetricsAutoConfiguration {
         return new CompositeMeterRegistry(clock, registries);
     }
 
-//    @Bean
-//    public TomcatMetricsBinder tomcatMetricsBinder(MeterRegistry meterRegistry) {
-//        return new TomcatMetricsBinder(meterRegistry);
-//    }
-
     @Bean
-//    @ConditionalOnProperty(value = "management.metrics.binders.uptime.enabled", matchIfMissing = true)
-//    @ConditionalOnMissingBean(UptimeMetrics.class)
     public UptimeMetrics uptimeMetrics() {
         return new UptimeMetrics();
     }
 
     @Bean
-//    @ConditionalOnProperty(value = "management.metrics.binders.processor.enabled", matchIfMissing = true)
-//    @ConditionalOnMissingBean(ProcessorMetrics.class)
     public ProcessorMetrics processorMetrics() {
         return new ProcessorMetrics();
     }
 
     @Bean
-//    @ConditionalOnProperty(name = "management.metrics.binders.files.enabled", matchIfMissing = true)
-//    @ConditionalOnMissingBean(FileDescriptorMetrics.class)
     public FileDescriptorMetrics fileDescriptorMetrics() {
         return new FileDescriptorMetrics();
     }

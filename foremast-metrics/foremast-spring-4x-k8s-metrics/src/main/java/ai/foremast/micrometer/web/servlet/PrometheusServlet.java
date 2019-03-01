@@ -17,6 +17,9 @@
 package ai.foremast.micrometer.web.servlet;
 
 
+import ai.foremast.metrics.k8s.starter.CommonMetricsFilter;
+import ai.foremast.metrics.k8s.starter.K8sMetricsProperties;
+import ai.foremast.micrometer.autoconfigure.MetricsProperties;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 
@@ -43,15 +46,32 @@ public class PrometheusServlet extends HttpServlet {
     private CollectorRegistry collectorRegistry;
 
 
+    private CommonMetricsFilter commonMetricsFilter;
+
+
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
         WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(config.getServletContext());
         this.collectorRegistry = ctx.getBean(CollectorRegistry.class);
+        this.commonMetricsFilter = ctx.getBean(CommonMetricsFilter.class);
     }
 
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
+        if (commonMetricsFilter != null && action != null) {
+            String metricName = req.getParameter("metric");
+            if ("enable".equalsIgnoreCase(action)) {
+                commonMetricsFilter.enableMetric(metricName);
+            }
+            else if ("disable".equalsIgnoreCase(action)) {
+                commonMetricsFilter.disableMetric(metricName);
+            }
+            resp.getWriter().write("OK");
+            return;
+        }
+
         try {
             StringWriter writer = new StringWriter();
             TextFormat.write004(writer, collectorRegistry.metricFamilySamples());

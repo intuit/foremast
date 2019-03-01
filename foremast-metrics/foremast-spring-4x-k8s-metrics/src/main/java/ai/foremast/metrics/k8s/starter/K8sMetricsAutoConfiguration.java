@@ -1,6 +1,7 @@
 package ai.foremast.metrics.k8s.starter;
 
 import ai.foremast.micrometer.autoconfigure.MeterRegistryCustomizer;
+import ai.foremast.micrometer.autoconfigure.MetricsProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -24,9 +25,15 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
 
     @Bean
-    public K8sMetricsProperties initK8sMetricsProperties() {
+    public K8sMetricsProperties k8sMetricsProperties() {
         return k8sMetricsProperties = new K8sMetricsProperties();
     }
+
+    @Bean
+    public CommonMetricsFilter commonMetricsFilter(K8sMetricsProperties k8sMetricsProperties, MetricsProperties properties) {
+        return new CommonMetricsFilter(k8sMetricsProperties, properties);
+    }
+
 
     @Override
     public void customize(MeterRegistry registry) {
