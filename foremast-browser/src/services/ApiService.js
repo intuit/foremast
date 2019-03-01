@@ -1,3 +1,5 @@
+// @flow
+
 import { dataDomain, dataPath, dataQueryParam, dataStartParam,
   dataEndParam, dataStepParam, dataStepValSec } from '../config/api';
 
@@ -52,4 +54,11 @@ const encodeParams = params => {
     paramStr = '?' + paramStr
   }
   return paramStr;
+};
+
+//NOTE: string concatenation is potentially insecure IF the string generated
+//here were to be directly built into a DB query at any point; but really, this
+//sanitization will need to be confirmed in service/back-end layers
+const tagBuilder = (namespace = '', appName, namespaceKey) => {
+  return `{${namespaceKey}="${namespace}", app="${appName}"}`;
 };
