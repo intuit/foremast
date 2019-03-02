@@ -32,15 +32,15 @@ k8s.metrics.callerHeader=X-CALLER
 #### How to use in your spring boot application?
 ```xml
     <properties>
-      <foremast-spring-boot-k8s-metrics-starter>0.1.3</foremast-spring-boot-k8s-metrics-starter>
+      <foremast-spring-boot-1x-k8s-metrics-starter>0.1.6</foremast-spring-boot-1x-k8s-metrics-starter>
     </properties>
 
     <dependencies>
     <!-- K8s Metrics Starter which is to simplify the metrics usage on K8s -->
       <dependency>
          <groupId>ai.foremast.metrics</groupId>
-         <artifactId>foremast-spring-boot-k8s-metrics-starter</artifactId>
-         <version>${foremast-spring-boot-k8s-metrics-starter}</version>
+         <artifactId>foremast-spring-boot-1x-k8s-metrics-starter</artifactId>
+         <version>${foremast-spring-boot-1x-k8s-metrics-starter}</version>
       </dependency>
     </dependencies>
 ```

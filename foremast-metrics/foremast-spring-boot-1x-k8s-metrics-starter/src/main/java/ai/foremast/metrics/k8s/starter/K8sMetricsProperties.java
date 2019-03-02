@@ -15,6 +15,57 @@ public class K8sMetricsProperties {
 
     private boolean disableCsrf = false;
 
+    private boolean enableCommonMetricsFilter = false;
+
+    private String commonMetricsWhitelist = null;
+
+    private String commonMetricsBlacklist = null;
+
+    private String commonMetricsPrefix = null;
+
+    private boolean enableCommonMetricsFilterAction = false;
+
+
+    public boolean isEnableCommonMetricsFilter() {
+        return enableCommonMetricsFilter;
+    }
+
+    public void setEnableCommonMetricsFilter(boolean enableCommonMetricsFilter) {
+        this.enableCommonMetricsFilter = enableCommonMetricsFilter;
+    }
+
+    public String getCommonMetricsWhitelist() {
+        return commonMetricsWhitelist;
+    }
+
+    public void setCommonMetricsWhitelist(String commonMetricsWhitelist) {
+        this.commonMetricsWhitelist = commonMetricsWhitelist;
+    }
+
+    public String getCommonMetricsBlacklist() {
+        return commonMetricsBlacklist;
+    }
+
+    public void setCommonMetricsBlacklist(String commonMetricsBlacklist) {
+        this.commonMetricsBlacklist = commonMetricsBlacklist;
+    }
+
+    public String getCommonMetricsPrefix() {
+        return commonMetricsPrefix;
+    }
+
+    public void setCommonMetricsPrefix(String commonMetricsPrefix) {
+        this.commonMetricsPrefix = commonMetricsPrefix;
+    }
+
+    public boolean isEnableCommonMetricsFilterAction() {
+        return enableCommonMetricsFilterAction;
+    }
+
+    public void setEnableCommonMetricsFilterAction(boolean enableCommonMetricsFilterAction) {
+        this.enableCommonMetricsFilterAction = enableCommonMetricsFilterAction;
+    }
+
     public String getInitializeForStatuses() {
         return initializeForStatuses;
     }
