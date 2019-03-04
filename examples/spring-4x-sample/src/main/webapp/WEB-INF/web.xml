@@ -25,23 +25,16 @@
 	<filter>
 		<filter-name>HttpServerMetrics</filter-name>
 		<filter-class>ai.foremast.micrometer.web.servlet.WebMvcMetricsFilter</filter-class>
+		<init-param>
+			<param-name>prometheus-path</param-name>
+			<param-value>/actuator/prometheus</param-value>
+		</init-param>
 	</filter>
 
 	<filter-mapping>
 		<filter-name>HttpServerMetrics</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
-
-	<servlet>
-		<servlet-name>prometheus</servlet-name>
-		<servlet-class>ai.foremast.micrometer.web.servlet.PrometheusServlet</servlet-class>
-		<load-on-startup>1000</load-on-startup>
-	</servlet>
-
-	<servlet-mapping>
-		<servlet-name>prometheus</servlet-name>
-		<url-pattern>/prometheus</url-pattern>
-	</servlet-mapping>
 
 	<session-config>
 		<session-timeout>60</session-timeout>
