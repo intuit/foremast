@@ -94,11 +94,18 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			var continuous = oldMonitor.Spec.Continuous
 			var newContinuous = newMonitor.Spec.Continuous
 			var continuousChange = continuous != newContinuous
+			var hpa = oldMonitor.Spec.Hpa
+			var newHpa = newMonitor.Spec.Hpa
 
 			if newPhase == oldPhase {
 				if continuousChange {
 					if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
 						go barrelman.monitorContinuously(newMonitor)
+						return
+					}
+				} else if hpa != newHpa {
+					if newHpa && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
+						go barrelman.monitorHpa(newMonitor)
 						return
 					}
 				} else {
