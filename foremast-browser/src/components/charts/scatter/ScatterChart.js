@@ -145,6 +145,9 @@ export default class ScatterChart extends React.Component {
   buildSeries() {
     let xytData = [];
     let { xSeries, ySeries } = this.props;
+    //copy the arrays since we may mutate them below, and we don't want to
+    //mutate arrs directly in the store
+    xSeries = [...xSeries]; ySeries = [...ySeries];
     //immediately enforce the same lengths
     if(xSeries.length !== 0 && ySeries.length !== 0){
       xSeries.length = Math.min(xSeries.length, ySeries.length);
