@@ -1,4 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-    ai.foremast.metrics.k8s.starter.ExposePrometheusAutoConfiguration,\
-    ai.foremast.metrics.k8s.starter.ActuatorSecurityConfig,\
-    ai.foremast.metrics.k8s.starter.K8sMetricsAutoConfiguration
