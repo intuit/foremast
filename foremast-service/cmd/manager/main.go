@@ -17,15 +17,6 @@ import (
 	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
-
-	common "foremast.ai/foremast/foremast-service/pkg/common"
-	converter "foremast.ai/foremast/foremast-service/pkg/converter"
-	models "foremast.ai/foremast/foremast-service/pkg/models"
-	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
-	search "foremast.ai/foremast/foremast-service/pkg/search"
-	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
-	"github.com/gin-gonic/gin"
-	"github.com/olivere/elastic"
 )
 
 var (
@@ -249,10 +240,11 @@ func main() {
 	QueryEndpoint = os.Getenv("QUERY_SERVICE_ENDPOINT")
 	if esURL == "" {
 		//esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
-		esURL = "http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200/"
+		esURL = "http://a2c1d2f06186b11e98f4602f39e94cef-36929393.us-west-2.elb.amazonaws.com:9200/"
 	}
 	if QueryEndpoint == "" {
-		QueryEndpoint = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
+		// QueryEndpoint = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
+		QueryEndpoint = "http://a6ac3e9663bb411e9a63702d1928664b-740248454.us-west-2.elb.amazonaws.com:9090/"
 	}
 
 	var err error
