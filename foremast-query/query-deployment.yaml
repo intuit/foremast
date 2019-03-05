@@ -15,7 +15,7 @@ spec:
         app: foremast-query
     spec:
       containers:
-      - image: docker.io/kjones43/foremast-query:1.7
+      - image: docker.io/kjones43/foremast-query:2.3
         imagePullPolicy: Always
         name: query
         resources:
@@ -30,6 +30,6 @@ spec:
           name: http
         env:
           - name: ENDPOINT
-            # value: http://foremast-service.foremast.
-            value: http://10.97.93.44:8099/v1/healthcheck/create
+            value: http://foremast-service.foremast.svc.cluster.local
+            # value: http://10.97.93.44:8099/v1/healthcheck/create
       terminationGracePeriodSeconds: 10
