@@ -1,0 +1,33 @@
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+target
+
+# Kubernetes Generated files - skip generated files, except for vendored files
+
+zz_generated.*
+!vendor/**/zz_generated.*
+
+# editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~
+*.iml
+*.DS_Store
+
+# Jekyll 
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata

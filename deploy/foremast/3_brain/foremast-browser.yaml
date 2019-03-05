@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: foremast-browser
+  namespace: foremast
+  labels:
+    app: foremast-browser
+spec:
+  selector:
+    app: foremast-browser
+  ports:
+  - port: 80
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foremast-browser
+  namespace: foremast
+  labels:
+    app: foremast-browser
+spec:
+  selector:
+    matchLabels:
+      app: foremast-browser
+  template:
+    metadata:
+      labels:
+        app: foremast-browser
+    spec:
+      containers:
+      - image: docker.io/foremast/foremast-browser:0.5.0
+        imagePullPolicy: Always
+        name: service
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+        ports:
+        - containerPort: 80
+          name: http
+      terminationGracePeriodSeconds: 10

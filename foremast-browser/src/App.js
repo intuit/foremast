@@ -8,15 +8,13 @@ import Highcharts from 'highcharts';
 
 import './App.css';
 import * as metricActions from "./actions/metricActions";
-import { METRICS_MAP, ANNOTATION_QUERY,
-  BASE, UPPER, LOWER, ANOMALY } from './config/metrics';
+import { METRICS_MAP, ANNOTATION_QUERY_A, ANNOTATION_QUERY_B,
+  ANNOTATION_QUERY_C, BASE, UPPER, LOWER, ANOMALY, X_METRIC_NAME,
+  Y_METRIC_NAME, DEFAULT_NAMESPACE, DEFAULT_APPNAME } from './config/metrics';
 import { dataStepValSec } from './config/api';
 import Header from './components/header/Header';
 import TimeseriesChart from './components/charts/timeseries/TimeseriesChart';
 import ScatterChart from './components/charts/scatter/ScatterChart';
-
-const xMetricName = 'namespace_app_per_pod:http_server_requests_latency';
-const yMetricName = 'namespace_app_per_pod:http_server_requests_error_5xx';
 
 class App extends React.Component {
   state = {
@@ -60,23 +58,37 @@ class App extends React.Component {
           }
       });
 
+    //TODO:DM - figure out how to make this more DRY wrt same block below
+    let { namespace, appName } = this.props.match.params;
+    //override these params if undefined
+    namespace = namespace || DEFAULT_NAMESPACE;
+    appName = appName || DEFAULT_APPNAME;
+
     //track base metrics and annotations based on config
     Object.keys(METRICS_MAP).forEach(key => {
       this.props.metricActions.addBaseMetric(key, METRICS_MAP[key]);
     });
 
-    this.props.metricActions.addAnnotationMetric(ANNOTATION_QUERY);
+    this.props.metricActions.addAnnotationMetric(ANNOTATION_QUERY_A + appName +
+      ANNOTATION_QUERY_B + namespace + ANNOTATION_QUERY_C);
 
     this.fetchData();
     setInterval(this.fetchData, dataStepValSec * 1000);
   }
 
   fetchData = () => {
-    //API can't provide more than roughly 7 days of data at 60sec granularity
-    const endTimestamp = moment().subtract(0, 'minutes').unix();
-    const startTimestamp = moment().subtract(15, 'minutes').unix();
+    //API can't provide more than roughly 7 days of data at 60sec granularity,
+    //in practice we'll probably request even quite a bit less; 15min here
+    let endTimestamp = moment().subtract(0, 'minutes').unix();
+    //align requests with 15 sec boundaries to make responses more consistent
+    endTimestamp -= (endTimestamp % 15);
+    let startTimestamp = moment().subtract(15, 'minutes').unix();
+    startTimestamp -= (startTimestamp % 15);
 
-    const { namespace, appName } = this.props.match.params;
+    let { namespace, appName } = this.props.match.params;
+    //override these params if undefined
+    namespace = namespace || DEFAULT_NAMESPACE;
+    appName = appName || DEFAULT_APPNAME;
     this.setState({
       namespace,
       appName
@@ -89,7 +101,7 @@ class App extends React.Component {
     Object.keys(metric.resultsByName).forEach(key => {
       metric.resultsByName[key].metrics.forEach(metricObj => {
         let scale = metric.resultsByName[key].scale;
-        metricActions.requestMetricData(key, metricObj, scale, startTimestamp, endTimestamp);
+        metricActions.requestMetricData(namespace, appName, key, metricObj, scale, startTimestamp, endTimestamp);
       });
     });
 
@@ -126,8 +138,10 @@ class App extends React.Component {
             }
           </div>
           <ScatterChart
-            xSeries={metric.resultsByName[xMetricName] ? metric.resultsByName[xMetricName][BASE] : []}
-            ySeries={metric.resultsByName[yMetricName] ? metric.resultsByName[yMetricName][BASE] : []}
+            xSeries={metric.resultsByName[X_METRIC_NAME] ?
+              [...metric.resultsByName[X_METRIC_NAME][BASE]] : []}
+            ySeries={metric.resultsByName[Y_METRIC_NAME] ?
+              [...metric.resultsByName[Y_METRIC_NAME][BASE]] : []}
           />
         </SplitterLayout>
       </div>

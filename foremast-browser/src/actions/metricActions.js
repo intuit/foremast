@@ -7,9 +7,9 @@ export const addBaseMetric = (name, object) => ({
   object
 });
 
-export const requestMetricData = (baseName, metric, scale, start, end) => {
+export const requestMetricData = (namespace, appName, baseName, metric, scale, start, end) => {
   return dispatch => {
-    let requestPromise = ApiService.getMetricData(metric, start, end);
+    let requestPromise = ApiService.getMetricData(namespace, appName, metric, start, end);
     return requestPromise.then(results => {
       dispatch(receiveMetricData(baseName, metric, scale, results));
     });
@@ -19,7 +19,7 @@ export const requestMetricData = (baseName, metric, scale, start, end) => {
 export const receiveMetricData = (baseName, metric, scale, results) => ({
   type: types.RECEIVE_METRIC_DATA,
   baseName,
-  metric,
+  metricType: metric.type,
   scale,
   results
 });

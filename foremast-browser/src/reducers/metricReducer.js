@@ -20,16 +20,24 @@ export default function metric(state = initialState.metric, action) {
         [BASE]: [],
         [UPPER]: [],
         [LOWER]: [],
-        [ANOMALY]: []
+        [ANOMALY]: {}
       };
       return newState;
     case RECEIVE_METRIC_DATA:
       newState = {
-        ...state
+        ...state,
+        resultsByName: {
+          ...state.resultsByName,
+          [action.baseName]: {
+            ...state.resultsByName[action.baseName],
+            [action.metricType]:
+              //each action result resp. provides just 1 data series, so use
+              //the 0th index of data arr
+              parseMetricData(action.results[0], action.metricType, action.scale,
+                state.resultsByName[action.baseName][BASE])
+          }
+        }
       };
-      newState.resultsByName[action.baseName][action.metric.type] = parseMetricData(
-        action.results, action.metric.type, action.scale,
-        state.resultsByName[action.baseName][BASE]);
       return newState;
     case ADD_ANNOTATION_METRIC:
       newState = {
@@ -53,20 +61,22 @@ const parseMetricData = (data, type, scale, baseSeries) => {
     case BASE:
     case UPPER:
     case LOWER:
-      //each of these series provides just 1 data series, use 0th index of data arr
-      return data[0] && _.isArray(data[0].values) ?
-        data[0].values.map(point => [1000 * point[0], scale * parseFloat(point[1])]) :
-        [];
+      //for any direct series, map raw points to plot-able points via timestamp
+      //change and converting string value to float, while scaling; empty array
+      //if no input data present
+      return (data && _.isArray(data.values)) ?
+        data.values.map(point => [1000 * point[0],
+          scale * parseFloat(point[1])]) : [];
     case ANOMALY:
-      return parseAnomalyData(data[0], baseSeries);
+      return parseAnomalyData(data, baseSeries);
     default:
-      break;
+      return;
   }
 };
 
 const parseAnomalyData = (data, baseSeries) => {
   let returnData = [];
-  let anomalyArr = (data && data.values) ?
+  let anomalyArr = (data && _.isArray(data.values)) ?
     data.values.map(point => 1000 * parseInt(point[1])) : [];
   let seen = new Set();
   anomalyArr.forEach(anomalyTimestamp => {
@@ -83,7 +93,7 @@ const parseAnomalyData = (data, baseSeries) => {
     baseSeries.forEach(basePoint => {
       let timeDiff = anomalyTimestamp - basePoint[0];
       //use this point if it's within a minute (data resolution requested), but only if BEFORE anomaly stamp
-      if(timeDiff < dataStepValSec * 1000 && timeDiff > 0) {
+      if(timeDiff <= dataStepValSec * 2000 && timeDiff > 0) {
         //NOTE: using base point here will allow for anomalous points to fall directly on top of measured series BUT does therefore indicate slightly different timing than the anaomalies may be marked with
         //NOTE: also, this strategy allows for out of order points to be added, highcharts will warn about this with error #15, but it doesn't stop it from rendering as expected
         returnData.push(basePoint);
