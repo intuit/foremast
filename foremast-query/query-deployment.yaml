@@ -15,7 +15,7 @@ spec:
         app: foremast-query
     spec:
       containers:
-      - image: docker.io/kjones43/foremast-query:2.3
+      - image: docker.io/shaoxt/foremast-query:2.3-das
         imagePullPolicy: Always
         name: query
         resources:
@@ -29,7 +29,9 @@ spec:
         - containerPort: 8011
           name: http
         env:
-          - name: ENDPOINT
-            value: http://foremast-service.foremast.svc.cluster.local
+          - name: FOREMAST_ES_ENDPOINT
+            value: http://elasticsearch-discovery.foremast.svc.cluster.local:9200
+          - name: FOREMAST_SERVICE_ENDPOINT
+            value: http://foremast-service.foremast.svc.cluster.local:8099
             # value: http://10.97.93.44:8099/v1/healthcheck/create
       terminationGracePeriodSeconds: 10

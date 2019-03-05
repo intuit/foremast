@@ -15,7 +15,7 @@ FROM ubuntu:latest
 RUN apt-get update
 RUN apt-get -y install curl
 WORKDIR /root/
-COPY --from=builder /go/src/foremast.ai/foremast/foremast-query/manager .
 COPY --from=builder /go/src/foremast.ai/foremast/foremast-query/cmd/manager/requests.csv .
+COPY --from=builder /go/src/foremast.ai/foremast/foremast-query/manager .
 # COPY ./cmd/manager/manager .
 ENTRYPOINT ["./manager"]
