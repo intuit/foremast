@@ -52,7 +52,7 @@ var jobmap map[string]JobInfo
 
 func CheckJobCompleted(jobID string) bool {
 	// esUrl := "http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200/documents/_search"
-	esUrl := "http://a2c1d2f06186b11e98f4602f39e94cef-36929393.us-west-2.elb.amazonaws.com:9200/documents/_search"
+	esUrl := os.Getenv("FOREMAST_ES_ENDPOINT") + "/documents/_search"
 	newRequest := JobRequest{
 		Query: map[string]map[string][]string{
 			"terms": {
@@ -96,7 +96,7 @@ func CheckJobCompleted(jobID string) bool {
 			completed = true
 			return true
 		} else {
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Minute)
 		}
 
 	}
@@ -110,7 +110,7 @@ func CheckAllJobsCompleted() {
 
 func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string, error) {
 	//log.Printf("\n\nendpoint: %#v\n\n", analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"])
-	endpoint := "http://" + os.Getenv("FOREMAST_SERVICE_SERVICE_HOST") + ":" + os.Getenv("FOREMAST_SERVICE_SERVICE_PORT_HTTP") + "/v1/healthcheck/create" //os.Getenv("ENDPOINT")
+	endpoint := os.Getenv("FOREMAST_SERVICE_ENDPOINT") + "/v1/healthcheck/create" //os.Getenv("ENDPOINT")
 
 	log.Printf("\nendpoint: %#v\n", endpoint)
 	c, err := fq.NewClient(nil, endpoint) //analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"].(string))
@@ -160,39 +160,85 @@ func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string
 
 func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool {
 	now := time.Now()
-	nanos := now.UnixNano()
-	millis := nanos / 1000000
-	startTime := millis - (60 * 5)
+	unix := now.Unix()
+	startTime := unix - (60 * 5)
 	endTime := startTime + (60 * 30)
 
-	sample := `{"appName":"fds-dac","startTime":"2018-11-03T16:50:04-07:00","endTime":"2018-11-03T16:33:04-07:00","strategy":"rollover","metrics":{"current":{"error4xx":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"","start":1550815200000,"step":60}},"latency":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"avg(align(60s, mean, ts(appdynamics.apm.transactions.avg_resp_time_ms, bu=cto and app=fds-dac and env=prd and source=fds-dac )), name)","start":1550815200000,"step":60}}},"historical":{"error4xx":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"avg(align(60s, mean, ts(appdynamics.apm.transactions.errors_per_min, bu=cto and app=fds-dac and env=prd and source=fds-dac )), name)","start":1550815200000,"step":60}},"latency":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"avg(align(60s, mean, ts(appdynamics.apm.transactions.avg_resp_time_ms, bu=cto and app=fds-dac and env=prd and source=fds-dac )), name)","start":1550815200000,"step":60}}},"strategy":"rollover"}}`
+	//sample := `{"appName":"fds-dac","startTime":"2018-11-03T16:50:04-07:00","endTime":"2018-11-03T16:33:04-07:00","strategy":"rollover","metrics":{"current":{"error4xx":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"","start":1550815200000,"step":60}},"latency":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"avg(align(60s, mean, ts(appdynamics.apm.transactions.avg_resp_time_ms, bu=cto and app=fds-dac and env=prd and source=fds-dac )), name)","start":1550815200000,"step":60}}},"historical":{"error4xx":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"avg(align(60s, mean, ts(appdynamics.apm.transactions.errors_per_min, bu=cto and app=fds-dac and env=prd and source=fds-dac )), name)","start":1550815200000,"step":60}},"latency":{"dataSourceType":"wavefront","parameters":{"end":1550825400000,"endpoint":"http://ab683be21d97f11e88e87023426427de-657499332.us-west-2.elb.amazonaws.com:9090/api/v1/","query":"avg(align(60s, mean, ts(appdynamics.apm.transactions.avg_resp_time_ms, bu=cto and app=fds-dac and env=prd and source=fds-dac )), name)","start":1550815200000,"step":60}}},"strategy":"rollover"}}`
 
 	analyzingRequest := fq.ApplicationHealthAnalyzeRequest{}
-	byt := []byte(sample)
-	if err := json.Unmarshal(byt, &analyzingRequest); err != nil {
-		panic(err)
-	}
+	//byt := []byte(sample)
+	//if err := json.Unmarshal(byt, &analyzingRequest); err != nil {
+	//	panic(err)
+	//}
 
-	endpoint := "http://" + os.Getenv("FOREMAST_SERVICE_SERVICE_HOST") + ":" + os.Getenv("FOREMAST_SERVICE_SERVICE_PORT_HTTP") + "/v1/healthcheck/create" //os.Getenv("ENDPOINT")
+	//endpoint := os.Getenv("FOREMAST_SERVICE_ENDPOINT") + "/v1/healthcheck/create" //os.Getenv("ENDPOINT")
 
 	analyzingRequest.AppName = appName
 	fmt.Printf("%s, %s", analyzingRequest.AppName, appName)
-	analyzingRequest.Metrics.Current["error4xx"].Parameters["query"] = errorQuery
-	analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"] = endpoint
-	analyzingRequest.Metrics.Current["error4xx"].Parameters["start"] = startTime
-	analyzingRequest.Metrics.Current["error4xx"].Parameters["end"] = endTime
-	analyzingRequest.Metrics.Current["latency"].Parameters["query"] = latencyQuery
-	analyzingRequest.Metrics.Current["latency"].Parameters["endpoint"] = endpoint
-	analyzingRequest.Metrics.Current["latency"].Parameters["start"] = startTime
-	analyzingRequest.Metrics.Current["latency"].Parameters["end"] = endTime
-	analyzingRequest.Metrics.Historical["error4xx"].Parameters["query"] = errorQuery
-	analyzingRequest.Metrics.Historical["error4xx"].Parameters["endpoint"] = endpoint
-	analyzingRequest.Metrics.Historical["error4xx"].Parameters["start"] = startTime
-	analyzingRequest.Metrics.Historical["error4xx"].Parameters["end"] = endTime
-	analyzingRequest.Metrics.Historical["latency"].Parameters["query"] = latencyQuery
-	analyzingRequest.Metrics.Historical["latency"].Parameters["endpoint"] = endpoint
-	analyzingRequest.Metrics.Historical["latency"].Parameters["start"] = startTime
-	analyzingRequest.Metrics.Historical["latency"].Parameters["end"] = endTime
+	analyzingRequest.Metrics = fq.MetricsInfo{
+		Current: map[string]fq.MetricQuery{
+			"error5xx": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    errorQuery,
+					"endpoint": "",
+					"start":    startTime,
+					"end":      endTime,
+					"step":     60,
+				},
+			},
+			"latency": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    latencyQuery,
+					"endpoint": "",
+					"start":    startTime,
+					"end":      endTime,
+					"step":     60,
+				},
+			},
+		},
+		Historical: map[string]fq.MetricQuery{
+			"error5xx": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    errorQuery,
+					"endpoint": "",
+					"start":    startTime,
+					"end":      endTime,
+					"step":     60,
+				},
+			},
+			"latency": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    latencyQuery,
+					"endpoint": "",
+					"start":    startTime,
+					"end":      endTime,
+					"step":     60,
+				},
+			},
+		},
+	}
+
+	//analyzingRequest.Metrics.Current["error4xx"].Parameters["query"] = errorQuery
+	//analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"] = ""
+	//analyzingRequest.Metrics.Current["error4xx"].Parameters["start"] = startTime
+	//analyzingRequest.Metrics.Current["error4xx"].Parameters["end"] = endTime
+	//analyzingRequest.Metrics.Current["latency"].Parameters["query"] = latencyQuery
+	//analyzingRequest.Metrics.Current["latency"].Parameters["endpoint"] = ""
+	//analyzingRequest.Metrics.Current["latency"].Parameters["start"] = startTime
+	//analyzingRequest.Metrics.Current["latency"].Parameters["end"] = endTime
+	//analyzingRequest.Metrics.Historical["error4xx"].Parameters["query"] = errorQuery
+	//analyzingRequest.Metrics.Historical["error4xx"].Parameters["endpoint"] = ""
+	//analyzingRequest.Metrics.Historical["error4xx"].Parameters["start"] = startTime
+	//analyzingRequest.Metrics.Historical["error4xx"].Parameters["end"] = endTime
+	//analyzingRequest.Metrics.Historical["latency"].Parameters["query"] = latencyQuery
+	//analyzingRequest.Metrics.Historical["latency"].Parameters["endpoint"] = ""
+	//analyzingRequest.Metrics.Historical["latency"].Parameters["start"] = startTime
+	//analyzingRequest.Metrics.Historical["latency"].Parameters["end"] = endTime
 	b, err := json.MarshalIndent(analyzingRequest, "", "  ")
 	if err != nil {
 		fmt.Println("error:", err)
@@ -248,7 +294,7 @@ func main() {
 		values := strings.Split(line, ";")
 		success := ForemastQuery(values[0], values[2], values[4])
 		for success != true {
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Minute)
 			ForemastQuery(values[0], values[2], values[4])
 		}
 		// time.Sleep(time.Second * 60)
@@ -256,9 +302,9 @@ func main() {
 	}
 
 	for {
-		if CheckJobCompleted(jobmap["fds-fpp"].JobID) {
+		if CheckJobCompleted(jobmap["fds-das"].JobID) {
 			// UpdateTimes(&jobmap[k].Request)
-			ForemastQuery("fds-fpp", jobmap["fds-fpp"].ErrorQuery, jobmap["fds-fpp"].LatencyQuery)
+			ForemastQuery("fds-das", jobmap["fds-das"].ErrorQuery, jobmap["fds-das"].LatencyQuery)
 		}
 	}
 
