@@ -23,6 +23,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "proxy": "http://foremast-service:8099",
   "eslintConfig": {
     "extends": "react-app"
   },
