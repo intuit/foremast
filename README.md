@@ -49,7 +49,7 @@ The [Set Up](docs/guides/installation.md) documentation has step by step instruc
 
 ### Running Foremast-Browser UI
 
-Documentation for running the front-end portion of the project can be found [here](foremast-browser/README.md).
+Documentation for running the front-end portion of the project can be found [here](foremast-dashboard/README.md).
 
 ## Roadmap
 
