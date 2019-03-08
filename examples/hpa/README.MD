@@ -5,13 +5,18 @@
 - VPA - Vertical Pod Autoscaler (VPA) frees the users from necessity of setting up-to-date resource requests for the containers in their pods. When configured, it will set the requests automatically based on usage and thus allow proper scheduling onto nodes so that appropriate resource amount is available for each pod.
 
 ###Problem statement
-- As an application developer it is very hard to
+####HPA
+1. As an application developer it is very hard to
 Determine whether the application is CPU bound, network bound or traffic bound.
-Which metric should I set up for the HPA.
-Give right thresholds for CPU and memory for VPA.
+1. Which metric should I set up for the HPA.
+1. Give right thresholds for CPU and memory for VPA.
 
-- Also VPA picking 50%,95% as lower bound and upper bound is not accurate.
-All those information can be captured by historical data of the application itself.  So we can leverage automation instead of human decision to do that. 
+
+####VPA
+
+1. Also VPA picking 50%,95% as lower bound and upper bound is not accurate.
+1. All those information can be captured by historical data of the application itself.  So we can leverage automation instead of human decision to do that. 
+
 That’s the good area where Foremast can help.
 
 ###Proposal
