@@ -11,7 +11,7 @@ import * as metricActions from "./actions/metricActions";
 import { METRICS_MAP, ANNOTATION_QUERY_A, ANNOTATION_QUERY_B,
   ANNOTATION_QUERY_C, BASE, UPPER, LOWER, ANOMALY, X_METRIC_NAME,
   Y_METRIC_NAME, DEFAULT_NAMESPACE, DEFAULT_APPNAME } from './config/metrics';
-import { dataStepValSec } from './config/api';
+import { DATA_STEP_VAL_SEC } from './config/api';
 import Header from './components/header/Header';
 import TimeseriesChart from './components/charts/timeseries/TimeseriesChart';
 import ScatterChart from './components/charts/scatter/ScatterChart';
@@ -73,7 +73,7 @@ class App extends React.Component {
       ANNOTATION_QUERY_B + namespace + ANNOTATION_QUERY_C);
 
     this.fetchData();
-    setInterval(this.fetchData, dataStepValSec * 1000);
+    setInterval(this.fetchData, DATA_STEP_VAL_SEC * 1000);
   }
 
   fetchData = () => {
@@ -112,7 +112,7 @@ class App extends React.Component {
   };
 
   render() {
-    let { namespace, appName } = this.state;
+    const { namespace, appName } = this.state;
     let { metric } = this.props;
     return (
       <div className="App">
@@ -137,12 +137,13 @@ class App extends React.Component {
               })
             }
           </div>
-          <ScatterChart
-            xSeries={metric.resultsByName[X_METRIC_NAME] ?
-              [...metric.resultsByName[X_METRIC_NAME][BASE]] : []}
-            ySeries={metric.resultsByName[Y_METRIC_NAME] ?
-              [...metric.resultsByName[Y_METRIC_NAME][BASE]] : []}
-          />
+          {//only render ScatterChart once resultsByName objects has necesssary data
+          metric.resultsByName[X_METRIC_NAME] && metric.resultsByName[X_METRIC_NAME] &&
+            <ScatterChart
+              xSeries={metric.resultsByName[X_METRIC_NAME][BASE]}
+              ySeries={metric.resultsByName[Y_METRIC_NAME][BASE]}
+            />
+          }
         </SplitterLayout>
       </div>
     );
