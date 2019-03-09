@@ -173,7 +173,15 @@ func (c *Barrelman) getDeploymentMetadata(namespace string, appName string, depl
 	return deploymentMetadata, nil
 }
 
+func (c *Barrelman) monitorHpa(monitor *v1alpha1.DeploymentMonitor) error {
+	return c.monitorInternal(monitor, m.StrategyHpa)
+}
+
 func (c *Barrelman) monitorContinuously(monitor *v1alpha1.DeploymentMonitor) error {
+	return c.monitorInternal(monitor, m.StrategyContinuous)
+}
+
+func (c *Barrelman) monitorInternal(monitor *v1alpha1.DeploymentMonitor, strategy string) error {
 	var deploymentName = monitor.Annotations[DeploymentName]
 	if deploymentName == "" {
 		deploymentName = monitor.Name
@@ -198,7 +206,7 @@ func (c *Barrelman) monitorContinuously(monitor *v1alpha1.DeploymentMonitor) err
 		return err
 	}
 
-	c.monitorNewDeployment(appName, depl, depl, deploymentMetadata, monitor, false, m.StrategyContinuous)
+	c.monitorNewDeployment(appName, depl, depl, deploymentMetadata, monitor, false, strategy)
 	return nil
 }
 
@@ -336,6 +344,7 @@ func NewBarrelman(
 			var remediationAction v1alpha1.RemediationAction
 			var create = false
 			var continuous = false
+			var hpa = false
 			if err != nil {
 				oldMonitor = &v1alpha1.DeploymentMonitor{
 					ObjectMeta: metav1.ObjectMeta{
@@ -354,6 +363,7 @@ func NewBarrelman(
 			} else {
 				remediationAction = oldMonitor.Spec.Remediation
 				continuous = oldMonitor.Spec.Continuous
+				hpa = oldMonitor.Spec.Hpa
 			}
 
 			oldMonitor.Spec = v1alpha1.DeploymentMonitorSpec{
@@ -365,6 +375,7 @@ func NewBarrelman(
 				Logs:             deploymentMetadata.Spec.Logs,
 				Remediation:      remediationAction,
 				Continuous:       continuous,
+				Hpa:              hpa,
 				RollbackRevision: 0,
 			}
 			oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{
@@ -573,7 +584,7 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 							glog.Infof("Updated deployment monitor %v", item)
 						}
 					}
-				} else if item.Spec.Continuous {
+				} else if item.Spec.Continuous || item.Spec.Hpa {
 					if item.Status.Phase == v1alpha1.MonitorPhaseUnhealthy {
 						d, err := time.Parse(time.RFC3339, item.Status.Timestamp)
 						if err == nil && (time.Now().Unix()-d.Unix()) > 60 {
@@ -581,7 +592,11 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 							go c.monitorContinuously(&item)
 						}
 					} else {
-						go c.monitorContinuously(&item)
+						if item.Spec.Continuous {
+							go c.monitorContinuously(&item)
+						} else if item.Spec.Hpa {
+							go c.monitorHpa(&item)
+						}
 					}
 				}
 			}
@@ -789,7 +804,7 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 
 	var podNames [][]string
 	var err error
-	if strategy != m.StrategyContinuous {
+	if !(strategy == m.StrategyContinuous || strategy == m.StrategyHpa) {
 		podNames, err = c.getPodNames(oldDepl, newDepl, c.kubeclientset)
 		if err != nil {
 			glog.Infof("Get pod names error %v %s", newDepl, err)
@@ -807,7 +822,7 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 	}
 
 	//begin monitoring new deployment
-	if strategy == m.StrategyContinuous || (oldMonitor != nil && !oldMonitor.Spec.Continuous) { //Only generates job when the continuous monitoring is not running
+	if (strategy == m.StrategyContinuous || strategy == m.StrategyHpa) || (oldMonitor != nil && !oldMonitor.Spec.Continuous) { //Only generates job when the continuous monitoring is not running
 		analystClient, err := a.NewClient(nil, deploymentMetadata.Spec.Analyst.Endpoint)
 		if err != nil {
 			glog.Infof("Creating judgement error %v %s", newDepl, err)
@@ -872,6 +887,7 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 				Option: remediationOption,
 			},
 			Continuous:       oldMonitor.Spec.Continuous,
+			Hpa:              oldMonitor.Spec.Hpa,
 			RollbackRevision: oldRevision,
 		}
 

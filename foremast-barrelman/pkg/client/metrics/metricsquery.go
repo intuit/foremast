@@ -17,6 +17,7 @@ const CategoryHistorical = "historical"
 const StrategyRollingUpdate = "rollingUpdate"
 const StrategyCanary = "canary"
 const StrategyContinuous = "continuous"
+const StrategyHpa = "hpa"
 
 func createMap(namespace string, appName string, podNames []string, metrics d.Metrics, category string, timeWindow time.Duration, strategy string) (map[string]MetricQuery, error) {
 
@@ -53,7 +54,7 @@ func createMap(namespace string, appName string, podNames []string, metrics d.Me
 			//Since prometheus has 1 minutes latency, add one minute to make sure prometheus won't get metrics from previous version
 			p["start"] = nowUnix + step
 			p["end"] = (now.Add((timeWindow+1)*time.Minute).Unix() / step) * step
-			if strategy == StrategyContinuous {
+			if strategy == StrategyContinuous || strategy == StrategyHpa {
 				p["query"] = "namespace_app_per_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",app=\"" + appName + "\"}"
 			} else {
 				if podCount > 1 {
@@ -89,14 +90,14 @@ func createMap(namespace string, appName string, podNames []string, metrics d.Me
 }
 
 func CreateMetricsInfo(namespace string, appName string, podNames [][]string, metrics d.Metrics, timeWindow time.Duration, strategy string) (MetricsInfo, error) {
-	if strategy != StrategyContinuous && len(podNames) == 0 {
+	if !(strategy == StrategyContinuous || strategy == StrategyHpa) && len(podNames) == 0 {
 		return MetricsInfo{}, errors.NewBadRequest("No valid pod names")
 	}
 	var dataSourceType = metrics.DataSourceType
 	if dataSourceType == "prometheus" {
 
 		var podName = []string{}
-		if strategy != StrategyContinuous {
+		if !(strategy == StrategyContinuous || strategy == StrategyHpa) {
 			podName = podNames[0]
 		}
 		var current, err = createMap(namespace, appName, podName, metrics, CategoryCurrent, timeWindow, strategy)

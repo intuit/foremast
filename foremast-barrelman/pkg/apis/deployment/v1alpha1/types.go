@@ -215,6 +215,9 @@ type DeploymentMonitorSpec struct {
 
 	// Rollback revision
 	RollbackRevision int64 `json:"rollbackRevision,omitempty"`
+
+	// Running as HPA mode
+	Hpa bool `json:"hpa,omitempty"`
 }
 
 // DeploymentMonitorStatus defines controllers the observed state of DeploymentMonitor
