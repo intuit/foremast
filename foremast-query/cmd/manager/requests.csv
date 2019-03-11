@@ -1,1 +1,0 @@
-fds-das;error4xx;avg(align(60s, mean, ts(appdynamics.apm.overall.avg_resp_time_ms, bu=cto and bugroup=fds and app=fds-das and env=prd)), name);latency;avg(align(60s, mean, ts(appdynamics.apm.overall.avg_resp_time_ms, bu=cto and bugroup=fds and app=fds-das and env=prd)), name);1545868800000;1545883200000
