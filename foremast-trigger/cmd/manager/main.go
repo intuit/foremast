@@ -25,13 +25,13 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	fq "foremast.ai/foremast/foremast-trigger/pkg/foremasttrigger"
 	// fq "github.com/kianjones4/foremast/foremast-trigger/pkg/foremasttrigger"
 
-	"github.com/gorilla/mux"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -48,45 +48,33 @@ type JobInfo struct {
 	JobID        string
 	ErrorQuery   string
 	LatencyQuery string
+	TPSQuery     string
 	Request      fq.ApplicationHealthAnalyzeRequest
 }
 
 var jobmap map[string]JobInfo
+var anomalyfile string = "./anomaly.txt"
 
-func CheckJobCompleted(jobID string) int {
+func CheckJobCompleted(jobID string, serviceName string) fq.ApplicationHealthAnalyzeResponse {
 	// log.Println(jobID)
 	// esUrl := "http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200/documents/_search"
 	esUrl := os.Getenv("FOREMAST_SERVICE_ENDPOINT") + "/v1/healthcheck/" //+ "/documents/_search"
 	c, err := fq.NewClient(nil, esUrl)
 	healthResponse, err := c.GetStatus(jobID)
 	if err != nil {
-		log.Printf("getStatus err: %#v\n%s\n", err, err.Error())
-		return 1
+		log.Printf("[%s] getStatus err: %#v\n%s\n", serviceName, err, err.Error())
+		return fq.ApplicationHealthAnalyzeResponse{Status: "Error"}
 	}
 	// body, _ := ioutil.ReadAll(response.Body)
-	log.Printf("healthStatus: %#v\n", healthResponse)
-	// healthResponse = fq.ApplicationHealthAnalyzeResponse{}
-	// _ = json.Unmarshal(body, &healthResponse)
-	if healthResponse.Status == "Healthy" || healthResponse.Status == "Unhealthy" {
-		return 0
-	} else {
-		if healthResponse.Status == "Running" {
-			return 2
-		} else {
-			return 1
-		}
-	}
-}
-
-func CheckAllJobsCompleted() {
-
+	log.Printf("[%s] healthStatus: %#v\n", serviceName, healthResponse)
+	return healthResponse
 }
 
 func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string, error) {
 	//log.Printf("\n\nendpoint: %#v\n\n", analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"])
 	endpoint := os.Getenv("FOREMAST_SERVICE_ENDPOINT") + "/v1/healthcheck/create" //os.Getenv("ENDPOINT")
 
-	log.Printf("\nendpoint: %#v\n", endpoint)
+	// log.Printf("\nendpoint: %#v\n", endpoint)
 	c, err := fq.NewClient(nil, endpoint) //analyzingRequest.Metrics.Current["error4xx"].Parameters["endpoint"].(string))
 	b, err := json.Marshal(analyzingRequest)
 	if err != nil {
@@ -96,7 +84,7 @@ func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string
 	rel := &url.URL{Path: "create"}
 	u := c.BaseURL.ResolveReference(rel)
 
-	log.Printf("Request body: %#v\n", string(b))
+	log.Printf("[%s] Request body: %#v\n", analyzingRequest.AppName, string(b))
 	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(b))
 	if err != nil {
 
@@ -107,7 +95,7 @@ func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string
 
 	resp, err := c.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("request err: %#v\n %s\n", err, err.Error())
+		log.Printf("[%s] request err: %#v\n %s\n", analyzingRequest.AppName, err, err.Error())
 		return "", err
 	}
 
@@ -132,7 +120,7 @@ func StartAnalyzing(analyzingRequest fq.ApplicationHealthAnalyzeRequest) (string
 	return analyzingResponse.JobId, nil
 }
 
-func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool {
+func ForemastQuery(appName string, errorQuery string, latencyQuery string, tpsQuery string) bool {
 	now := time.Now()
 	unix := now.Unix()
 	startTime := unix - (60 * 5)
@@ -141,7 +129,7 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool 
 	analyzingRequest := fq.ApplicationHealthAnalyzeRequest{}
 
 	analyzingRequest.AppName = appName
-	fmt.Printf("%s, %s", analyzingRequest.AppName, appName)
+	// fmt.Printf("%s, %s", analyzingRequest.AppName, appName)
 	analyzingRequest.Strategy = "rollover"
 	analyzingRequest.StartTime = now.Format("2006-01-02T15:04:05Z07:00")
 	analyzingRequest.EndTime = now.Add(time.Minute * 5).Format("2006-01-02T15:04:05Z07:00") //"2018-11-03T16:33:04-07:00"
@@ -152,8 +140,8 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool 
 				Parameters: map[string](interface{}){
 					"query":    errorQuery,
 					"endpoint": "",
-					"start":    startTime,
-					"end":      endTime,
+					"start":    startTime * 1000,
+					"end":      endTime * 1000,
 					"step":     60,
 				},
 			},
@@ -162,8 +150,18 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool 
 				Parameters: map[string](interface{}){
 					"query":    latencyQuery,
 					"endpoint": "",
-					"start":    startTime,
-					"end":      endTime,
+					"start":    startTime * 1000,
+					"end":      endTime * 1000,
+					"step":     60,
+				},
+			},
+			"tps": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    tpsQuery,
+					"endpoint": "",
+					"start":    startTime * 1000,
+					"end":      endTime * 1000,
 					"step":     60,
 				},
 			},
@@ -174,8 +172,8 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool 
 				Parameters: map[string](interface{}){
 					"query":    errorQuery,
 					"endpoint": "",
-					"start":    startTime - (7 * 24 * 60 * 60),
-					"end":      startTime - (60 * 5),
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      startTime,
 					"step":     60,
 				},
 			},
@@ -184,8 +182,18 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool 
 				Parameters: map[string](interface{}){
 					"query":    latencyQuery,
 					"endpoint": "",
-					"start":    startTime - (7 * 24 * 60 * 60),
-					"end":      startTime - (60 * 5),
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      startTime,
+					"step":     60,
+				},
+			},
+			"tps": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    tpsQuery,
+					"endpoint": "",
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      endTime,
 					"step":     60,
 				},
 			},
@@ -194,49 +202,55 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string) bool 
 
 	b, err := json.MarshalIndent(analyzingRequest, "", "  ")
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Printf("[%s] error: %s\n", analyzingRequest.AppName, err)
 	}
 	_ = b
 	// log.Printf("%s\n", string(b))
 
 	resp, err := StartAnalyzing(analyzingRequest)
 	if err == nil {
-		log.Printf("startanalyzing resp %#v\n", resp)
+		log.Printf("[%s] startanalyzing resp %#v\n", appName, resp)
 		jobmap[analyzingRequest.AppName] = JobInfo{
 			ErrorQuery:   analyzingRequest.Metrics.Current["error5xx"].Parameters["query"].(string),
 			LatencyQuery: analyzingRequest.Metrics.Current["latency"].Parameters["query"].(string),
+			TPSQuery:     analyzingRequest.Metrics.Current["tps"].Parameters["query"].(string),
 			JobID:        resp,
 			Request:      analyzingRequest,
 		}
 		// log.Printf("jobmap %#v", jobmap)
 		return true
 	} else {
-		log.Printf("startanalyzing err %#v\n%#v\n", err, err.Error())
+		log.Printf("[%s] startanalyzing err %#v\n%#v\n", appName, err, err.Error())
 		return false
 	}
 	// CheckJobCompleted(resp)
 
 }
 
-func MonitorService(serviceName string) {
+func MonitorService(serviceName string, mutex *sync.Mutex, anomalyfile *os.File) {
 	for {
-		if CheckJobCompleted(jobmap[serviceName].JobID) <= 1 {
-			// create a new job
-			ForemastQuery(serviceName, jobmap[serviceName].ErrorQuery, jobmap[serviceName].LatencyQuery)
+		healthresponse := CheckJobCompleted(jobmap[serviceName].JobID, serviceName)
+		status := healthresponse.Status
+		if status == "Healthy" {
+			// run the next query
+			ForemastQuery(serviceName, jobmap[serviceName].ErrorQuery, jobmap[serviceName].LatencyQuery, jobmap[serviceName].TPSQuery)
+		} else if status == "Unhealthy" {
+			//write to file and run next query
+			s := time.Now().Format("2006-01-02T15:04:05Z07:00") + "#" + serviceName + "#" + jobmap[serviceName].JobID + "#" + jobmap[serviceName].ErrorQuery + "#" + jobmap[serviceName].LatencyQuery + "#" + jobmap[serviceName].TPSQuery + "#" + healthresponse.Reason + "\n" //timestamp + servicename + jobid
+			mutex.Lock()
+			_, err := anomalyfile.WriteString(s)
+			if err != nil {
+				log.Printf("error writing to anomaly file %s\n%s\n", err, err.Error())
+			}
+			mutex.Unlock()
+			ForemastQuery(serviceName, jobmap[serviceName].ErrorQuery, jobmap[serviceName].LatencyQuery, jobmap[serviceName].TPSQuery)
+		} else if status == "Abort" || status == "Warning" {
+			// give up and run another query
+			ForemastQuery(serviceName, jobmap[serviceName].ErrorQuery, jobmap[serviceName].LatencyQuery, jobmap[serviceName].TPSQuery)
 		} else {
 			time.Sleep(time.Second * 10)
 		}
 	}
-
-}
-
-func serve() {
-	router := mux.NewRouter()
-
-	// router.HandleFunc("/restart", ForemastQuery).Methods("GET")
-
-	log.Printf("Service started on port:8011, mode:\n")
-	log.Fatal(http.ListenAndServe(":8011", router))
 
 }
 
@@ -246,14 +260,21 @@ func main() {
 	// decoder := json.NewDecoder(r.Body)
 
 	// UpdateTimes(analyzingRequest)
-	absPath, _ := filepath.Abs("./requests.csv")
-	file, err := os.Open(absPath)
+	requestsPath, _ := filepath.Abs("./requests.csv")
+	requestsfile, err := os.Open(requestsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	defer requestsfile.Close()
 
-	scanner := bufio.NewScanner(file)
+	anomalyPath, _ := filepath.Abs("./anomaly.csv")
+	anomalyfile, err := os.OpenFile(anomalyPath, os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer anomalyfile.Close()
+
+	scanner := bufio.NewScanner(requestsfile)
 	for scanner.Scan() {
 		line := scanner.Text()
 		lines = append(lines, line)
@@ -263,18 +284,21 @@ func main() {
 
 	for _, line := range lines {
 		values := strings.Split(line, ";")
-		success := ForemastQuery(values[0], values[2], values[4])
+		success := ForemastQuery(values[0], values[2], values[4], values[6])
 		for success != true {
-			time.Sleep(time.Minute)
-			ForemastQuery(values[0], values[2], values[4])
+			time.Sleep(time.Second * 10)
+			success = ForemastQuery(values[0], values[2], values[4], values[6])
 		}
 	}
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
+	mutex := &sync.Mutex{}
+
 	for serviceName, _ := range jobmap {
-		go MonitorService(serviceName)
+		go MonitorService(serviceName, mutex, anomalyfile)
+
 	}
 
 	sigTerm := make(chan os.Signal, 1)

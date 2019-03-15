@@ -16,7 +16,7 @@ spec:
         app: foremast-trigger
     spec:
       containers:
-      - image: docker.io/kjones43/foremast-trigger:1.1
+      - image: docker.intuit.com/foremast/foremast-trigger:0.0.27
         imagePullPolicy: Always
         name: query
         resources:
@@ -31,8 +31,8 @@ spec:
           name: http
         env:
           - name: FOREMAST_ES_ENDPOINT
-            value: http://elasticsearch-discovery.foremast.svc.cluster.local:9200
+            value: http://elasticsearch-discovery.dev-container-foremast-brain-usw2-dev-dev.svc.cluster.local:9200
           - name: FOREMAST_SERVICE_ENDPOINT
-            value: http://foremast-service.foremast.svc.cluster.local:8099
+            value: http://foremast-service.dev-container-foremast-brain-usw2-dev-dev.svc.cluster.local:8099
             # value: http://10.97.93.44:8099/v1/healthcheck/create
       terminationGracePeriodSeconds: 10
