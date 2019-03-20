@@ -20,6 +20,7 @@ public class K8sMetricsProperties {
     private String commonMetricsWhitelist = null;
     private String commonMetricsBlacklist = null;
     private String commonMetricsPrefix = null;
+    private String commonMetricsTagRules = null;
 
     public String getInitializeForStatuses() {
         return initializeForStatuses;
@@ -87,5 +88,13 @@ public class K8sMetricsProperties {
 
     public void setCommonMetricsPrefix(String commonMetricsPrefix) {
         this.commonMetricsPrefix = commonMetricsPrefix;
+    }
+
+    public String getCommonMetricsTagRules() {
+        return commonMetricsTagRules;
+    }
+
+    public void setCommonMetricsTagRules(String commonMetricsTagRules) {
+        this.commonMetricsTagRules = commonMetricsTagRules;
     }
 }

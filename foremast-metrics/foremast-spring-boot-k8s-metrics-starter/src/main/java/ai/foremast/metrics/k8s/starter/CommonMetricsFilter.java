@@ -22,9 +22,7 @@ import io.micrometer.core.instrument.config.MeterFilterReply;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.util.StringUtils;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -42,6 +40,8 @@ public class CommonMetricsFilter implements MeterFilter {
     private MetricsProperties properties;
 
     private String[] prefixes = new String[] {};
+
+    private LinkedHashMap<String, String> tagRules = new LinkedHashMap<>();
 
     private Set<String> whitelist = new HashSet<>();
 
@@ -73,6 +73,20 @@ public class CommonMetricsFilter implements MeterFilter {
         if (list != null && !list.isEmpty()) {
             prefixes = StringUtils.tokenizeToStringArray(list, ",", true, true);
         }
+
+        String tagRuleExpressions = k8sMetricsProperties.getCommonMetricsTagRules();
+        if (tagRuleExpressions != null) {
+            String[] array = StringUtils.tokenizeToStringArray(tagRuleExpressions, ",", true, true);
+            for(String str: array) {
+                str = str.trim();
+                String[] nameAndValue = str.split(":");
+                if (nameAndValue == null || nameAndValue.length != 2) {
+                    throw new IllegalStateException("Invalid common tag name value pair:" + str);
+                }
+                tagRules.put(nameAndValue[0].trim(), nameAndValue[1].trim());
+            }
+        }
+
     }
 
     /**
@@ -103,6 +117,15 @@ public class CommonMetricsFilter implements MeterFilter {
         for(String prefix: prefixes) {
             if (metricName.startsWith(prefix)) {
                 return MeterFilterReply.ACCEPT;
+            }
+        }
+
+        for(String key: tagRules.keySet()) {
+            String expectedValue = tagRules.get(key);
+            if (expectedValue != null) {
+                if (expectedValue.equals(id.getTag(key))) {
+                    return MeterFilterReply.ACCEPT;
+                }
             }
         }
 
