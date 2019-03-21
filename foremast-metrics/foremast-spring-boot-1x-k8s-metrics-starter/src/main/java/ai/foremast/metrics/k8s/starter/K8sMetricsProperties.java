@@ -25,6 +25,8 @@ public class K8sMetricsProperties {
 
     private boolean enableCommonMetricsFilterAction = false;
 
+    private String commonMetricsTagRules = null;
+
 
     public boolean isEnableCommonMetricsFilter() {
         return enableCommonMetricsFilter;
@@ -100,5 +102,13 @@ public class K8sMetricsProperties {
 
     public void setDisableCsrf(boolean disableCsrf) {
         this.disableCsrf = disableCsrf;
+    }
+
+    public String getCommonMetricsTagRules() {
+        return commonMetricsTagRules;
+    }
+
+    public void setCommonMetricsTagRules(String commonMetricsTagRules) {
+        this.commonMetricsTagRules = commonMetricsTagRules;
     }
 }
