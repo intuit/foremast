@@ -16,13 +16,16 @@
  */
 package ai.foremast.metrics.k8s.starter;
 
+import io.micrometer.spring.autoconfigure.MetricsProperties;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.config.MeterFilterReply;
-import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -41,17 +44,22 @@ public class CommonMetricsFilter implements MeterFilter {
 
     private String[] prefixes = new String[] {};
 
-    private LinkedHashMap<String, String> tagRules = new LinkedHashMap<>();
-
     private Set<String> whitelist = new HashSet<>();
 
     private Set<String> blacklist = new HashSet<>();
 
     private K8sMetricsProperties k8sMetricsProperties;
 
+    private boolean actionEnabled = false;
+
+    private LinkedHashMap<String, String> tagRules = new LinkedHashMap<>();
+
+
     public CommonMetricsFilter(K8sMetricsProperties k8sMetricsProperties, MetricsProperties properties) {
         this.properties = properties;
         this.k8sMetricsProperties = k8sMetricsProperties;
+        this.actionEnabled = k8sMetricsProperties.isEnableCommonMetricsFilterAction();
+
         String list = k8sMetricsProperties.getCommonMetricsBlacklist();
         if (list != null && !list.isEmpty()) {
             String[] array = StringUtils.tokenizeToStringArray(list, ",", true, true);
@@ -86,7 +94,6 @@ public class CommonMetricsFilter implements MeterFilter {
                 tagRules.put(nameAndValue[0].trim(), nameAndValue[1].trim());
             }
         }
-
     }
 
     /**
@@ -192,5 +199,9 @@ public class CommonMetricsFilter implements MeterFilter {
 
     public void setPrefixes(String[] prefixes) {
         this.prefixes = prefixes;
+    }
+
+    public boolean isActionEnabled() {
+        return actionEnabled;
     }
 }
