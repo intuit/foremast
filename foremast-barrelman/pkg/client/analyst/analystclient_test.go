@@ -1,9 +1,7 @@
 package analyst
 
 import (
-	"github.com/golang/glog"
 	"testing"
-	"time"
 )
 
 func TestPayload(*testing.T) {
@@ -31,11 +29,11 @@ func TestPayload(*testing.T) {
 	//glog.Info(getStatusResponse.Status)
 }
 
-func TestTimeFormat(*testing.T) {
-
-	var t = time.Now()
-	var start = t.Format(time.RFC3339)
-	var waitUntil = t.Add(30 * time.Minute).Format(time.RFC3339)
-	glog.Info(start)
-	glog.Info(waitUntil)
-}
+// func TestTimeFormat(*testing.T) {
+//
+// 	var t = time.Now()
+// 	var start = t.Format(time.RFC3339)
+// 	var waitUntil = t.Add(30 * time.Minute).Format(time.RFC3339)
+// 	glog.Info(start)
+// 	glog.Info(waitUntil)
+// }
