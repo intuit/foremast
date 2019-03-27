@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	"foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
