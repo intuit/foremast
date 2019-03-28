@@ -76,10 +76,10 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
             String[] statusCodes = statuses.split(",");
             for(String code: statusCodes) {
                 if (metricsProperties.hasCaller()) {
-                    registry.timer(HTTP_SERVER_REQUESTS, "exception", "None", "method", "GET", "status", code, "uri", "/**", "caller", "*");
+                    registry.timer(HTTP_SERVER_REQUESTS, "exception", "None", "method", "GET", "status", code, "uri", "/**", "caller", "*",  "outcome", "SERVER_ERROR");
                 }
                 else {
-                    registry.timer(HTTP_SERVER_REQUESTS, "exception", "None", "method", "GET", "status", code, "uri", "/**");
+                    registry.timer(HTTP_SERVER_REQUESTS, "exception", "None", "method", "GET", "status", code, "uri", "/**", "outcome", "SERVER_ERROR");
                 }
             }
         }
