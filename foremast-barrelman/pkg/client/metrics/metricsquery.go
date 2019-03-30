@@ -55,28 +55,28 @@ func createMap(namespace string, appName string, podNames []string, metrics d.Me
 			p["start"] = nowUnix + step
 			p["end"] = (now.Add((timeWindow+1)*time.Minute).Unix() / step) * step
 			if strategy == StrategyContinuous || strategy == StrategyHpa {
-				p["query"] = "namespace_app_per_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",app=\"" + appName + "\"}"
+				p["query"] = "namespace_app_pod_" + monitoring.MetricName + "{namespace=\"" + namespace + "\",app=\"" + appName + "\"}"
 			} else {
 				if podCount > 1 {
-					p["query"] = "namespace_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=~\"" + strings.Join(podNames, "|") + "\"}"
+					p["query"] = "namespace_pod_" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=~\"" + strings.Join(podNames, "|") + "\"}"
 				} else {
-					p["query"] = "namespace_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=\"" + podNames[0] + "\"}"
+					p["query"] = "namespace_pod_" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=\"" + podNames[0] + "\"}"
 				}
 			}
 		} else if category == CategoryBaseline {
 			p["start"] = before
 			p["end"] = nowUnix
 			if podCount > 1 {
-				p["query"] = "namespace_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=~\"" + strings.Join(podNames, "|") + "\"}"
+				p["query"] = "namespace_pod_" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=~\"" + strings.Join(podNames, "|") + "\"}"
 			} else {
-				p["query"] = "namespace_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=\"" + podNames[0] + "\"}"
+				p["query"] = "namespace_pod_" + monitoring.MetricName + "{namespace=\"" + namespace + "\",pod=\"" + podNames[0] + "\"}"
 			}
 		} else if category == CategoryHistorical {
 			//p["step"] = 1200
 			var t = now.Add(-7 * 24 * time.Hour)
 			p["start"] = t.Unix() / step * step
 			p["end"] = nowUnix
-			p["query"] = "namespace_app_per_pod:" + monitoring.MetricName + "{namespace=\"" + namespace + "\",app=\"" + appName + "\"}"
+			p["query"] = "namespace_app_pod_" + monitoring.MetricName + "{namespace=\"" + namespace + "\",app=\"" + appName + "\"}"
 		}
 
 		var metricQuery = MetricQuery{
