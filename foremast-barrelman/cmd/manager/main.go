@@ -78,18 +78,12 @@ func main() {
 
 	barrelman := controller.NewBarrelman(kubeClient, foremastClient, mode, hpaStrategy)
 
+	var deploymentController *controller.DeploymentController
 	if strings.Contains(mode, "healthy_monitoring") { //If it runs as "hpa_and_healthy_monitoring", start the deployment controller
-		deploymentController := controller.NewDeploymentController(kubeClient, foremastClient,
+		deploymentController = controller.NewDeploymentController(kubeClient, foremastClient,
 			kubeInformerFactory.Apps().V1().Deployments(), barrelman)
 
 		log.Printf("Starting the deploymentController.")
-
-		// Start the Cmd
-		//log.Fatal(mgr.Start(signals.SetupSignalHandler()))
-
-		if err = deploymentController.Run(2, stopCh); err != nil {
-			glog.Fatalf("Error running controller: %s", err.Error())
-		}
 	}
 
 	monitorController := controller.NewController(kubeClient, foremastClient, sharedInformerFactory.Deployment().V1alpha1().DeploymentMonitors(), barrelman)
@@ -107,4 +101,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if deploymentController != nil {
+		// Start the Cmd
+		if err = deploymentController.Run(2, stopCh); err != nil {
+			glog.Fatalf("Error running controller: %s", err.Error())
+		}
+	}
 }
