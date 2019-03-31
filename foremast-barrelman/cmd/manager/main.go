@@ -67,13 +67,13 @@ func main() {
 
 	sharedInformerFactory := externalversions.NewSharedInformerFactory(foremastClient, time.Second*10)
 
-	var mode = controller.MODE_HPA_AND_HEALTHY_MONITORING
-	var hpaStrategy = controller.HPA_STRATEGY_ENABLED_ONLY
-	if len(os.Args) > 2 {
-		mode = os.Args[1]
-		if len(os.Args) > 3 {
-			hpaStrategy = os.Args[2]
-		}
+	var mode = os.Getenv("MODE")
+	if len(mode) == 0 {
+		mode = controller.MODE_HPA_AND_HEALTHY_MONITORING
+	}
+	var hpaStrategy = os.Getenv("HPA_STRATEGY")
+	if len(hpaStrategy) == 0 {
+		hpaStrategy = controller.HPA_STRATEGY_ENABLED_ONLY
 	}
 
 	barrelman := controller.NewBarrelman(kubeClient, foremastClient, mode, hpaStrategy)
