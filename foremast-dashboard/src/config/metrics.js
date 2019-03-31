@@ -4,29 +4,29 @@ export const LOWER = 'lower';
 export const ANOMALY = 'anomaly';
 
 export const X_METRIC_NAME = 'namespace_app_pod_http_server_requests_latency';
-export const Y_METRIC_NAME = 'namespace_app_pod_http_server_requests_error_5xx';
+export const Y_METRIC_NAME = 'namespace_app_pod_http_server_requests_errors_5xx';
 
 export const DEFAULT_NAMESPACE = 'dev-container-foremast-examples-usw2-dev-dev';
 export const DEFAULT_APPNAME = 'demo';
 
 export const METRICS_MAP = {
-  'namespace_app_pod_http_server_requests_error_5xx': {
+  'namespace_app_pod_http_server_requests_errors_5xx': {
     commonName: '5XX Errors',
     metrics: [{
       type: BASE,
-      name: 'namespace_app_pod_http_server_requests_error_5xx',
+      name: 'namespace_app_pod_http_server_requests_errors_5xx',
       namespace_key: 'namespace',
     }, {
       type: UPPER,
-      name: 'foremastbrain:namespace_app_pod_http_server_requests_error_5xx_upper',
+      name: 'foremastbrain:namespace_app_pod_http_server_requests_errors_5xx_upper',
       namespace_key: 'exported_namespace',
     }, {
       type: LOWER,
-      name: 'foremastbrain:namespace_app_pod_http_server_requests_error_5xx_lower',
+      name: 'foremastbrain:namespace_app_pod_http_server_requests_errors_5xx_lower',
       namespace_key: 'exported_namespace',
     }, {
       type: ANOMALY,
-      name: 'foremastbrain:namespace_app_pod_http_server_requests_error_5xx_anomaly',
+      name: 'foremastbrain:namespace_app_pod_http_server_requests_errors_5xx_anomaly',
       namespace_key: 'exported_namespace',
     }],
     scale: 1, //multiply by data value
