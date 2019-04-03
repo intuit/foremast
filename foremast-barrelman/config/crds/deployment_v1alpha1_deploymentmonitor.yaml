@@ -33,6 +33,8 @@ spec:
               type: object
             continuous:
               type: boolean
+            hpa:
+              type: boolean
             logs:
               items:
                 properties:

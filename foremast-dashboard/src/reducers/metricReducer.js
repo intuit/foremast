@@ -6,7 +6,7 @@ import {
   ADD_ANNOTATION_METRIC, RECEIVE_ANNOTATION_METRIC_DATA
 } from '../actions/actionTypes';
 import { BASE, UPPER, LOWER, ANOMALY } from '../config/metrics';
-import { dataStepValSec } from "../config/api";
+import { DATA_STEP_VAL_SEC } from "../config/api";
 
 export default function metric(state = initialState.metric, action) {
   let newState;
@@ -93,7 +93,7 @@ const parseAnomalyData = (data, baseSeries) => {
     baseSeries.forEach(basePoint => {
       let timeDiff = anomalyTimestamp - basePoint[0];
       //use this point if it's within a minute (data resolution requested), but only if BEFORE anomaly stamp
-      if(timeDiff <= dataStepValSec * 2000 && timeDiff > 0) {
+      if(timeDiff <= DATA_STEP_VAL_SEC * 2000 && timeDiff > 0) {
         //NOTE: using base point here will allow for anomalous points to fall directly on top of measured series BUT does therefore indicate slightly different timing than the anaomalies may be marked with
         //NOTE: also, this strategy allows for out of order points to be added, highcharts will warn about this with error #15, but it doesn't stop it from rendering as expected
         returnData.push(basePoint);

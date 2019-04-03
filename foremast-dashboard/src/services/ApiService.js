@@ -1,5 +1,5 @@
-import { dataDomain, dataPath, dataQueryParam, dataStartParam,
-  dataEndParam, dataStepParam, dataStepValSec } from '../config/api';
+import { DATA_PATH, DATA_QUERY_PARAM, DATA_START_PARAM,
+  DATA_END_PARAM, DATA_STEP_PARAM, DATA_STEP_VAL_SEC } from '../config/api';
 
 export default class ApiService {
   static getMetricData(namespace, appName, metric, startTimestamp, endTimestamp) {
@@ -11,12 +11,12 @@ export default class ApiService {
     return ApiService.getData(query, startTimestamp, endTimestamp);
   }
   static getData(queryStr, startTimestamp, endTimestamp) {
-    let uri = dataDomain + dataPath;
+    let uri = DATA_PATH;
     let params = {
-      [dataQueryParam]: queryStr,
-      [dataStartParam]: startTimestamp,
-      [dataEndParam]: endTimestamp,
-      [dataStepParam]: dataStepValSec
+      [DATA_QUERY_PARAM]: queryStr,
+      [DATA_START_PARAM]: startTimestamp,
+      [DATA_END_PARAM]: endTimestamp,
+      [DATA_STEP_PARAM]: DATA_STEP_VAL_SEC
     };
     return requestHelper(uri, params);
   }

@@ -24,6 +24,15 @@ data:
           app:
             {group: "apps", resource: "deployment"}
       metricsQuery: sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)
+    - seriesQuery: '{__name__=~"^foremastbrain.*",exported_namespace!="",app!=""}'
+      seriesFilters: []
+      resources:
+        overrides:
+          exported_namespace:
+            resource: namespace
+          app:
+            {group: "apps", resource: "deployment"}
+      metricsQuery: sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)
     - seriesQuery: '{__name__=~"^container_.*",container_name!="POD",namespace!="",pod_name!=""}'
       seriesFilters: []
       resources:

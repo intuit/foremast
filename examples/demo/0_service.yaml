@@ -25,3 +25,20 @@ spec:
   # Auto rollback or not when unhealthy detected
   remediation:
     option: AutoRollback
+
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: demo
+  namespace: foremast-examples
+spec:
+  selector:
+    matchLabels:
+      app: demo
+  endpoints:
+  - port: http
+    targetPort: 8080
+    scheme: http
+    path: /actuator/prometheus
