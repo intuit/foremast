@@ -35,6 +35,9 @@ type DeploymentMetadataSpec struct {
 
 	// Descriptor regroups information and metadata about an application.
 	Descriptor Descriptor `json:"descriptor,omitempty"`
+
+	// HPA Score Templates
+	HpaScoreTemplates []HpaScoreTemplate `json:"hpaScoreTemplates,omitempty"`
 }
 
 // DeploymentMetadataStatus defines controllers the observed state of DeploymentMetadata
@@ -42,6 +45,25 @@ type DeploymentMetadataStatus struct {
 	// ObservedGeneration is used by the DeploymentMetadata Controller to report the last Generation of a DeploymentMetadata
 	// that it has observed.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+}
+
+/*
+   - name: intelligent
+     metrics:
+     - traffic
+     - cpu
+     - jvm_heap
+     - gc_pause
+     - latency
+     - error5xx
+     - tomcat_threads
+     - memory
+*/
+// HPA Score Template definitions
+type HpaScoreTemplate struct {
+	Name string `json:"name"`
+
+	Metrics []string `json:"metrics"`
 }
 
 // Analyst backend information
@@ -217,7 +239,7 @@ type DeploymentMonitorSpec struct {
 	RollbackRevision int64 `json:"rollbackRevision,omitempty"`
 
 	// Running as HPA mode
-	Hpa bool `json:"hpa,omitempty"`
+	HpaScoreTemplate string `json:"hpaScoreTemplate,omitempty"`
 }
 
 // DeploymentMonitorStatus defines controllers the observed state of DeploymentMonitor

@@ -256,7 +256,12 @@ func NewDeploymentController(
 				return
 			}
 
-			var deploymentStrategy = m.StrategyRollingUpdate
+			var deploymentStrategy = ""
+			if barrelman.hasHealthyMonitoring() {
+				deploymentStrategy = m.StrategyRollingUpdate
+			} else {
+				deploymentStrategy = m.StrategyHpa
+			}
 			if strings.HasSuffix(deploymentName, CanarySuffic) {
 				deploymentStrategy = m.StrategyCanary
 			}
@@ -270,7 +275,7 @@ func NewDeploymentController(
 			var remediationAction v1alpha1.RemediationAction
 			var create = false
 			var continuous = false
-			var hpa = false
+			var hpaScoreTemplate = ""
 			if err != nil {
 				oldMonitor = &v1alpha1.DeploymentMonitor{
 					ObjectMeta: metav1.ObjectMeta{
@@ -289,7 +294,7 @@ func NewDeploymentController(
 			} else {
 				remediationAction = oldMonitor.Spec.Remediation
 				continuous = oldMonitor.Spec.Continuous
-				hpa = oldMonitor.Spec.Hpa
+				hpaScoreTemplate = oldMonitor.Spec.HpaScoreTemplate
 			}
 
 			oldMonitor.Spec = v1alpha1.DeploymentMonitorSpec{
@@ -301,7 +306,7 @@ func NewDeploymentController(
 				Logs:             deploymentMetadata.Spec.Logs,
 				Remediation:      remediationAction,
 				Continuous:       continuous,
-				Hpa:              hpa,
+				HpaScoreTemplate: hpaScoreTemplate,
 				RollbackRevision: 0,
 			}
 			oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{

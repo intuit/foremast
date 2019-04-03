@@ -34,6 +34,8 @@ const HPA_STRATEGY_SPEC_EXISTS = "spec_exists"
 // Generates HPA SCORE any way
 const HPA_STRATEGY_ANYWAY = "anyway"
 
+const HPA_SCORE_TEMPLATE_DEFAULT = "cpu_bound"
+
 // DeploymentController is the controller implementation for watching deployment changes
 type Barrelman struct {
 	// kubeclientset is a standard kubernetes clientset
@@ -320,7 +322,7 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 				Option: remediationOption,
 			},
 			Continuous:       oldMonitor.Spec.Continuous,
-			Hpa:              oldMonitor.Spec.Hpa,
+			HpaScoreTemplate: oldMonitor.Spec.HpaScoreTemplate,
 			RollbackRevision: oldRevision,
 		}
 
@@ -501,7 +503,7 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 							glog.Infof("Updated deployment monitor %v", item)
 						}
 					}
-				} else if item.Spec.Continuous || item.Spec.Hpa {
+				} else if item.Spec.Continuous || item.Spec.HpaScoreTemplate != "" {
 					if c.hasHealthyMonitoring() && item.Status.Phase == v1alpha1.MonitorPhaseUnhealthy {
 						d, err := time.Parse(time.RFC3339, item.Status.Timestamp)
 						if err == nil && (time.Now().Unix()-d.Unix()) > 60 {
@@ -511,7 +513,7 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 					} else {
 						if c.hasHealthyMonitoring() && item.Spec.Continuous {
 							go c.monitorContinuously(&item)
-						} else if item.Spec.Hpa {
+						} else if item.Spec.HpaScoreTemplate != "" {
 							go c.monitorHpa(&item)
 						}
 					}

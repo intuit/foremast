@@ -19,7 +19,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"foremast.ai/foremast/foremast-barrelman/pkg/apis"
@@ -79,14 +78,13 @@ func main() {
 	barrelman := controller.NewBarrelman(kubeClient, foremastClient, mode, hpaStrategy)
 
 	var deploymentController *controller.DeploymentController
-	if strings.Contains(mode, "healthy_monitoring") { //If it runs as "hpa_and_healthy_monitoring", start the deployment controller
-		deploymentController = controller.NewDeploymentController(kubeClient, foremastClient,
-			kubeInformerFactory.Apps().V1().Deployments(), barrelman)
 
-		log.Printf("Starting the deploymentController.")
-	}
+	deploymentController = controller.NewDeploymentController(kubeClient, foremastClient,
+		kubeInformerFactory.Apps().V1().Deployments(), barrelman)
 
-	monitorController := controller.NewController(kubeClient, foremastClient, sharedInformerFactory.Deployment().V1alpha1().DeploymentMonitors(), barrelman)
+	log.Printf("Starting the deploymentController.")
+
+	monitorController := controller.NewMonitorController(kubeClient, foremastClient, sharedInformerFactory.Deployment().V1alpha1().DeploymentMonitors(), barrelman)
 
 	if monitorController != nil {
 		log.Printf("Monitor controller started.")
@@ -101,10 +99,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if deploymentController != nil {
-		// Start the Cmd
-		if err = deploymentController.Run(2, stopCh); err != nil {
-			glog.Fatalf("Error running controller: %s", err.Error())
-		}
+	// Start the Cmd
+	if err = deploymentController.Run(2, stopCh); err != nil {
+		glog.Fatalf("Error running controller: %s", err.Error())
 	}
 }

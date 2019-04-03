@@ -17,10 +17,12 @@ limitations under the License.
 package app
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	goruntime "runtime"
 
+	"github.com/prometheus/client_golang/prometheus"
+
+	apiserverconfig "k8s.io/apiserver/pkg/apis/config"
 	genericapifilters "k8s.io/apiserver/pkg/endpoints/filters"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
 	apiserver "k8s.io/apiserver/pkg/server"
@@ -29,7 +31,6 @@ import (
 	"k8s.io/apiserver/pkg/server/mux"
 	"k8s.io/apiserver/pkg/server/routes"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	"k8s.io/kubernetes/pkg/util/configz"
 )
 
@@ -38,8 +39,13 @@ func BuildHandlerChain(apiHandler http.Handler, authorizationInfo *apiserver.Aut
 	requestInfoResolver := &apirequest.RequestInfoFactory{}
 	failedHandler := genericapifilters.Unauthorized(legacyscheme.Codecs, false)
 
-	handler := genericapifilters.WithAuthorization(apiHandler, authorizationInfo.Authorizer, legacyscheme.Codecs)
-	handler = genericapifilters.WithAuthentication(handler, authenticationInfo.Authenticator, failedHandler)
+	handler := apiHandler
+	if authorizationInfo != nil {
+		handler = genericapifilters.WithAuthorization(apiHandler, authorizationInfo.Authorizer, legacyscheme.Codecs)
+	}
+	if authenticationInfo != nil {
+		handler = genericapifilters.WithAuthentication(handler, authenticationInfo.Authenticator, failedHandler)
+	}
 	handler = genericapifilters.WithRequestInfo(handler, requestInfoResolver)
 	handler = genericfilters.WithPanicRecovery(handler)
 
@@ -47,9 +53,9 @@ func BuildHandlerChain(apiHandler http.Handler, authorizationInfo *apiserver.Aut
 }
 
 // NewBaseHandler takes in CompletedConfig and returns a handler.
-func NewBaseHandler(c *componentconfig.DebuggingConfiguration, checks ...healthz.HealthzChecker) http.Handler {
+func NewBaseHandler(c *apiserverconfig.DebuggingConfiguration) *mux.PathRecorderMux {
 	mux := mux.NewPathRecorderMux("controller-manager")
-	healthz.InstallHandler(mux, checks...)
+	healthz.InstallHandler(mux)
 	if c.EnableProfiling {
 		routes.Profiling{}.Install(mux)
 		if c.EnableContentionProfiling {

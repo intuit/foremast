@@ -25,18 +25,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/discovery"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/kubectl/metricsutil"
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
 	metricsapi "k8s.io/metrics/pkg/apis/metrics"
 	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	metricsclientset "k8s.io/metrics/pkg/client/clientset_generated/clientset"
+	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 type TopPodOptions struct {
@@ -45,7 +45,7 @@ type TopPodOptions struct {
 	Selector        string
 	AllNamespaces   bool
 	PrintContainers bool
-	PodClient       corev1.PodsGetter
+	PodClient       corev1client.PodsGetter
 	HeapsterOptions HeapsterTopOptions
 	Client          *metricsutil.HeapsterMetricsClient
 	Printer         *metricsutil.TopCmdPrinter
@@ -88,11 +88,11 @@ func NewCmdTopPod(f cmdutil.Factory, o *TopPodOptions, streams genericclioptions
 	}
 
 	cmd := &cobra.Command{
-		Use: "pod [NAME | -l label]",
+		Use:                   "pod [NAME | -l label]",
 		DisableFlagsInUseLine: true,
-		Short:   i18n.T("Display Resource (CPU/Memory/Storage) usage of pods"),
-		Long:    topPodLong,
-		Example: topPodExample,
+		Short:                 i18n.T("Display Resource (CPU/Memory/Storage) usage of pods"),
+		Long:                  topPodLong,
+		Example:               topPodExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := o.Complete(f, cmd, args); err != nil {
 				cmdutil.CheckErr(err)

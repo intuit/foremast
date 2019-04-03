@@ -51,8 +51,8 @@ type MonitorController struct {
 	remediationOptions *RemediationOptions
 }
 
-// NewDeploymentController returns a new sample controller
-func NewController(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface,
+// NewMonitorController returns a new DeploymentMonitor controller
+func NewMonitorController(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface,
 	monitorInformer informers.DeploymentMonitorInformer, barrelman *Barrelman) *MonitorController {
 
 	// Create event broadcaster
@@ -94,8 +94,8 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			var continuous = oldMonitor.Spec.Continuous
 			var newContinuous = newMonitor.Spec.Continuous
 			var continuousChange = continuous != newContinuous
-			var hpa = oldMonitor.Spec.Hpa
-			var newHpa = newMonitor.Spec.Hpa
+			var hpaScoreTemplate = oldMonitor.Spec.HpaScoreTemplate
+			var newHpaScoreTemplate = newMonitor.Spec.HpaScoreTemplate
 
 			//Barrelman can run with "hpa" mode only
 			var hasHealthyMonitoring = controller.barrelman.hasHealthyMonitoring()
@@ -106,8 +106,8 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 						go barrelman.monitorContinuously(newMonitor)
 						return
 					}
-				} else if hpa != newHpa {
-					if newHpa && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
+				} else if hpaScoreTemplate != newHpaScoreTemplate {
+					if newHpaScoreTemplate != "" && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
 						go barrelman.monitorHpa(newMonitor)
 						return
 					}

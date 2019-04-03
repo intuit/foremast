@@ -35,7 +35,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion, &DeploymentMonitor{},
 		&DeploymentMonitorList{}, &DeploymentMetadata{}, &DeploymentMetadataList{})
 
-	scheme.AddFieldLabelConversionFunc("v1alpha1", "DeploymentMonitor",
+	scheme.AddFieldLabelConversionFunc(
+		schema.GroupVersionKind{
+			Group:   deployment.GroupName,
+			Version: "v1alpha1",
+			Kind:    "DeploymentMonitor",
+		},
 		func(label, value string) (string, string, error) {
 			switch label {
 			case "metadata.annotations",
@@ -53,7 +58,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 			}
 		})
 
-	scheme.AddFieldLabelConversionFunc("v1alpha1", "DeploymentMetadata",
+	scheme.AddFieldLabelConversionFunc(
+		schema.GroupVersionKind{
+			Group:   deployment.GroupName,
+			Version: "v1alpha1",
+			Kind:    "DeploymentMetadata",
+		},
 		func(label, value string) (string, string, error) {
 			switch label {
 			case "metadata.annotations",
