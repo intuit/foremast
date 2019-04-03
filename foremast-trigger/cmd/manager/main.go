@@ -58,7 +58,7 @@ type JobInfo struct {
 
 var jobmap map[string]JobInfo
 var serviceslist []string
-var anomalyfilename string = "./anomaly.tsv"
+var anomalyfilename string = "/data/anomaly/anomaly.tsv"
 var currentYear int
 var currentMonth time.Month
 var currentDay int
@@ -202,7 +202,7 @@ func GenerateSummaryReport() {
 	// now := time.Now()
 	// unix := now.Unix()
 	// filename := "./anomalyreport" + strconv.FormatInt(unix*1000, 10) + ".txt"
-	filename := "./anomalyreport" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".txt"
+	filename := "/data/anomaly/anomalyreport" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".txt"
 	reportfile, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 	if err != nil {
 		log.Printf("error creating file for anomaly report: %s\n%s\n", err, err.Error())
@@ -299,6 +299,38 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string, tpsQu
 				},
 			},
 		},
+		Baseline: map[string]fq.MetricQuery{
+			"error5xx": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    errorQuery,
+					"endpoint": "",
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      startTime,
+					"step":     60,
+				},
+			},
+			"latency": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    latencyQuery,
+					"endpoint": "",
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      startTime,
+					"step":     60,
+				},
+			},
+			"tps": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    tpsQuery,
+					"endpoint": "",
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      endTime,
+					"step":     60,
+				},
+			},
+		},
 	}
 
 	b, err := json.MarshalIndent(analyzingRequest, "", "  ")
@@ -350,9 +382,11 @@ func MonitorService(serviceName string, mutex *sync.Mutex, filename string) {
 				dashboardUrl = os.Getenv("WAVEFRONT_ENDPOINT") + "/dashboard/Foremast"
 			} else {
 				timestamp := strings.ToLower(matches[1])
+				newtime, _ := strconv.ParseInt(timestamp, 0, 64)
+				newtime = newtime - (60 * 15)
 
 				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_APP", serviceName, -1)
-				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_TIME", timestamp, -1)
+				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_TIME", strconv.FormatInt(newtime, 10), -1)
 			}
 
 			metricRegex := `&quot;name&quot;\s*:\s*&quot;([\w\.]*)`
@@ -384,7 +418,7 @@ func MonitorService(serviceName string, mutex *sync.Mutex, filename string) {
 				currentYear = cury
 				currentMonth = curm
 				currentDay = curd
-				anomalyfilename = "./anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
+				anomalyfilename = "/data/anomaly/anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
 			}
 
 			anomalyPath, _ := filepath.Abs(anomalyfilename)
@@ -459,7 +493,7 @@ func main() {
 	mutex := &sync.Mutex{}
 	_ = mutex
 
-	anomalyfilename = "./anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
+	anomalyfilename = "/data/anomaly/anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
 
 	for serviceName, _ := range jobmap {
 		go MonitorService(serviceName, mutex, anomalyfilename)

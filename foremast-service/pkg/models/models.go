@@ -8,6 +8,12 @@ type MetricQuery struct {
 
 	Parameters map[string]interface{} `json:"parameters,omitempty"`
 
+	Priority *int `json:"priority,omitempty"`
+
+	IsIncrease bool `json:"isIncrease,omitempty"`
+
+	IsAbsolute bool `json:"isAbsolute,omitempty"`
+
 	// Can be any metric data Source Type
 	// For prometheus dataSource Type
 	//Name string `json:"name,omitempty"`
@@ -49,8 +55,16 @@ type ApplicationHealthAnalyzeRequest struct {
 
 	// canary or blue-green
 	Strategy string `json:"strategy"`
-}
 
+	// list of metrics and their priorities for HPA
+	HPAMetrics []HPAMetric `json:"hpametrics,omitempty"`
+
+	// for later
+	Policy string `json:"policy,omitempty"`
+
+	// app namespace
+	Namespace string `json:"namespace,omitempty"`
+}
 
 type QueryRequest struct {
 	QueryString string `json:"queryString"`
@@ -68,7 +82,7 @@ type ApplicationHealthAnalyzeResponse struct {
 	StatusCode int32                  `json:"statusCode"`
 	Status     string                 `json:"status"`
 	Reason     string                 `json:"reason,omitempty"`
-	Anomaly    map[string]AnomalyInfo `json:"anomaly",omitempty`
+	Anomaly    map[string]AnomalyInfo `json:"anomaly,omitempty"`
 }
 
 // ApplicationHealthAnalyzeResponseNew .... new response
@@ -81,38 +95,44 @@ type ApplicationHealthAnalyzeResponseNew struct {
 
 // Document --- elastic search document index
 type Document struct {
-	ID                string    `json:"id"`
-	AppName           string    `json:"appName"`
-	CreatedAt         time.Time `json:"created_at"`
-	StartTime         time.Time `json:"startTime"`
-	EndTime           time.Time `json:"endTime"`
-	ModifiedAt        time.Time `json:"modified_at"`
-	CurrentConfig     string    `json:"currentConfig"`
-	BaselineConfig    string    `json:"baselineConfig",omitempty`
-	HistoricalConfig  string    `json:"historicalConfig",omitempty`
-	CurrentMetricStore     string    `json:"currentMetricStore",omitempty`
-	BaselineMetricStore    string    `json:"baselineMetricStore",omitempty`
-	HistoricalMetricStore  string    `json:"historicalMetricStore",omitempty`
-	Status            string    `json:"status"`
-	StatusCode        string    `json:"statusCode"`
-	Strategy          string    `json:"strategy"`
-	Reason            string    `json:"reason",omitempty`
-	ProcessingContent string    `json:"processingContent",omitempty`
+	ID                    string      `json:"id"`
+	AppName               string      `json:"appName"`
+	CreatedAt             time.Time   `json:"created_at"`
+	StartTime             time.Time   `json:"startTime"`
+	EndTime               time.Time   `json:"endTime"`
+	ModifiedAt            time.Time   `json:"modified_at"`
+	CurrentConfig         string      `json:"currentConfig"`
+	BaselineConfig        string      `json:"baselineConfig,omitempty"`
+	HistoricalConfig      string      `json:"historicalConfig,omitempty"`
+	CurrentMetricStore    string      `json:"currentMetricStore,omitempty"`
+	BaselineMetricStore   string      `json:"baselineMetricStore,omitempty"`
+	HistoricalMetricStore string      `json:"historicalMetricStore,omitempty"`
+	Status                string      `json:"status"`
+	StatusCode            string      `json:"statusCode"`
+	Strategy              string      `json:"strategy"`
+	Reason                string      `json:"reason,omitempty"`
+	ProcessingContent     string      `json:"processingContent,omitempty"`
+	HPAMetrics            []HPAMetric `json:"hpametricsconfig,omitempty"`
+	Policy                string      `json:"policy,omitempty"`
+	Namespace             string      `json:"namespace,omitempty"`
 }
 
 // DocumentRequest .... request structure
 type DocumentRequest struct {
-	AppName          string `json:"appName"`
-	StartTime        string `json:"startTime"`
-	EndTime          string `json:"endTime"`
-	CurrentConfig    string `json:"currentConfig"`
-	BaselineConfig   string `json:"baselineConfig",omitempty`
-	HistoricalConfig string `json:"historicalConfig",omitempty`
-	CurrentMetricStore    string `json:"currentMetricStore",omitempty`
-	BaselineMetricStore   string `json:"baselineMetricStore",omitempty`
-	HistoricalMetricStore string `json:"historicalMetricStore",omitempty`
-	StatusCode       string `json:"statusCode",omitempty`
-	Strategy         string `json:"strategy"`
+	AppName               string      `json:"appName"`
+	StartTime             string      `json:"startTime"`
+	EndTime               string      `json:"endTime"`
+	CurrentConfig         string      `json:"currentConfig"`
+	BaselineConfig        string      `json:"baselineConfig,omitempty"`
+	HistoricalConfig      string      `json:"historicalConfig,omitempty"`
+	CurrentMetricStore    string      `json:"currentMetricStore,omitempty"`
+	BaselineMetricStore   string      `json:"baselineMetricStore,omitempty"`
+	HistoricalMetricStore string      `json:"historicalMetricStore,omitempty"`
+	StatusCode            string      `json:"statusCode,omitempty"`
+	Strategy              string      `json:"strategy"`
+	HPAMetrics            []HPAMetric `json:"hpametricsconfig,omitempty"`
+	Policy                string      `json:"policy,omitempty"`
+	Namespace             string      `json:"namespace,omitempty"`
 }
 
 // DocumentResponse .... es response structure
@@ -124,18 +144,21 @@ type DocumentResponse struct {
 	EndTime    time.Time `json:"endTime"`
 	ModifiedAt time.Time `json:"modified_at"`
 	//Type       string    `json:"type"`
-	Strategy          string `json:"strategy"`
-	CurrentConfig     string `json:"currentConfig"`
-	BaselineConfig    string `json:"baselineConfig",omitempty`
-	HistoricConfig    string `json:"historicConfig",omitempty`
-	CurrentMetricStore     string `json:"currentMetricStore",omitempty`
-	BaselineMetricStore    string `json:"baselineMetricStore",omitempty`
-	HistoricMetricStore    string `json:"historicMetricStore",omitempty`
-	Status            string `json:"status"`
-	StatusCode        string `json:"statusCode"`
-	Reason            string `json:"reason",omitempty`
-	ProcessingContent string `json:"processingContent",omitempty`
-	AnomalyInfo       string `json:"anomalyInfo",omitempty`
+	Strategy            string      `json:"strategy"`
+	CurrentConfig       string      `json:"currentConfig"`
+	BaselineConfig      string      `json:"baselineConfig,omitempty"`
+	HistoricConfig      string      `json:"historicConfig,omitempty"`
+	CurrentMetricStore  string      `json:"currentMetricStore,omitempty"`
+	BaselineMetricStore string      `json:"baselineMetricStore,omitempty"`
+	HistoricMetricStore string      `json:"historicMetricStore,omitempty"`
+	Status              string      `json:"status"`
+	StatusCode          string      `json:"statusCode"`
+	Reason              string      `json:"reason,omitempty"`
+	ProcessingContent   string      `json:"processingContent,omitempty"`
+	AnomalyInfo         string      `json:"anomalyInfo,omitempty"`
+	HPAMetrics          []HPAMetric `json:"hpametricsconfig,omitempty"`
+	Policy              string      `json:"policy,omitempty"`
+	Namespace           string      `json:"namespace,omitempty"`
 }
 
 // SearchResponse .... es search reqponse structure
@@ -143,4 +166,11 @@ type SearchResponse struct {
 	Time      string             `json:"time"`
 	Hits      string             `json:"hits"`
 	Documents []DocumentResponse `json:"documents"`
+}
+
+type HPAMetric struct {
+	Priority   int    `json:"priority"`
+	Name       string `json:"name"`
+	IsIncrease bool   `json:"isIncrease"`
+	IsAbsolute bool   `json:"isAbsolute"`
 }
