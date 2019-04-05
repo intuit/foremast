@@ -106,7 +106,7 @@ export default class ScatterChart extends React.Component {
         type: 'datetime'
       },
       time: {
-        timezoneOffset: 8 * 60, //TODO: CONSTANTIZE me
+        timezoneOffset: new Date().getTimezoneOffset(),
       },
       yAxis: {
         title: {

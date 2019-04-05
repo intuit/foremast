@@ -65,7 +65,7 @@ export default class TimeseriesChart extends React.Component {
         }
       },
       time: {
-        timezoneOffset: 8 * 60, //TODO: CONSTANTIZE me //8hrs offset, will need to be changed on DST shifts
+        timezoneOffset: new Date().getTimezoneOffset(),
       },
       yAxis: {
         title: {
