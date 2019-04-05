@@ -57,7 +57,7 @@ type ApplicationHealthAnalyzeRequest struct {
 	Strategy string `json:"strategy"`
 
 	// list of metrics and their priorities for HPA
-	HPAMetrics []HPAMetric `json:"hpametrics,omitempty"`
+	HPAMetrics []HPAMetric `json:"hpaMetrics,omitempty"`
 
 	// for later
 	Policy string `json:"policy,omitempty"`
@@ -112,7 +112,7 @@ type Document struct {
 	Strategy              string      `json:"strategy"`
 	Reason                string      `json:"reason,omitempty"`
 	ProcessingContent     string      `json:"processingContent,omitempty"`
-	HPAMetrics            []HPAMetric `json:"hpametricsconfig,omitempty"`
+	HPAMetrics            []HPAMetric `json:"hpaMetricsConfig,omitempty"`
 	Policy                string      `json:"policy,omitempty"`
 	Namespace             string      `json:"namespace,omitempty"`
 }
@@ -130,7 +130,7 @@ type DocumentRequest struct {
 	HistoricalMetricStore string      `json:"historicalMetricStore,omitempty"`
 	StatusCode            string      `json:"statusCode,omitempty"`
 	Strategy              string      `json:"strategy"`
-	HPAMetrics            []HPAMetric `json:"hpametricsconfig,omitempty"`
+	HPAMetrics            []HPAMetric `json:"hpaMetricsConfig,omitempty"`
 	Policy                string      `json:"policy,omitempty"`
 	Namespace             string      `json:"namespace,omitempty"`
 }
@@ -156,7 +156,7 @@ type DocumentResponse struct {
 	Reason              string      `json:"reason,omitempty"`
 	ProcessingContent   string      `json:"processingContent,omitempty"`
 	AnomalyInfo         string      `json:"anomalyInfo,omitempty"`
-	HPAMetrics          []HPAMetric `json:"hpametricsconfig,omitempty"`
+	HPAMetrics          []HPAMetric `json:"hpaMetricsConfig,omitempty"`
 	Policy              string      `json:"policy,omitempty"`
 	Namespace           string      `json:"namespace,omitempty"`
 }

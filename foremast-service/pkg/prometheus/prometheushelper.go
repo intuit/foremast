@@ -27,6 +27,7 @@ func BuildURL(metricQuery models.MetricQuery) string {
 		urlstring.WriteString(strconv.FormatFloat(start.(float64), 'f', 0, 64))
 	}
 	urlstring.WriteString("&end=")
+
 	var end interface{}
 	if reflect.TypeOf(config["start"]).Name() == "string" {
 		end = config["end"]
