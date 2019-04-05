@@ -260,15 +260,32 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 	if (strategy == m.StrategyContinuous || strategy == m.StrategyHpa) || (oldMonitor != nil && !oldMonitor.Spec.Continuous) { //Only generates job when the continuous monitoring is not running
 		analystClient, err := a.NewClient(nil, deploymentMetadata.Spec.Analyst.Endpoint)
 		if err != nil {
-			glog.Infof("Creating judgement error %v %s", newDepl, err)
+			glog.Infof("Creating foremast service request error %v %s", newDepl, err)
 			return
 		}
 
-		jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
+		var metrics = deploymentMetadata.Spec.Metrics
+		var metricAliases []string = nil
+
+		if strategy == m.StrategyHpa { //Select metrics by hpaScoreTemplate
+			if oldMonitor.Spec.HpaScoreTemplate == "" {
+				glog.Infof("No HpaScore Template ignore %v %s", newDepl)
+				return
+			}
+
+			for _, t := range deploymentMetadata.Spec.HpaScoreTemplates {
+				if oldMonitor.Spec.HpaScoreTemplate == t.Name {
+					metricAliases = t.Metrics
+					break
+				}
+			}
+		}
+
+		jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, metrics, watchTime, strategy, metricAliases)
 
 		if err != nil {
 			glog.Infof("Starting analyzing error, try it again: %v", err)
-			jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, deploymentMetadata.Spec.Metrics, watchTime, strategy)
+			jobId, err = analystClient.StartAnalyzing(newDepl.Namespace, appName, podNames, deploymentMetadata.Spec.Metrics.Endpoint, metrics, watchTime, strategy, metricAliases)
 			if err != nil {
 				glog.Infof("Tried twice to analyzing error: %v", err)
 				return

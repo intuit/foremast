@@ -166,6 +166,9 @@ type Monitoring struct {
 
 	// Shorten name in backend system
 	MetricAlias string `json:"metricAlias"`
+
+	//+optional
+
 }
 
 type Logs struct {

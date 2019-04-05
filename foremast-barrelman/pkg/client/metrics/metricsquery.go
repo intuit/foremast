@@ -19,10 +19,29 @@ const StrategyCanary = "canary"
 const StrategyContinuous = "continuous"
 const StrategyHpa = "hpa"
 
-func createMap(namespace string, appName string, podNames []string, metrics d.Metrics, category string, timeWindow time.Duration, strategy string) (map[string]MetricQuery, error) {
+func indexOf(s []string, e string) int {
+	for i, a := range s {
+		if a == e {
+			return i
+		}
+	}
+	return -1
+}
+
+func createMap(namespace string, appName string, podNames []string, metrics d.Metrics, category string,
+	timeWindow time.Duration, strategy string, metricsAliases []string) (map[string]MetricQuery, error) {
 
 	var m = make(map[string]MetricQuery)
-	for _, monitoring := range metrics.Monitoring {
+	for i, monitoring := range metrics.Monitoring {
+
+		var priority = i + 1
+		if metricsAliases != nil {
+			var index = indexOf(metricsAliases, monitoring.MetricAlias)
+			if index == -1 {
+				continue
+			}
+			priority = index + 1
+		}
 
 		var p = make(map[string]interface{})
 
@@ -81,6 +100,7 @@ func createMap(namespace string, appName string, podNames []string, metrics d.Me
 
 		var metricQuery = MetricQuery{
 			DataSourceType: metrics.DataSourceType,
+			Priority:       priority,
 			Parameters:     p,
 		}
 
@@ -89,18 +109,17 @@ func createMap(namespace string, appName string, podNames []string, metrics d.Me
 	return m, nil
 }
 
-func CreateMetricsInfo(namespace string, appName string, podNames [][]string, metrics d.Metrics, timeWindow time.Duration, strategy string) (MetricsInfo, error) {
+func CreateMetricsInfo(namespace string, appName string, podNames [][]string, metrics d.Metrics, timeWindow time.Duration, strategy string, metricAliases []string) (MetricsInfo, error) {
 	if !(strategy == StrategyContinuous || strategy == StrategyHpa) && len(podNames) == 0 {
 		return MetricsInfo{}, errors.NewBadRequest("No valid pod names")
 	}
 	var dataSourceType = metrics.DataSourceType
 	if dataSourceType == "prometheus" {
-
 		var podName = []string{}
 		if !(strategy == StrategyContinuous || strategy == StrategyHpa) {
 			podName = podNames[0]
 		}
-		var current, err = createMap(namespace, appName, podName, metrics, CategoryCurrent, timeWindow, strategy)
+		var current, err = createMap(namespace, appName, podName, metrics, CategoryCurrent, timeWindow, strategy, metricAliases)
 		if err != nil {
 			return MetricsInfo{}, nil
 		}
@@ -110,13 +129,13 @@ func CreateMetricsInfo(namespace string, appName string, podNames [][]string, me
 		}
 
 		if strategy != StrategyRollingUpdate && len(podNames) > 1 {
-			baseline, err := createMap(namespace, appName, podNames[1], metrics, CategoryBaseline, timeWindow, strategy)
+			baseline, err := createMap(namespace, appName, podNames[1], metrics, CategoryBaseline, timeWindow, strategy, metricAliases)
 			if err == nil {
 				metricsInfo.Baseline = baseline
 			}
 		}
 
-		historical, err := createMap(namespace, appName, podName, metrics, CategoryHistorical, timeWindow, strategy)
+		historical, err := createMap(namespace, appName, podName, metrics, CategoryHistorical, timeWindow, strategy, metricAliases)
 		if err == nil {
 			metricsInfo.Historical = historical
 		}
@@ -150,6 +169,7 @@ type MetricQuery struct {
 	//Start int64 `json:"start,omitempty"`
 	//
 	//End int64 `json:"end,omitempty"`
+	Priority int `json:"priority,omitempty"`
 
 	Parameters map[string]interface{} `json:"parameters,omitempty"`
 }

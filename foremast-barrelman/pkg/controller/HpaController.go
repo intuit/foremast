@@ -4,10 +4,10 @@ import (
 	d "foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment/v1alpha1"
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	"github.com/golang/glog"
-	asv1 "k8s.io/api/autoscaling/v1"
+	asv2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	hpainformers "k8s.io/client-go/informers/autoscaling/v1"
+	hpainformers "k8s.io/client-go/informers/autoscaling/v2beta2"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -56,22 +56,22 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 
 	hpaInfomer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			newHpa := obj.(*asv1.HorizontalPodAutoscaler)
+			newHpa := obj.(*asv2.HorizontalPodAutoscaler)
 			controller.updateDeploymentMonitor(newHpa)
 		},
 		UpdateFunc: func(old, new interface{}) {
-			newHpa := new.(*asv1.HorizontalPodAutoscaler)
+			newHpa := new.(*asv2.HorizontalPodAutoscaler)
 			controller.updateDeploymentMonitor(newHpa)
 		},
 		DeleteFunc: func(obj interface{}) {
-			hpa := obj.(*asv1.HorizontalPodAutoscaler)
+			hpa := obj.(*asv2.HorizontalPodAutoscaler)
 			if hpa == nil {
 				return
 			}
-			monitor, err := controller.getDeploymentMonitor(hpa)
-			if err == nil {
+			monitor := controller.getDeploymentMonitor(hpa)
+			if monitor != nil {
 				monitor.Spec.HpaScoreTemplate = ""
-				_, err = controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
+				controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
 				glog.V(4).Infof("Updating deployment monitor error, while HPA got deleted: %s", monitor.GetName())
 			}
 		},
@@ -80,25 +80,72 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 	return controller
 }
 
-func (c *HpaController) getDeploymentMonitor(hpa *asv1.HorizontalPodAutoscaler) (*d.DeploymentMonitor, error) {
-	return c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Get(hpa.Name, metav1.GetOptions{})
+func (c *HpaController) getDeploymentMonitor(hpa *asv2.HorizontalPodAutoscaler) *d.DeploymentMonitor {
+	if hpa.Spec.ScaleTargetRef.Kind == "Deployment" {
+		var deplName = hpa.Spec.ScaleTargetRef.Name
+		if deplName != "" {
+			monitor, _ := c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Get(deplName, metav1.GetOptions{})
+			return monitor
+		} else {
+			return nil
+		}
+	}
+	return nil
 }
 
-func (c *HpaController) updateDeploymentMonitor(hpa *asv1.HorizontalPodAutoscaler) {
-	monitor, err := c.getDeploymentMonitor(hpa)
-	if err == nil {
+/*
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  annotations:
+  labels:
+    app: hpa-samples
+  name: hpa-samples
+  namespace: dev-fm-foremast-examples-usw2-dev-dev
+spec:
+  maxReplicas: 10
+  metrics:
+  - object:
+      metric:
+        name: namespace_app_pod_http_server_requests_2xx
+      target:
+        type: Value
+        value: 8
+      describedObject:
+        apiVersion: apps/v1beta2
+        kind: Deployment
+        name: hpa-samples
+    type: Object
+  minReplicas: 3
+  scaleTargetRef:
+    apiVersion: apps/v1beta2
+    kind: Deployment
+    name: hpa-samples
+*/
+
+func (c *HpaController) updateDeploymentMonitor(hpa *asv2.HorizontalPodAutoscaler) {
+	monitor := c.getDeploymentMonitor(hpa)
+	if monitor != nil {
 		var hpaStrategy = c.barrelman.hpaStrategy
 		if hpaStrategy == HPA_STRATEGY_ANYWAY || hpaStrategy == HPA_STRATEGY_SPEC_EXISTS {
-			if monitor.Spec.HpaScoreTemplate == "" || monitor.Spec.HpaScoreTemplate == "disabled" {
+			if monitor.Spec.HpaScoreTemplate == "" {
 				monitor.Spec.HpaScoreTemplate = HPA_SCORE_TEMPLATE_DEFAULT
 			}
 		} else if hpaStrategy == HPA_STRATEGY_ENABLED_ONLY {
-			if *hpa.Spec.MinReplicas > 0 {
-
+			if *hpa.Spec.MinReplicas > 0 && len(hpa.Spec.Metrics) == 1 && hpa.Spec.Metrics[0].Object.Metric.Name != "" {
+				if *hpa.Spec.MinReplicas < hpa.Spec.MaxReplicas { //Not disabled
+					monitor.Spec.HpaScoreTemplate = HPA_SCORE_TEMPLATE_DEFAULT
+				}
+			} else {
+				monitor.Spec.HpaScoreTemplate = ""
 			}
+		} else {
+			monitor.Spec.HpaScoreTemplate = ""
 		}
-		monitor.Spec.HpaScoreTemplate = ""
-		_, err = c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
-		glog.V(4).Infof("Updating deployment monitor error, while HPA got deleted: %s", monitor.GetName())
+
+		glog.V(4).Infof("Updating deployment monitor: %s", monitor.GetName())
+		c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
+		glog.V(4).Infof("Notifying foremast service: %s", monitor.GetName())
+		c.barrelman.monitorHpa(monitor)
 	}
 }
