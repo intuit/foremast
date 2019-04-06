@@ -10,9 +10,6 @@ go_test(
     name = "go_default_test",
     srcs = ["healthz_test.go"],
     embed = [":go_default_library"],
-    deps = [
-        "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",
-    ],
 )
 
 go_library(
@@ -21,10 +18,11 @@ go_library(
         "doc.go",
         "healthz.go",
     ],
+    importmap = "k8s.io/kubernetes/vendor/k8s.io/apiserver/pkg/server/healthz",
     importpath = "k8s.io/apiserver/pkg/server/healthz",
     deps = [
+        "//staging/src/k8s.io/apimachinery/pkg/util/wait:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",
     ],
 )
 

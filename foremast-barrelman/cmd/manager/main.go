@@ -18,6 +18,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
 	"log"
+	"os"
 	"time"
 
 	"foremast.ai/foremast/foremast-barrelman/pkg/apis"
@@ -29,11 +30,6 @@ import (
 
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	kubeinformers "k8s.io/client-go/informers"
-)
-
-var (
-	masterURL  string
-	kubeconfig string
 )
 
 func main() {
@@ -59,11 +55,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
-	//if err != nil {
-	//	glog.Fatalf("Error building kubeconfig: %s", err.Error())
-	//}
-
 	kubeClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		glog.Fatalf("Error building kubernetes clientset: %s", err.Error())
@@ -75,10 +66,25 @@ func main() {
 
 	sharedInformerFactory := externalversions.NewSharedInformerFactory(foremastClient, time.Second*10)
 
-	barrelman := controller.NewBarrelman(kubeClient, foremastClient,
-		kubeInformerFactory.Apps().V1().Deployments())
+	var mode = os.Getenv("MODE")
+	if len(mode) == 0 {
+		mode = controller.MODE_HPA_AND_HEALTHY_MONITORING
+	}
+	var hpaStrategy = os.Getenv("HPA_STRATEGY")
+	if len(hpaStrategy) == 0 {
+		hpaStrategy = controller.HPA_STRATEGY_ENABLED_ONLY
+	}
 
-	monitorController := controller.NewController(kubeClient, foremastClient, sharedInformerFactory.Deployment().V1alpha1().DeploymentMonitors(), barrelman)
+	barrelman := controller.NewBarrelman(kubeClient, foremastClient, mode, hpaStrategy)
+
+	var deploymentController *controller.DeploymentController
+
+	deploymentController = controller.NewDeploymentController(kubeClient, foremastClient,
+		kubeInformerFactory.Apps().V1().Deployments(), barrelman)
+
+	log.Printf("Starting the deploymentController.")
+
+	monitorController := controller.NewMonitorController(kubeClient, foremastClient, sharedInformerFactory.Deployment().V1alpha1().DeploymentMonitors(), barrelman)
 
 	if monitorController != nil {
 		log.Printf("Monitor controller started.")
@@ -93,17 +99,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("Starting the barrelman.")
-
 	// Start the Cmd
-	//log.Fatal(mgr.Start(signals.SetupSignalHandler()))
-
-	if err = barrelman.Run(2, stopCh); err != nil {
+	if err = deploymentController.Run(2, stopCh); err != nil {
 		glog.Fatalf("Error running controller: %s", err.Error())
 	}
 }
-
-//func init() {
-//	flag.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-//	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-//}
