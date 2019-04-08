@@ -63,8 +63,10 @@ spec:
                 ), "apps_deployment", "", "app")
 
     # Aggregated by namespace + app and average by pod
+    # pod count only includes the pod on ready condtion
     - record: namespace_app_pod_count
-      expr: label_join((count(label_replace(kube_pod_labels{job="kube-state-metrics"}, "app", "$1", "label_app","(.*)")) by (namespace, app)), "apps_deployment", "", "app")
+      expr: label_join((sum(label_replace(
+        (kube_pod_status_ready{condition="true"} * on (namespace, pod) group_left(label_app) kube_pod_labels{job="kube-state-metrics"}), "app", "$1", "label_app","(.*)")) by (namespace, app)), "apps_deployment", "", "app")
     - record: namespace_app_pod_cpu_usage_seconds_total
       expr: namespace_app_cpu_usage_seconds_total / namespace_app_pod_count
     - record: namespace_app_pod_memory_usage_bytes
@@ -72,9 +74,9 @@ spec:
 
     # Resource utilization aggregated by namespace + app and average by pod
     - record: namespace_app_pod_cpu_utilization
-      expr: namespace_app_cpu_usage_seconds_total * namespace_app_pod_count / namespace_app_cpu_resource_requests
+      expr: namespace_app_cpu_usage_seconds_total * 100 / namespace_app_cpu_resource_requests
     - record: namespace_app_pod_memory_utilization
-      expr: namespace_app_pod_memory_usage_bytes * namespace_app_pod_count / namespace_app_memory_resource_requests
+      expr: namespace_app_memory_usage_bytes * 100 / namespace_app_memory_resource_requests
 
   # Spring boot request and latency aggregation metrics rules
   - name: foremast.service.metrics.rules
@@ -87,7 +89,7 @@ spec:
     - record: namespace_app_pod_http_server_requests_errors
       expr: label_join((sum(rate(http_server_requests_seconds_count{status=~"[4-5][0-9]+"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / namespace_app_pod_count
     - record: namespace_app_pod_http_server_requests_latency
-      expr: label_join((sum(rate(http_server_requests_seconds_sum{status="200"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / sum(rate(http_server_requests_seconds_count{status="200"}[1m])) by (namespace, app)
+      expr: label_join((sum(rate(http_server_requests_seconds_sum{status="200"}[1m])) by (namespace, app) / sum(rate(http_server_requests_seconds_count{status="200"}[1m])) by (namespace, app)), "apps_deployment", "", "app")
     - record: namespace_app_pod_http_server_requests_2xx
       expr: label_join((sum(rate(http_server_requests_seconds_count{status=~"2[0-9]+"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / namespace_app_pod_count
     - record: namespace_app_pod_http_server_requests_count
