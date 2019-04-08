@@ -269,7 +269,7 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 
 		if strategy == m.StrategyHpa { //Select metrics by hpaScoreTemplate
 			if oldMonitor.Spec.HpaScoreTemplate == "" {
-				glog.Infof("No HpaScore Template ignore %v %s", newDepl)
+				glog.Infof("No HpaScore Template ignore %v", oldMonitor)
 				return
 			}
 

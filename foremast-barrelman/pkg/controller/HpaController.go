@@ -73,6 +73,7 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 				monitor.Spec.HpaScoreTemplate = ""
 				controller.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
 				glog.V(4).Infof("Updating deployment monitor error, while HPA got deleted: %s", monitor.GetName())
+				//TODO foremast-brain
 			}
 		},
 	})
@@ -145,7 +146,9 @@ func (c *HpaController) updateDeploymentMonitor(hpa *asv2.HorizontalPodAutoscale
 
 		glog.V(4).Infof("Updating deployment monitor: %s", monitor.GetName())
 		c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
-		glog.V(4).Infof("Notifying foremast service: %s", monitor.GetName())
-		c.barrelman.monitorHpa(monitor)
+		if monitor.Spec.HpaScoreTemplate != "" {
+			glog.V(4).Infof("Notifying foremast service: %s", monitor.GetName())
+			c.barrelman.monitorHpa(monitor)
+		}
 	}
 }

@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1554507308363,
+  "iteration": 1554507540652,
   "links": [],
   "panels": [
     {
@@ -239,7 +239,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "TPS/POD",
+          "label": "Percentile",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -248,7 +248,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -359,7 +359,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "TPS/POD",
+          "label": "Percentile",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -368,7 +368,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -478,7 +478,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "TPS/POD",
+          "label": "RPS/POD",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -487,7 +487,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -607,7 +607,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -727,7 +727,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -813,5 +813,5 @@
   "timezone": "browser",
   "title": "HPA",
   "uid": "A4yxivymk",
-  "version": 3
+  "version": 4
 }
