@@ -23,6 +23,7 @@ import io.micrometer.core.instrument.config.MeterFilterReply;
 import org.springframework.util.StringUtils;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -51,6 +52,8 @@ public class CommonMetricsFilter implements MeterFilter {
 
     private boolean actionEnabled = false;
 
+    private LinkedHashMap<String, String> tagRules = new LinkedHashMap<>();
+
     public CommonMetricsFilter(K8sMetricsProperties k8sMetricsProperties, MetricsProperties properties) {
         this.properties = properties;
         this.k8sMetricsProperties = k8sMetricsProperties;
@@ -76,6 +79,19 @@ public class CommonMetricsFilter implements MeterFilter {
         list = k8sMetricsProperties.getCommonMetricsPrefix();
         if (list != null && !list.isEmpty()) {
             prefixes = StringUtils.tokenizeToStringArray(list, ",", true, true);
+        }
+
+        String tagRuleExpressions = k8sMetricsProperties.getCommonMetricsTagRules();
+        if (tagRuleExpressions != null) {
+            String[] array = StringUtils.tokenizeToStringArray(tagRuleExpressions, ",", true, true);
+            for(String str: array) {
+                str = str.trim();
+                String[] nameAndValue = str.split(":");
+                if (nameAndValue == null || nameAndValue.length != 2) {
+                    throw new IllegalStateException("Invalid common tag name value pair:" + str);
+                }
+                tagRules.put(nameAndValue[0].trim(), nameAndValue[1].trim());
+            }
         }
     }
 
@@ -107,6 +123,15 @@ public class CommonMetricsFilter implements MeterFilter {
         for(String prefix: prefixes) {
             if (metricName.startsWith(prefix)) {
                 return MeterFilterReply.ACCEPT;
+            }
+        }
+
+        for(String key: tagRules.keySet()) {
+            String expectedValue = tagRules.get(key);
+            if (expectedValue != null) {
+                if (expectedValue.equals(id.getTag(key))) {
+                    return MeterFilterReply.ACCEPT;
+                }
             }
         }
 
