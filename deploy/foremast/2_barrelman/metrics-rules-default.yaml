@@ -9,76 +9,94 @@ metadata:
 spec:
   groups:
   # Core metrics aggregation rules
-  - name: core.metrics.aggregation.rules
+  - name: foremast.core.metrics.rules
     rules:
     # Aggregated by namespace + pod
-    - record: namespace_pod:cpu_usage_seconds_total
-      expr: sum by (namespace, pod) (label_replace(namespace_pod_name_container_name:container_cpu_usage_seconds_total:sum_rate, "pod", "$1", "pod_name", "(.*)"))
-    - record: namespace_pod:memory_usage_bytes
-      expr: sum by (namespace, pod) (label_replace(sum(container_memory_usage_bytes{job="kubelet", image!="", container_name!=""}) by (namespace, pod_name), "pod", "$1", "pod_name", "(.*)"))
-    # Aggregated by namespace + app
-    - record: namespace_app:cpu_usage_seconds_total
+    - record: namespace_pod_container_cpu_usage_seconds_total
       expr: |
-        sum by (namespace, app) (
-        sum(rate(container_cpu_usage_seconds_total{job="kubelet", image!="", container_name!=""}[5m])) by (namespace, pod_name) * on (namespace, pod_name) group_left(app)
-        label_replace(label_replace(kube_pod_labels{job="kube-state-metrics"}, "pod_name", "$1", "pod", "(.*)"), "app", "$1", "label_app","(.*)")
+        sum by (namespace, pod, container) (
+            label_replace(label_replace(rate(container_cpu_usage_seconds_total{job="kubelet", image!="", container_name!=""}[1m]), "pod", "$1", "pod_name", "(.*)"), "container", "$1", "container_name", "(.*)")
         )
-    - record: namespace_app:memory_usage_bytes
+    - record: namespace_pod_cpu_usage_seconds_total
+      expr: sum by (namespace, pod) (namespace_pod_container_cpu_usage_seconds_total)
+    - record: namespace_pod_memory_usage_bytes
+      expr: sum by (namespace, pod) (label_replace(sum(container_memory_usage_bytes{job="kubelet", image!="", container_name!=""}) by (namespace, pod_name), "pod", "$1", "pod_name", "(.*)"))
+
+    # Total requested resource per pod
+    - record: namespace_pod_cpu_resource_requests
+      expr:  sum(kube_pod_container_resource_requests{resource="cpu"}) by (namespace, pod)
+    - record: namespace_pod_memory_resource_requests
+      expr:  sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod)
+
+    # Aggregated by namespace + app
+    - record: namespace_app_cpu_usage_seconds_total
       expr: |
-        sum by (namespace, app) (
+        label_join(sum by (namespace, app) (
+        sum(rate(container_cpu_usage_seconds_total{job="kubelet", image!="", container_name!=""}[5m])) by (namespace, pod_name) * on (namespace, pod_name) group_left(app, apps_deployment)
+        label_replace(label_replace(kube_pod_labels{job="kube-state-metrics"}, "pod_name", "$1", "pod", "(.*)"), "app", "$1", "label_app","(.*)")
+        ), "apps_deployment", "", "app")
+    - record: namespace_app_memory_usage_bytes
+      expr: |
+        label_join(sum by (namespace, app) (
             sum(container_memory_usage_bytes{job="kubelet", image!="", container_name!=""}) by (namespace, pod_name)
         * on (namespace, pod_name) group_left(app)
          label_replace(label_replace(kube_pod_labels{job="kube-state-metrics"}, "pod_name", "$1", "pod", "(.*)"), "app", "$1", "label_app","(.*)")
-        )
+        ), "apps_deployment", "", "app")
+
+      # Total requested resource per app
+    - record: namespace_pod_cpu_resource_requests
+      expr:  sum(kube_pod_container_resource_requests{resource="cpu"}) by (namespace, pod)
+    - record: namespace_pod_memory_resource_requests
+      expr:  sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod)
+
+    - record: namespace_app_cpu_resource_requests
+      expr: |
+        label_join(sum by (namespace, app) (
+                sum(kube_pod_container_resource_requests{resource="cpu"}) by (namespace, pod) * on (namespace, pod) group_left(app, apps_deployment)
+                label_replace(kube_pod_labels{job="kube-state-metrics"}, "app", "$1", "label_app","(.*)")
+                ), "apps_deployment", "", "app")
+    - record: namespace_app_memory_resource_requests
+      expr: |
+        label_join(sum by (namespace, app) (
+                sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace, pod) * on (namespace, pod) group_left(app, apps_deployment)
+                label_replace(kube_pod_labels{job="kube-state-metrics"}, "app", "$1", "label_app","(.*)")
+                ), "apps_deployment", "", "app")
+
     # Aggregated by namespace + app and average by pod
-    - record: namespace_app:pod_count
-      expr: count(label_replace(kube_pod_labels{job="kube-state-metrics"}, "app", "$1", "label_app","(.*)")) by (namespace, app)
-    - record: namespace_app_per_pod:cpu_usage_seconds_total
-      expr: namespace_app:cpu_usage_seconds_total / namespace_app:pod_count
-    - record: namespace_app_per_pod:memory_usage_bytes
-      expr: namespace_app:memory_usage_bytes / namespace_app:pod_count
+    - record: namespace_app_pod_count
+      expr: label_join((count(label_replace(kube_pod_labels{job="kube-state-metrics"}, "app", "$1", "label_app","(.*)")) by (namespace, app)), "apps_deployment", "", "app")
+    - record: namespace_app_pod_cpu_usage_seconds_total
+      expr: namespace_app_cpu_usage_seconds_total / namespace_app_pod_count
+    - record: namespace_app_pod_memory_usage_bytes
+      expr: namespace_app_memory_usage_bytes / namespace_app_pod_count
 
-  # Spring boot request and latency  aggregation metrics rules
-  - name: spring.boot.metrics.rules
+    # Resource utilization aggregated by namespace + app and average by pod
+    - record: namespace_app_pod_cpu_utilization
+      expr: namespace_app_cpu_usage_seconds_total * namespace_app_pod_count / namespace_app_cpu_resource_requests
+    - record: namespace_app_pod_memory_utilization
+      expr: namespace_app_pod_memory_usage_bytes * namespace_app_pod_count / namespace_app_memory_resource_requests
+
+  # Spring boot request and latency aggregation metrics rules
+  - name: foremast.service.metrics.rules
     rules:
-    # Aggregated by namespace + pod
-    - record: namespace_pod:http_server_requests_error_4xx
-      expr: sum(rate(http_server_requests_seconds_count{status=~"4[0-9]+"}[1m])) by (namespace, pod)
-    - record: namespace_pod:http_server_requests_error_5xx
-      expr: sum(rate(http_server_requests_seconds_count{status=~"5[0-9]+"}[1m])) by (namespace, pod)
-    - record: namespace_pod:http_server_requests_errors
-      expr: sum(rate(http_server_requests_seconds_count{status=~"[4-5][0-9]+"}[1m])) by (namespace, pod)
-    - record: namespace_pod:http_server_requests_latency
-      expr: sum(rate(http_server_requests_seconds_sum{status="200"}[1m])/rate(http_server_requests_seconds_count{status="200"}[1m])) by (namespace, pod)
-    - record: namespace_pod:http_server_requests_2xx
-      expr: sum(rate(http_server_requests_seconds_count{status=~"2[0-9]+"}[1m])) by (namespace, pod)
-    - record: namespace_pod:http_server_requests_count
-      expr: sum(rate(http_server_requests_seconds_count[1m])) by (namespace, pod)
+    # Aggregated by namespace + app and per_pod
+    - record: namespace_app_pod_http_server_requests_errors_4xx
+      expr: label_join((sum(rate(http_server_requests_seconds_count{status=~"4[0-9]+"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / namespace_app_pod_count
+    - record: namespace_app_pod_http_server_requests_errors_5xx
+      expr: label_join((sum(rate(http_server_requests_seconds_count{status=~"5[0-9]+"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / namespace_app_pod_count
+    - record: namespace_app_pod_http_server_requests_errors
+      expr: label_join((sum(rate(http_server_requests_seconds_count{status=~"[4-5][0-9]+"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / namespace_app_pod_count
+    - record: namespace_app_pod_http_server_requests_latency
+      expr: label_join((sum(rate(http_server_requests_seconds_sum{status="200"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / sum(rate(http_server_requests_seconds_count{status="200"}[1m])) by (namespace, app)
+    - record: namespace_app_pod_http_server_requests_2xx
+      expr: label_join((sum(rate(http_server_requests_seconds_count{status=~"2[0-9]+"}[1m])) by (namespace, app)), "apps_deployment", "", "app") / namespace_app_pod_count
+    - record: namespace_app_pod_http_server_requests_count
+      expr: label_join((sum(rate(http_server_requests_seconds_count[1m])) by (namespace, app)), "apps_deployment", "", "app") / namespace_app_pod_count
 
-    # Aggregated by namespace + app
-    - record: namespace_app:http_server_requests_error_4xx
-      expr: sum(rate(http_server_requests_seconds_count{status=~"4[0-9]+"}[1m])) by (namespace, app)
-    - record: namespace_app:http_server_requests_error_5xx
-      expr: sum(rate(http_server_requests_seconds_count{status=~"5[0-9]+"}[1m])) by (namespace, app)
-    - record: namespace_app:http_server_requests_errors
-      expr: sum(rate(http_server_requests_seconds_count{status=~"[4-5][0-9]+"}[1m])) by (namespace, app)
-    - record: namespace_app:http_server_requests_latency
-      expr: sum(rate(http_server_requests_seconds_sum{status="200"}[1m])/rate(http_server_requests_seconds_count{status="200"}[1m])) by (namespace, app)
-    - record: namespace_app:http_server_requests_2xx
-      expr: sum(rate(http_server_requests_seconds_count{status=~"2[0-9]+"}[1m])) by (namespace, app)
-    - record: namespace_app:http_server_requests_count
-      expr: sum(rate(http_server_requests_seconds_count[1m])) by (namespace, app)
-
-    # Aggregated by namespace + app and averaged by pod
-    - record: namespace_app_per_pod:http_server_requests_error_4xx
-      expr: namespace_app:http_server_requests_error_4xx / namespace_app:pod_count
-    - record: namespace_app_per_pod:http_server_requests_error_5xx
-      expr: namespace_app:http_server_requests_error_5xx / namespace_app:pod_count
-    - record: namespace_app_per_pod:http_server_requests_errors
-      expr: namespace_app:http_server_requests_errors / namespace_app:pod_count
-    - record: namespace_app_per_pod:http_server_requests_latency
-      expr: namespace_app:http_server_requests_latency / namespace_app:pod_count
-    - record: namespace_app_per_pod:http_server_requests_2xx
-      expr: namespace_app:http_server_requests_2xx / namespace_app:pod_count
-    - record: namespace_app_per_pod:http_server_requests_count
-      expr: namespace_app:http_server_requests_count / namespace_app:pod_count
+    # Aggregated java application metrics for HPA
+    - record: namespace_app_pod_jvm_memory_heap_utilization
+      expr: label_join(((sum(jvm_memory_used_bytes{area="heap"}) by (namespace, app) * 100 / sum(jvm_memory_max_bytes{area="heap"}) by (namespace, app))), "apps_deployment", "", "app")
+    - record: namespace_app_pod_jvm_gc_pause_seconds_avg
+      expr: label_join((sum(rate(jvm_gc_pause_seconds_sum[1m])) by (namespace, app) / sum(rate(jvm_gc_pause_seconds_count[1m])) by (namespace, app)), "apps_deployment", "", "app")
+    - record: namespace_app_pod_tomcat_threads_busy_percentage
+      expr: label_join((sum(tomcat_threads_busy*100/tomcat_threads_config_max) by (namespace, app)), "apps_deployment", "", "app")

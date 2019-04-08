@@ -58,7 +58,7 @@ type JobInfo struct {
 
 var jobmap map[string]JobInfo
 var serviceslist []string
-var anomalyfilename string = "./anomaly.tsv"
+var anomalyfilename string = "/data/anomaly/anomaly.tsv"
 var currentYear int
 var currentMonth time.Month
 var currentDay int
@@ -202,7 +202,7 @@ func GenerateSummaryReport() {
 	// now := time.Now()
 	// unix := now.Unix()
 	// filename := "./anomalyreport" + strconv.FormatInt(unix*1000, 10) + ".txt"
-	filename := "./anomalyreport" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".txt"
+	filename := "/data/anomaly/anomalyreport" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".txt"
 	reportfile, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 	if err != nil {
 		log.Printf("error creating file for anomaly report: %s\n%s\n", err, err.Error())
@@ -299,6 +299,38 @@ func ForemastQuery(appName string, errorQuery string, latencyQuery string, tpsQu
 				},
 			},
 		},
+		Baseline: map[string]fq.MetricQuery{
+			"error5xx": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    errorQuery,
+					"endpoint": "",
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      startTime,
+					"step":     60,
+				},
+			},
+			"latency": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    latencyQuery,
+					"endpoint": "",
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      startTime,
+					"step":     60,
+				},
+			},
+			"tps": {
+				DataSourceType: "wavefront",
+				Parameters: map[string](interface{}){
+					"query":    tpsQuery,
+					"endpoint": "",
+					"start":    (startTime - (7 * 24 * 60 * 60)) * 1000,
+					"end":      endTime,
+					"step":     60,
+				},
+			},
+		},
 	}
 
 	b, err := json.MarshalIndent(analyzingRequest, "", "  ")
@@ -338,41 +370,51 @@ func MonitorService(serviceName string, mutex *sync.Mutex, filename string) {
 			ForemastQuery(serviceName, jobmap[serviceName].ErrorQuery, jobmap[serviceName].LatencyQuery, jobmap[serviceName].TPSQuery)
 		} else if status == "Unhealthy" {
 			//we're done with this job, write the anomaly to file and run next query
-			timeRegex := `&quot;ts&quot;\s*:\s*\[(\d*).\d`
 
-			r := regexp.MustCompile(timeRegex)
-			matches := r.FindStringSubmatch(healthresponse.Reason)
-
-			// dashboardUrl := os.Getenv("WAVEFRONT_ENDPOINT") + `/dashboard/Foremast#_v01(g:(c:off,d:7200,ls:!f,s:REPLACE_TIME,w:'2h'),p:(app:(d:Label,f:TAG_KEY,k:app,l:Application,m:(Label_2:REPLACE_APP),q:'ts(appdynamics.apm.errors.errors_per_min,%20app=%22fds-*%22)',s:Label_2)))`
-			dashboardUrl := os.Getenv("WAVEFRONT_ENDPOINT") + `/chart#_v01(c:(cs:(type:line),id:chart,n:%22REPLACE_METRIC_lower%22,s:!((co:'rgb(247,12,28)',e:'',n:Query,q:'avg(ts(%22REPLACE_METRIC_upper%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22REPLACE_METRIC_upper%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(0,0,0)',e:'',n:'New%20Query',q:'avg(ts(%22REPLACE_METRIC_lower%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22REPLACE_METRIC_lower%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(166,7,231)',e:'',n:'New%20Query',q:'avg(ts(REPLACE_WF_METRIC,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(REPLACE_WF_METRIC)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y))),g:(c:off,d:7200,ls:!f,s:1553641280,w:'2h'))`
-			if len(matches) < 2 {
-				log.Printf("No timestamp in health response: %s", healthresponse.Reason)
-				dashboardUrl = os.Getenv("WAVEFRONT_ENDPOINT") + "/dashboard/Foremast"
-			} else {
-				timestamp := strings.ToLower(matches[1])
-
-				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_APP", serviceName, -1)
-				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_TIME", timestamp, -1)
-			}
+			dashboardUrl := os.Getenv("WAVEFRONT_ENDPOINT") + `/chart#_v01(c:(cs:(type:line),id:chart,n:%22REPLACE_METRIC_lower%22,s:!((co:'rgb(247,12,28)',e:'',n:Query,q:'avg(ts(%22REPLACE_METRIC_upper%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22REPLACE_METRIC_upper%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(0,0,0)',e:'',n:'New%20Query',q:'avg(ts(%22REPLACE_METRIC_lower%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22REPLACE_METRIC_lower%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(166,7,231)',e:'',n:'New%20Query',q:'avg(ts(REPLACE_WF_METRIC,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(REPLACE_WF_METRIC)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y))),g:(c:off,d:7200,ls:!f,s:REPLACE_TIME,w:'2h'))`
 
 			metricRegex := `&quot;name&quot;\s*:\s*&quot;([\w\.]*)`
-			r = regexp.MustCompile(metricRegex)
-			matches = r.FindStringSubmatch(healthresponse.Reason)
+			r := regexp.MustCompile(metricRegex)
+			matches := r.FindStringSubmatch(healthresponse.Reason)
 			if len(matches) < 2 {
 				log.Printf("No metric in health response: %s", healthresponse.Reason)
 				dashboardUrl = os.Getenv("WAVEFRONT_ENDPOINT") + "/dashboard/Foremast"
 			} else {
 
-				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_METRIC", strings.ToLower(matches[1]), -1)
-				if matches[1] == "custom.iks.foremast.appdynamics.apm.transactions.errors_per_min" {
-					dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_WF_METRIC", "appdynamics.apm.errors.errors_per_min", -1)
-				} else if matches[1] == "custom.iks.foremast.appdynamics.apm.transactions.errors_per_min" {
-					dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_WF_METRIC", "appdynamics.apm.transactions.90th_percentile_resp_time_ms", -1)
+				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_METRIC", "custom.iks.foremast."+strings.ToLower(matches[1]), -1)
+				if matches[1] == "appdynamics.apm.transactions.errors_per_min" {
+					// dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_WF_METRIC", "appdynamics.apm.errors.errors_per_min", -1)
+					dashboardUrl = os.Getenv("WAVEFRONT_ENDPOINT") + `/chart#_v01(c:(cs:(type:line),id:chart,n:%22custom.iks.foremast.appdynamics.apm.transactions.errors_per_min_lower%22,s:!((co:'rgb(247,12,28)',e:'',n:Query,q:'avg(ts(%22custom.iks.foremast.appdynamics.apm.transactions.errors_per_min_upper%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22custom.iks.foremast.appdynamics.apm.transactions.errors_per_min_upper%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(0,0,0)',e:'',n:'New%20Query',q:'avg(ts(%22custom.iks.foremast.appdynamics.apm.transactions.errors_per_min_lower%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22custom.iks.foremast.appdynamics.apm.transactions.errors_per_min_lower%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(166,7,231)',e:'',n:'New%20Query',q:'sum(align(60s,%20mean,%20ts(appdynamics.apm.transactions.errors_per_min,%20env=prd%20and%20app=REPLACE_APP%20)),%20app)',qbe:!f,s:Y))),g:(c:off,d:4383,ls:!f,s:REPLACE_TIME))`
+				} else if matches[1] == "appdynamics.apm.transactions.90th_percentile_resp_time_ms" {
+					// dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_WF_METRIC", "appdynamics.apm.transactions.90th_percentile_resp_time_ms", -1)
+					dashboardUrl = os.Getenv("WAVEFRONT_ENDPOINT") + `/chart#_v01(c:(cs:(type:line),id:chart,n:%22custom.iks.foremast.appdynamics.apm.transactions.90th_percentile_resp_time_ms_lower%22,s:!((co:'rgb(247,12,28)',e:'',n:Query,q:'avg(ts(%22custom.iks.foremast.appdynamics.apm.transactions.90th_percentile_resp_time_ms_upper%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22custom.iks.foremast.appdynamics.apm.transactions.90th_percentile_resp_time_ms_upper%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(0,0,0)',e:'',n:'New%20Query',q:'avg(ts(%22custom.iks.foremast.appdynamics.apm.transactions.90th_percentile_resp_time_ms_lower%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22custom.iks.foremast.appdynamics.apm.transactions.90th_percentile_resp_time_ms_lower%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(166,7,231)',e:'',n:'New%20Query',q:'avg(align(60s,%20mean,%20ts(appdynamics.apm.transactions.90th_percentile_resp_time_ms,%20env=prd%20and%20app=REPLACE_APP%20)),%20app)',qbe:!f,s:Y))),g:(c:off,d:7200,ls:!f,s:REPLACE_TIME,w:'2h'))`
 				} else {
-					dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_WF_METRIC", "appdynamics.apm.transactions.calls_per_min", -1)
+					// dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_WF_METRIC", "appdynamics.apm.transactions.calls_per_min", -1)
+					dashboardUrl = os.Getenv("WAVEFRONT_ENDPOINT") + `/chart#_v01(c:(cs:(type:line),id:chart,n:%22custom.iks.foremast.appdynamics.apm.transactions.calls_per_min_lower%22,s:!((co:'rgb(247,12,28)',e:'',n:Query,q:'avg(ts(%22custom.iks.foremast.appdynamics.apm.transactions.calls_per_min_upper%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22custom.iks.foremast.appdynamics.apm.transactions.calls_per_min_upper%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(0,0,0)',e:'',n:'New%20Query',q:'avg(ts(%22custom.iks.foremast.appdynamics.apm.transactions.calls_per_min_lower%22,%20app=%22REPLACE_APP%22),%20app)',qb:'%7B%22_v%22:1,%22metric%22:%22ts(%5C%22custom.iks.foremast.appdynamics.apm.transactions.calls_per_min_lower%5C%22)%22,%22filters%22:%5B%5B%5B%22app%22,%22REPLACE_APP%22%5D%5D,%22and%22%5D,%22functions%22:%5B%5B%22avg%22,%5B%22app%22%5D%5D%5D%7D',qbe:!t,s:Y),(co:'rgb(166,7,231)',e:'',n:'New%20Query',q:'sum(align(60s,%20mean,%20ts(appdynamics.apm.transactions.calls_per_min,%20env=prd%20and%20app=REPLACE_APP%20and%20env=prd)),%20app)/60',qbe:!f,s:Y))),g:(c:off,d:7200,ls:!f,s:REPLACE_TIME,w:'2h'))`
 				}
 
 			}
+
+			timeRegex := `&quot;ts&quot;\s*:\s*\[(\d*).\d`
+
+			r = regexp.MustCompile(timeRegex)
+			matches = r.FindStringSubmatch(healthresponse.Reason)
+
+			// dashboardUrl := os.Getenv("WAVEFRONT_ENDPOINT") + `/dashboard/Foremast#_v01(g:(c:off,d:7200,ls:!f,s:REPLACE_TIME,w:'2h'),p:(app:(d:Label,f:TAG_KEY,k:app,l:Application,m:(Label_2:REPLACE_APP),q:'ts(appdynamics.apm.errors.errors_per_min,%20app=%22fds-*%22)',s:Label_2)))`
+
+			if len(matches) < 2 {
+				log.Printf("No timestamp in health response: %s", healthresponse.Reason)
+				dashboardUrl = os.Getenv("WAVEFRONT_ENDPOINT") + "/dashboard/Foremast"
+			} else {
+				timestamp := strings.ToLower(matches[1])
+				newtime, _ := strconv.ParseInt(timestamp, 0, 64)
+				newtime = newtime - (60 * 15)
+
+				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_APP", serviceName, -1)
+				dashboardUrl = strings.Replace(dashboardUrl, "REPLACE_TIME", strconv.FormatInt(newtime, 10), -1)
+			}
+
+			log.Printf("[%s] dashboardUrl: %s", serviceName, dashboardUrl)
 
 			s := time.Now().Format("2006-01-02T15:04:05Z07:00") + "\t" + serviceName + "\t" + jobmap[serviceName].JobID + "\t" + healthresponse.Reason + "\t" + dashboardUrl + "\n" //timestamp + servicename + jobid
 			mutex.Lock()
@@ -382,17 +424,17 @@ func MonitorService(serviceName string, mutex *sync.Mutex, filename string) {
 				currentYear = cury
 				currentMonth = curm
 				currentDay = curd
-				anomalyfilename = "./anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
+				anomalyfilename = "/data/anomaly/anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
 			}
 
 			anomalyPath, _ := filepath.Abs(anomalyfilename)
 			anomalyfile, err := os.OpenFile(anomalyPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 			if err != nil {
-				log.Printf("error opening anomaly file %s\n%s\n", err, err.Error())
+				log.Printf("[%s] error opening anomaly file %s\n%s\n", serviceName, err, err.Error())
 			}
 			_, err = anomalyfile.WriteString(html.UnescapeString(s))
 			if err != nil {
-				log.Printf("error writing to anomaly file %s\n%s\n", err, err.Error())
+				log.Printf("[%s] error writing to anomaly file %s\n%s\n", serviceName, err, err.Error())
 			}
 			anomalyfile.Close()
 			mutex.Unlock()
@@ -444,10 +486,10 @@ func main() {
 
 	for _, line := range lines {
 		values := strings.Split(line, ";")
-		success := ForemastQuery(values[0], values[2], values[4], values[6])
+		success := ForemastQuery(values[0], values[4], values[2], values[6])
 		for success != true {
 			time.Sleep(time.Second * 10)
-			success = ForemastQuery(values[0], values[2], values[4], values[6])
+			success = ForemastQuery(values[0], values[4], values[2], values[6])
 		}
 	}
 
@@ -457,7 +499,7 @@ func main() {
 	mutex := &sync.Mutex{}
 	_ = mutex
 
-	anomalyfilename = "./anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
+	anomalyfilename = "/data/anomaly/anomaly_" + strconv.Itoa(currentYear) + "-" + currentMonth.String() + "-" + strconv.Itoa(currentDay) + ".tsv"
 
 	for serviceName, _ := range jobmap {
 		go MonitorService(serviceName, mutex, anomalyfilename)

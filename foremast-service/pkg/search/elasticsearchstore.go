@@ -34,23 +34,48 @@ func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc model
 		log.Println("Ignore me, means request is not exist and it is ok to create new request ", searchDoc.ID, "  reason is ", reason)
 	}
 	if err == -1 {
-		docNew := models.Document{
-			ID:               id,
-			AppName:          doc.AppName,
-			CreatedAt:        time.Now().UTC(),
-			StartTime:        common.StrToTime(doc.StartTime),
-			EndTime:          common.StrToTime(doc.EndTime),
-			ModifiedAt:       time.Now().UTC(),
-			CurrentConfig:    doc.CurrentConfig,
-			BaselineConfig:   doc.BaselineConfig,
-			HistoricalConfig: doc.HistoricalConfig,
-			CurrentMetricStore:    doc.CurrentMetricStore,
-			BaselineMetricStore:   doc.BaselineMetricStore,
-			HistoricalMetricStore: doc.HistoricalMetricStore,
-			Status:           "initial",
-			StatusCode:       doc.StatusCode,
-			Strategy:         doc.Strategy,
+		var docNew models.Document
+		if doc.Strategy == "hpa" {
+			docNew = models.Document{
+				ID:                    id,
+				AppName:               doc.AppName,
+				CreatedAt:             time.Now().UTC(),
+				StartTime:             common.StrToTime(doc.StartTime),
+				EndTime:               common.StrToTime(doc.StartTime),
+				ModifiedAt:            time.Now().UTC(),
+				CurrentConfig:         doc.CurrentConfig,
+				BaselineConfig:        doc.BaselineConfig,
+				HistoricalConfig:      doc.HistoricalConfig,
+				CurrentMetricStore:    doc.CurrentMetricStore,
+				BaselineMetricStore:   doc.BaselineMetricStore,
+				HistoricalMetricStore: doc.HistoricalMetricStore,
+				Status:                "initial",
+				StatusCode:            doc.StatusCode,
+				Strategy:              doc.Strategy,
+				HPAMetrics:            doc.HPAMetrics,
+				Policy:                doc.Policy,
+				Namespace:             doc.Namespace,
+			}
+		} else {
+			docNew = models.Document{
+				ID:                    id,
+				AppName:               doc.AppName,
+				CreatedAt:             time.Now().UTC(),
+				StartTime:             common.StrToTime(doc.StartTime),
+				EndTime:               common.StrToTime(doc.EndTime),
+				ModifiedAt:            time.Now().UTC(),
+				CurrentConfig:         doc.CurrentConfig,
+				BaselineConfig:        doc.BaselineConfig,
+				HistoricalConfig:      doc.HistoricalConfig,
+				CurrentMetricStore:    doc.CurrentMetricStore,
+				BaselineMetricStore:   doc.BaselineMetricStore,
+				HistoricalMetricStore: doc.HistoricalMetricStore,
+				Status:                "initial",
+				StatusCode:            doc.StatusCode,
+				Strategy:              doc.Strategy,
+			}
 		}
+		log.Printf("DOC: %#v\n", docNew)
 		bulk.Add(elastic.NewBulkIndexRequest().Id(docNew.ID).Doc(docNew))
 		if _, err := bulk.Do(context.Request.Context()); err != nil {
 			log.Println(err)

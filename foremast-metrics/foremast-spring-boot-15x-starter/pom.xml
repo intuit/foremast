@@ -5,13 +5,13 @@
 
     <groupId>ai.foremast.metrics</groupId>
     <artifactId>foremast-spring-boot-15x-starter</artifactId>
-    <version>0.1.9-SNAPSHOT</version>
+    <version>0.1.11</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.17.RELEASE</version>
+        <version>1.5.15.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
