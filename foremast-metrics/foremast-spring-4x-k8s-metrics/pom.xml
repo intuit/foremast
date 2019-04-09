@@ -5,7 +5,7 @@
 
     <groupId>ai.foremast.metrics</groupId>
     <artifactId>foremast-spring-4x-k8s-metrics</artifactId>
-    <version>0.1.6-SNAPSHOT</version>
+    <version>0.1.6</version>
     <packaging>jar</packaging>
 
     <name>foremast-spring-4.x-k8s-metrics</name>
