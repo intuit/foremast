@@ -114,8 +114,17 @@ and decides to scale up if SLA is impacted.
 ```
 Anomaly will be detected as a upwards trend or downwards trend. Upwards will only trigger scale up when it sees SLA impact.
 
+## Breath duration
+Breath duration is a period of time left to give the system a chance to reach a
+stable state after each scaling decision:
+- Breath-up is time to wait after each scaling up decision.
+- Breath-down is time to wait after each scaling down decision.
+
+Breath-up is smaller than breath-down to allow the system to scale-up rapidly to 
+cope with burst workload. Breath-down is larger than breath-up duration in order
+to avoid uncertain scaling down which could cause degradation in the system.
+
 ## Feedback
 Some metrics will be used to feedback into the flow:
 - Number of Scale up/down decisions in last N minutes to avoid flipping
 - ...
- 
