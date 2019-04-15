@@ -174,3 +174,21 @@ type HPAMetric struct {
 	IsIncrease bool   `json:"isIncrease"`
 	IsAbsolute bool   `json:"isAbsolute"`
 }
+
+type HPAAlertResponse struct {
+	JobID      string    `json:"jobId"`
+	AppName    string    `json:"appName"`
+	Namespace  string    `json:"namespace"`
+	Strategy   string    `json:"strategy"`
+	ModifiedAt time.Time `json:"modifiedAt"`
+	CreatedAt  time.Time `json:"createdAt"`
+	Status     string    `json:"status"`
+	HPALogs    []HPALog  `json:"hpalogs"`
+}
+
+type HPALog struct {
+	JobID     string    `json:"jobId"`
+	Timestamp time.Time `json:"timestamp"`
+	LogID     string    `json:"logId"`
+	Reason    string    `json:"reason"`
+}

@@ -116,9 +116,12 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 
 	if m.Historical != nil {
 		hErrCode, ret, mSource := convertMetricQuerys(m.Historical)
-		for k, v := range m.Historical {
-			hpametrics = append(hpametrics, models.HPAMetric{*v.Priority, k, v.IsIncrease, v.IsAbsolute})
+		if strategy == "hpa" {
+			for k, v := range m.Historical {
+				hpametrics = append(hpametrics, models.HPAMetric{*v.Priority, k, v.IsIncrease, v.IsAbsolute})
+			}
 		}
+
 		if hErrCode != 0 {
 			log.Println("Warning: historical convertMetricQuerys ", m.Historical, " failed. errorCode is ", hErrCode)
 			reason.WriteString(" historical query encount error ")
@@ -228,6 +231,57 @@ func SearchByID(context *gin.Context) {
 
 }
 
+// HpaAlert .... get hpa alert reason
+func HpaAlert(context *gin.Context) {
+	_appName := context.Param("appName")
+	_namespace := context.Param("namespace")
+	log.Printf("Getting info for %s/%s :\n", _namespace, _appName)
+	doc, err, reason := search.ByNamespacedQuery(context, elasticClient, _appName+" "+_namespace)
+	_ = reason
+
+	logs, err2, reason := search.GetLogs(context, elasticClient, doc.ID)
+	_ = err2
+	_ = reason
+
+	if len(logs) > 10 {
+		logs = logs[0:9]
+	}
+	log.Printf("logs: %s\n", logs)
+
+	if err == 1 {
+		context.JSON(http.StatusNotFound, converter.ConvertESToHPAResp(doc, logs))
+		// context.JSON(http.StatusInternalServerError, converter.ConvertESToHPAResp(doc.AppName, doc.Namespace, doc.ModifiedAt, doc.CreatedAt, doc.Status, doc.ID))
+		return
+	} else {
+		context.JSON(http.StatusOK, converter.ConvertESToHPAResp(doc, logs))
+		// context.JSON(http.StatusOK, converter.ConvertESToHPAResp(doc.AppName, doc.Namespace, doc.ModifiedAt, doc.CreatedAt, doc.Status, doc.ID))
+		return
+	}
+
+	context.JSON(http.StatusOK, converter.ConvertESToResp(doc))
+
+}
+
+func AddLog(context *gin.Context) {
+	var hpalog models.HPALog
+
+	if err := context.BindJSON(&hpalog); err != nil {
+		log.Println("Error: encounter context error ", err, " detail ", reflect.TypeOf(err))
+		common.ErrorResponse(context, http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	// hpalog.JobID = id
+
+	id, err := search.CreateNewHPALog(context, elasticClient, hpalog)
+	_ = err
+	_ = id
+	hpalog.LogID = id
+
+	context.JSON(http.StatusOK, hpalog)
+
+}
+
 /*
 func ProxyQuery(context *gin.Context) {
 	var myquery models.QueryRequest
@@ -318,8 +372,17 @@ func main() {
 		//query proxy
 		v2.GET("/v1/:queryproxy", QueryProxy)
 	}
+
+	v3 := router.Group("/alert")
+	{
+		// get hpa info for namespace/app
+		v3.GET("/:appName/:namespace/:strategy", HpaAlert)
+
+		// add an hpa log
+		v3.POST("/log", AddLog)
+	}
+
 	if err = router.Run(":8099"); err != nil {
 		log.Fatal(err)
 	}
-
 }

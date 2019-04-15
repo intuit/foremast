@@ -211,7 +211,7 @@ func (c *Client) GetStatus(jobId string) (ApplicationHealthAnalyzeResponse, erro
 	*/
 	var phase string
 	switch response.Status {
-	case "created", "initial", "new", "inprogress", "unknown":
+	case "created", "initial", "new", "inprogress":
 		phase = MonitorPhaseRunning
 		break
 	case "completed_health", "success":
@@ -220,7 +220,7 @@ func (c *Client) GetStatus(jobId string) (ApplicationHealthAnalyzeResponse, erro
 	case "completed_unhealth", "anomaly":
 		phase = MonitorPhaseUnhealthy
 		break
-	case "abort":
+	case "abort", "unknown":
 		phase = MonitorPhaseAbort
 		break
 	case "completed_unknown":
