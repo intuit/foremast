@@ -49,10 +49,10 @@ The default reward function R(action) considers two conditions:
 If a SLA metrics is not provided, *Latency* will be used.
 The rule is simple - reward function will reward lower resource allocation as long as SLA metrics is not vialated.
 
-| R(action)  | Scale UP  | Scale DOWN  |
-|---|---|---|
-| Meet SLA | -1 | 1 |
-| Not Meet SLA  | 1 | -1 |
+| R(action)  | Scale UP  | Scale DOWN  | No Change  |
+|---|---|---|---|
+| Meet SLA | -1 | 1 | 0 |
+| Not Meet SLA  | 1 | -1 | 0 |
 
 
 ## Samples
