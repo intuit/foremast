@@ -34,22 +34,21 @@ var (
 	kubeconfig string
 )
 
-var jobmap map[string]fq.JobInfo
+var jobmap map[string]fq.JobInfoM
 var serviceslist []string
+var serviceslist2 map[string]fq.JobInfoM
 var anomalyfilename string = "/data/anomaly/anomaly.tsv"
 var currentYear int
 var currentMonth time.Month
 var currentDay int
 
 func main() {
-	jobmap = make(map[string]fq.JobInfo)
+	//map servicename -> info
+	jobmap = make(map[string]fq.JobInfoM)
+	serviceslist2 = make(map[string]fq.JobInfoM)
 	lines := []string{}
 
-	// decoder := json.NewDecoder(r.Body)
-
-	// UpdateTimes(analyzingRequest)
 	requestsfilename := os.Getenv("REQUESTS_FILE")
-	// requestsPath, _ := filepath.Abs("./requests.csv")
 	requestsPath, _ := filepath.Abs("./" + requestsfilename)
 	requestsfile, err := os.Open(requestsPath)
 	if err != nil {
@@ -61,27 +60,45 @@ func main() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		lines = append(lines, line)
-		// time.Sleep(time.Second * 60)
-		// }
 	}
 
 	for _, line := range lines {
 		values := strings.Split(line, ";")
 		serviceslist = append(serviceslist, values[0])
+		metricmap := make(map[string]string)
+		i := 1
+		for i+1 < len(values) {
+			metricmap[values[i]] = values[i+1]
+			i += 2
+		}
+		serviceslist2[values[0]] = fq.JobInfoM{
+			MetricMap: metricmap, // map wavefront metric name -> wavefront query for that metric
+		}
+
 	}
 
 	now := time.Now()
 	currentYear, currentMonth, currentDay = now.Date()
 
-	fq.GenerateSummaryReport(serviceslist, &currentYear, &currentMonth, &currentDay)
+	fq.GenerateSummaryReport(serviceslist2, &currentYear, &currentMonth, &currentDay)
 
 	for _, line := range lines {
 		//appname;error4xx;errorquery;latency;latencyquery;tps;tpsquery
 		values := strings.Split(line, ";")
-		success := fq.ForemastQuery(values[0], values[2], values[4], values[6], &jobmap)
+		// map metricname -> query
+		metricmap := make(map[string]string)
+		i := 1
+		for i+1 < len(values) {
+			metricmap[values[i]] = values[i+1]
+			i += 2
+		}
+
+		// try to start job
+		success := fq.ForemastQuery(&jobmap, values[0], metricmap)
 		for success != true {
+			// wait and try again
 			time.Sleep(time.Second * 10)
-			success = fq.ForemastQuery(values[0], values[2], values[4], values[6], &jobmap)
+			success = fq.ForemastQuery(&jobmap, values[0], metricmap)
 		}
 	}
 
@@ -99,8 +116,9 @@ func main() {
 	}
 
 	go func() {
+		// generate summary report once per 24 hours
 		time.Sleep(time.Hour * 24)
-		fq.GenerateSummaryReport(serviceslist, &currentYear, &currentMonth, &currentDay)
+		fq.GenerateSummaryReport(serviceslist2, &currentYear, &currentMonth, &currentDay)
 	}()
 
 	sigTerm := make(chan os.Signal, 1)
@@ -109,8 +127,3 @@ func main() {
 	<-sigTerm
 
 }
-
-//func init() {
-//	flag.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-//	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-//}
