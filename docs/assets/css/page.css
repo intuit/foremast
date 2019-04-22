@@ -10,6 +10,15 @@ h1, h2, h3, h4, h5, h6 {
   font-size: .9rem;
 }
 
+.navbar {
+    position: relative;
+    display: -ms-flexbox;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: .2rem .2rem;
+}
+
 .jumbotron h1 {
   font-weight: 300;
   font-size: 3.2rem;
