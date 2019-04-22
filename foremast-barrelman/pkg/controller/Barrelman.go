@@ -1,6 +1,10 @@
 package controller
 
 import (
+	"os"
+	"strings"
+	"time"
+
 	"foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment/v1alpha1"
 	a "foremast.ai/foremast/foremast-barrelman/pkg/client/analyst"
 	m "foremast.ai/foremast/foremast-barrelman/pkg/client/metrics"
@@ -11,9 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
-	"os"
-	"strings"
-	"time"
 
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"

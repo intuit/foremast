@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foremast-trigger
+  namespace: dev-container-foremast-brain-usw2-dev-dev
+  labels:
+    app: foremast-trigger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foremast-trigger
+  template:
+    metadata:
+      labels:
+        app: foremast-trigger
+    spec:
+      containers:
+      - image: docker.intuit.com/foremast/foremast-trigger:0.0.27
+        imagePullPolicy: Always
+        name: query
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+        ports:
+        - containerPort: 8011
+          name: http
+        env:
+          - name: FOREMAST_ES_ENDPOINT
+            value: http://elasticsearch-discovery.dev-container-foremast-brain-usw2-dev-dev.svc.cluster.local:9200
+          - name: FOREMAST_SERVICE_ENDPOINT
+            value: http://foremast-service.dev-container-foremast-brain-usw2-dev-dev.svc.cluster.local:8099
+            # value: http://10.97.93.44:8099/v1/healthcheck/create
+      terminationGracePeriodSeconds: 10

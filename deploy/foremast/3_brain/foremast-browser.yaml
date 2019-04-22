@@ -1,35 +1,56 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: foremast-browser
+  name: foremast-dashboard
   namespace: foremast
   labels:
-    app: foremast-browser
+    app: foremast-dashboard
 spec:
   selector:
-    app: foremast-browser
+    app: foremast-dashboard
   ports:
   - port: 80
     name: http
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: foremast
+data:
+  nginx.conf: |
+    server {
+       listen 80;
+       location /api {
+          proxy_pass http://foremast-service.foremast.svc.cluster.local:8099;
+       }
+       location / {
+          root /usr/share/nginx/html;
+          index index.html index.htm;
+          try_files $uri $uri/ /index.html =404;
+        }
+    }
+
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: foremast-browser
+  name: foremast-dashboard
   namespace: foremast
   labels:
-    app: foremast-browser
+    app: foremast-dashboard
 spec:
   selector:
     matchLabels:
-      app: foremast-browser
+      app: foremast-dashboard
   template:
     metadata:
       labels:
-        app: foremast-browser
+        app: foremast-dashboard
     spec:
       containers:
-      - image: docker.io/foremast/foremast-browser:0.5.0
+      - image: docker.artifactory.a.intuit.com/foremast/foremast-dashboard:0.5.2
         imagePullPolicy: Always
         name: service
         resources:
@@ -42,4 +63,12 @@ spec:
         ports:
         - containerPort: 80
           name: http
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: nginx.conf
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
