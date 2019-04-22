@@ -1,19 +1,3 @@
-/**
- * Licensed to the Foremast under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package ai.foremast.metrics.k8s.starter;
 
 import io.micrometer.spring.autoconfigure.MetricsProperties;
@@ -144,33 +128,37 @@ public class CommonMetricsFilter implements MeterFilter {
     }
 
     public void enableMetric(String metricName) {
-        metricName = filter(metricName);
+        if (k8sMetricsProperties.isEnableCommonMetricsFilterAction()) {
+            metricName = filter(metricName);
 
-        if (blacklist.contains(metricName)) {
-            blacklist.remove(metricName);
-        }
-        if (!whitelist.contains(metricName)) {
-            whitelist.add(metricName);
+            if (blacklist.contains(metricName)) {
+                blacklist.remove(metricName);
+            }
+            if (!whitelist.contains(metricName)) {
+                whitelist.add(metricName);
+            }
         }
     }
 
     public void disableMetric(String metricName) {
-        metricName = filter(metricName);
+        if (k8sMetricsProperties.isEnableCommonMetricsFilterAction()) {
+            metricName = filter(metricName);
 
-        if (whitelist.contains(metricName)) {
-            whitelist.remove(metricName);
-        }
-        if (!blacklist.contains(metricName)) {
-            blacklist.add(metricName);
+            if (whitelist.contains(metricName)) {
+                whitelist.remove(metricName);
+            }
+            if (!blacklist.contains(metricName)) {
+                blacklist.add(metricName);
+            }
         }
     }
 
-    private <T> T lookup(Map<String, T> values, Meter.Id id, T defaultValue) {
-        if (values.isEmpty()) {
-            return defaultValue;
-        }
-        return doLookup(values, id, () -> defaultValue);
-    }
+//    private <T> T lookup(Map<String, T> values, Meter.Id id, T defaultValue) {
+//        if (values.isEmpty()) {
+//            return defaultValue;
+//        }
+//        return doLookup(values, id, () -> defaultValue);
+//    }
 
     private <T> T lookupWithFallbackToAll(Map<String, T> values, Meter.Id id, T defaultValue) {
         if (values.isEmpty()) {

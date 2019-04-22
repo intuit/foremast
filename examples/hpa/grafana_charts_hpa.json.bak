@@ -46,6 +46,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
+  "iteration": 1554507540652,
   "links": [],
   "panels": [
     {
@@ -90,19 +91,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (label_version) (kube_pod_labels{label_app=\"hpa-demo\"})",
+          "expr": "namespace_app_pod_count{namespace=\"$namespace\", app=\"$app\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
           "intervalFactor": 1,
-          "legendFormat": "{{label_version}}",
+          "legendFormat": "PodNumber",
           "refId": "A"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Demo Service",
+      "title": "${app}",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -144,7 +145,8 @@
         "Anomaly": "#052b51",
         "Demo Service": "#1f78c1",
         "ForemastDemo": "#e24d42",
-        "foo": "#e24d42"
+        "foo": "#e24d42",
+        "hpa-samples": "#0a50a1"
       },
       "bars": false,
       "dashLength": 10,
@@ -152,7 +154,7 @@
       "datasource": "${DS_PROMETHEUS}",
       "fill": 1,
       "gridPos": {
-        "h": 5,
+        "h": 4,
         "w": 24,
         "x": 0,
         "y": 4
@@ -207,44 +209,18 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "namespace_app_per_pod:http_server_requests_count{app=\"hpa-demo\",namespace=\"foremast-examples\"}",
+          "expr": "namespace_app_pod_cpu_utilization{app=\"$app\",namespace=\"$namespace\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "Demo Service",
+          "legendFormat": "$app",
           "refId": "A"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:http_server_requests_count_upper{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}*1000",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "Upper",
-          "refId": "B"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:http_server_requests_count_lower{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}*1000",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Lower",
-          "refId": "C"
-        },
-        {
-          "expr": "changes(foremastbrain:namespace_app_per_pod:http_server_requests_count_anomaly{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}[1m])",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "interval": "30s",
-          "intervalFactor": 1,
-          "legendFormat": "Anomaly",
-          "refId": "D"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Traffic",
+      "title": "CPU",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -263,7 +239,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "TPS/POD",
+          "label": "Percentile",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -272,7 +248,246 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
+          "label": "",
+          "logBase": 2,
+          "max": "1",
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Anomaly": "#052b51",
+        "Demo Service": "#1f78c1",
+        "ForemastDemo": "#e24d42",
+        "foo": "#e24d42",
+        "hpa-samples": "#65c5db"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "fill": 1,
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 16,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": 200,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 3,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "Upper",
+          "color": "#bf1b00",
+          "dashes": true,
+          "linewidth": 1
+        },
+        {
+          "alias": "Lower",
+          "color": "#508642",
+          "dashes": true,
+          "linewidth": 1,
+          "pointradius": 1
+        },
+        {
+          "alias": "Anomaly",
+          "color": "#bf1b00",
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "pointradius": 3,
+          "points": true,
+          "yaxis": 2
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "namespace_app_pod_jvm_memory_heap_utilization{app=\"$app\",namespace=\"$namespace\"}",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "$app",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "JVM_Heap",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": false,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": null,
+          "format": "short",
+          "label": "Percentile",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "decimals": null,
+          "format": "short",
+          "label": "",
+          "logBase": 2,
+          "max": "1",
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Anomaly": "#052b51",
+        "Demo Service": "#1f78c1",
+        "ForemastDemo": "#e24d42",
+        "foo": "#e24d42"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "fill": 1,
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 15,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": 200,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 3,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "Upper",
+          "color": "#bf1b00",
+          "dashes": true,
+          "linewidth": 1
+        },
+        {
+          "alias": "Lower",
+          "color": "#508642",
+          "dashes": true,
+          "linewidth": 1,
+          "pointradius": 1
+        },
+        {
+          "alias": "Anomaly",
+          "color": "#bf1b00",
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "pointradius": 3,
+          "points": true,
+          "yaxis": 2
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "namespace_app_pod_http_server_requests_count{app=\"$app\",namespace=\"$namespace\"}",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "$app",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "RPS",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": false,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": null,
+          "format": "short",
+          "label": "RPS/POD",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "decimals": null,
+          "format": "short",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -289,7 +504,8 @@
         "Anomaly": "#052b51",
         "Demo Service": "#cca300",
         "ForemastDemo": "#e24d42",
-        "foo": "#e24d42"
+        "foo": "#e24d42",
+        "hpa-samples": "#ef843c"
       },
       "bars": false,
       "dashLength": 10,
@@ -297,10 +513,10 @@
       "datasource": "${DS_PROMETHEUS}",
       "fill": 1,
       "gridPos": {
-        "h": 5,
+        "h": 4,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 16
       },
       "id": 11,
       "legend": {
@@ -352,38 +568,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "namespace_app_per_pod:http_server_requests_latency{app=\"hpa-demo\",namespace=\"foremast-examples\"}*1000",
+          "expr": "namespace_app_pod_http_server_requests_latency{app=\"$app\",namespace=\"$namespace\"}*1000",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "Demo Service",
+          "legendFormat": "$app",
           "refId": "A"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:http_server_requests_latency_upper{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}*1000",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "Upper",
-          "refId": "B"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:http_server_requests_latency_lower{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}*1000",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Lower",
-          "refId": "C"
-        },
-        {
-          "expr": "changes(foremastbrain:namespace_app_per_pod:http_server_requests_latency_anomaly{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}[1m])",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "interval": "30s",
-          "intervalFactor": 1,
-          "legendFormat": "Anomaly",
-          "refId": "D"
         }
       ],
       "thresholds": [],
@@ -417,7 +607,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -434,7 +624,8 @@
         "Anomaly": "#052b51",
         "Demo Service": "#ef843c",
         "ForemastDemo": "#e24d42",
-        "foo": "#e24d42"
+        "foo": "#e24d42",
+        "hpa-samples": "#bf1b00"
       },
       "bars": false,
       "dashLength": 10,
@@ -442,10 +633,10 @@
       "datasource": "${DS_PROMETHEUS}",
       "fill": 1,
       "gridPos": {
-        "h": 5,
+        "h": 3,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 20
       },
       "id": 2,
       "legend": {
@@ -497,44 +688,18 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "namespace_app_per_pod:http_server_requests_errors{app=\"hpa-demo\",namespace=\"foremast-examples\"}",
+          "expr": "namespace_app_pod_http_server_requests_errors{app=\"$app\",namespace=\"$namespace\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "Demo Service",
+          "legendFormat": "$app",
           "refId": "A"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_upper{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "Upper",
-          "refId": "B"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_lower{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Lower",
-          "refId": "C"
-        },
-        {
-          "expr": "delta(foremastbrain:namespace_app_per_pod:http_server_requests_error_5xx_anomaly{app=\"hpa-demo\",exported_namespace=\"foremast-examples\"}[1m])",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "interval": "30s",
-          "intervalFactor": 1,
-          "legendFormat": "Anomaly",
-          "refId": "D"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Errors (5xx 4xx)",
+      "title": "Errors",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -562,298 +727,7 @@
         {
           "decimals": null,
           "format": "short",
-          "label": "Anomaly",
-          "logBase": 2,
-          "max": "1",
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "Anomaly": "#052b51",
-        "Demo Service": "#65c5db",
-        "ForemastDemo": "#e24d42",
-        "foo": "#e24d42"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "fill": 1,
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 19
-      },
-      "id": 12,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": 200,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 3,
-      "links": [],
-      "nullPointMode": "null as zero",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "Upper",
-          "color": "#bf1b00",
-          "dashes": true,
-          "linewidth": 1
-        },
-        {
-          "alias": "Lower",
-          "color": "#508642",
-          "dashes": true,
-          "linewidth": 1,
-          "pointradius": 1
-        },
-        {
-          "alias": "Anomaly",
-          "color": "#bf1b00",
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "pointradius": 3,
-          "points": true,
-          "yaxis": 2
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "namespace_app_per_pod:cpu_usage_seconds_total{app=\"demo\",namespace=\"foremast-examples\"}*100",
-          "format": "time_series",
-          "hide": false,
-          "intervalFactor": 1,
-          "legendFormat": "Demo Service",
-          "refId": "A"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_upper{app=\"demo\",exported_namespace=\"foremast-examples\"}*100",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "Upper",
-          "refId": "B"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_lower{app=\"demo\",exported_namespace=\"foremast-examples\"}*100",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Lower",
-          "refId": "C"
-        },
-        {
-          "expr": "changes(foremastbrain:namespace_app_per_pod:cpu_usage_seconds_total_anomaly{app=\"demo\",exported_namespace=\"foremast-examples\"}[1m])",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "interval": "30s",
-          "intervalFactor": 1,
-          "legendFormat": "Anomaly",
-          "refId": "D"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "CPU",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transparent": false,
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "%",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Anomaly",
-          "logBase": 2,
-          "max": "1",
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "Anomaly": "#052b51",
-        "Demo Service": "#ba43a9",
-        "ForemastDemo": "#e24d42",
-        "foo": "#e24d42"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "fill": 1,
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 23
-      },
-      "id": 13,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": 200,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 3,
-      "links": [],
-      "nullPointMode": "null as zero",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "Upper",
-          "color": "#bf1b00",
-          "dashes": true,
-          "linewidth": 1
-        },
-        {
-          "alias": "Lower",
-          "color": "#508642",
-          "dashes": true,
-          "linewidth": 1,
-          "pointradius": 1
-        },
-        {
-          "alias": "Anomaly",
-          "color": "#bf1b00",
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "pointradius": 3,
-          "points": true,
-          "yaxis": 2
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "namespace_app_per_pod:memory_usage_bytes{app=\"demo\",namespace=\"foremast-examples\"}/1048576",
-          "format": "time_series",
-          "hide": false,
-          "intervalFactor": 1,
-          "legendFormat": "Demo Service",
-          "refId": "A"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:memory_usage_bytes_upper{app=\"demo\",exported_namespace=\"foremast-examples\"}/1048576",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "Upper",
-          "refId": "B"
-        },
-        {
-          "expr": "foremastbrain:namespace_app_per_pod:memory_usage_bytes_lower{app=\"demo\",exported_namespace=\"foremast-examples\"}/1048576",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "Lower",
-          "refId": "C"
-        },
-        {
-          "expr": "changes(foremastbrain:namespace_app_per_pod:memory_usage_bytes_anomaly{app=\"demo\",exported_namespace=\"foremast-examples\"}[1m])",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "interval": "30s",
-          "intervalFactor": 1,
-          "legendFormat": "Anomaly",
-          "refId": "D"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Memory",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transparent": false,
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "M",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Anomaly",
+          "label": "",
           "logBase": 2,
           "max": "1",
           "min": "0",
@@ -871,7 +745,50 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "text": "dev-fm-foremast-examples-usw2-dev-dev",
+          "value": "dev-fm-foremast-examples-usw2-dev-dev"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "dev-fm-foremast-examples-usw2-dev-dev",
+            "value": "dev-fm-foremast-examples-usw2-dev-dev"
+          }
+        ],
+        "query": "dev-fm-foremast-examples-usw2-dev-dev",
+        "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "text": "hpa-samples",
+          "value": "hpa-samples"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "Application",
+        "multi": false,
+        "name": "app",
+        "options": [
+          {
+            "selected": true,
+            "text": "hpa-samples",
+            "value": "hpa-samples"
+          }
+        ],
+        "query": "hpa-samples",
+        "type": "custom"
+      }
+    ]
   },
   "time": {
     "from": "now-5m",
@@ -894,7 +811,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "HPAWithForemast",
+  "title": "HPA",
   "uid": "A4yxivymk",
-  "version": 3
+  "version": 4
 }

@@ -33,6 +33,8 @@ public class K8sMetricsProperties {
     @Value("${k8s.metrics.enable-common-metrics-filter-action}")
     private boolean enableCommonMetricsFilterAction = false;
 
+    @Value("${k8s.metrics.common-metrics-tag-rules}")
+    private String commonMetricsTagRules = null;
 
     public String getInitializeForStatuses() {
         return initializeForStatuses;
@@ -100,5 +102,13 @@ public class K8sMetricsProperties {
 
     public void setEnableCommonMetricsFilterAction(boolean enableCommonMetricsFilterAction) {
         this.enableCommonMetricsFilterAction = enableCommonMetricsFilterAction;
+    }
+
+    public String getCommonMetricsTagRules() {
+        return commonMetricsTagRules;
+    }
+
+    public void setCommonMetricsTagRules(String commonMetricsTagRules) {
+        this.commonMetricsTagRules = commonMetricsTagRules;
     }
 }

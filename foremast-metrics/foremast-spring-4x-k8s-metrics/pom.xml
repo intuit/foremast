@@ -5,7 +5,7 @@
 
     <groupId>ai.foremast.metrics</groupId>
     <artifactId>foremast-spring-4x-k8s-metrics</artifactId>
-    <version>0.1.6-SNAPSHOT</version>
+    <version>0.1.6</version>
     <packaging>jar</packaging>
 
     <name>foremast-spring-4.x-k8s-metrics</name>
@@ -61,6 +61,15 @@
             <email>shaoxt@gmail.com</email>
         </developer>
     </developers>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
 
     <build>
         <plugins>

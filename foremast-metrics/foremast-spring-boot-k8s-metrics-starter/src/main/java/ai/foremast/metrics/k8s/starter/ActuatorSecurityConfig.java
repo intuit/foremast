@@ -1,6 +1,7 @@
 package ai.foremast.metrics.k8s.starter;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 @Configuration
 @Order(101)
 @EnableConfigurationProperties({K8sMetricsProperties.class})
+@ConditionalOnClass(WebSecurityConfigurerAdapter.class)
 public class ActuatorSecurityConfig extends WebSecurityConfigurerAdapter {
 
 
