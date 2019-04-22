@@ -128,17 +128,9 @@ func (c *HpaController) updateDeploymentMonitor(hpa *asv2.HorizontalPodAutoscale
 	monitor := c.getDeploymentMonitor(hpa)
 	if monitor != nil {
 		var hpaStrategy = c.barrelman.hpaStrategy
-		if hpaStrategy == HPA_STRATEGY_ANYWAY || hpaStrategy == HPA_STRATEGY_SPEC_EXISTS {
+		if hpaStrategy == HPA_STRATEGY_ANYWAY || hpaStrategy == HPA_STRATEGY_HPA_EXISTS {
 			if monitor.Spec.HpaScoreTemplate == "" {
 				monitor.Spec.HpaScoreTemplate = HPA_SCORE_TEMPLATE_DEFAULT
-			}
-		} else if hpaStrategy == HPA_STRATEGY_ENABLED_ONLY {
-			if *hpa.Spec.MinReplicas > 0 && len(hpa.Spec.Metrics) == 1 && hpa.Spec.Metrics[0].Object.Metric.Name != "" {
-				if *hpa.Spec.MinReplicas < hpa.Spec.MaxReplicas { //Not disabled
-					monitor.Spec.HpaScoreTemplate = HPA_SCORE_TEMPLATE_DEFAULT
-				}
-			} else {
-				monitor.Spec.HpaScoreTemplate = ""
 			}
 		} else {
 			monitor.Spec.HpaScoreTemplate = ""

@@ -25,11 +25,8 @@ const MODE_HPA_ONLY = "hpa_only"
 const MODE_HPA_AND_HEALTHY_MONITORING = "hpa_and_healthy_monitoring"
 
 // HPA score strategy
-// Generates HPA_SCORE for HPA enabled only
-const HPA_STRATEGY_ENABLED_ONLY = "enabled_only"
-
 // If the deployment has HPA object, generates score
-const HPA_STRATEGY_SPEC_EXISTS = "spec_exists"
+const HPA_STRATEGY_HPA_EXISTS = "hpa_exists"
 
 // Generates HPA SCORE any way
 const HPA_STRATEGY_ANYWAY = "anyway"
