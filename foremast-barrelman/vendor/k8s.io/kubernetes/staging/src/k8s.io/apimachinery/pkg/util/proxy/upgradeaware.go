@@ -69,6 +69,8 @@ type UpgradeAwareHandler struct {
 	// InterceptRedirects determines whether the proxy should sniff backend responses for redirects,
 	// following them as necessary.
 	InterceptRedirects bool
+	// RequireSameHostRedirects only allows redirects to the same host. It is only used if InterceptRedirects=true.
+	RequireSameHostRedirects bool
 	// UseRequestLocation will use the incoming request URL when talking to the backend server.
 	UseRequestLocation bool
 	// FlushInterval controls how often the standard HTTP proxy will flush content from the upstream.
@@ -257,7 +259,7 @@ func (h *UpgradeAwareHandler) tryUpgrade(w http.ResponseWriter, req *http.Reques
 	utilnet.AppendForwardedForHeader(clone)
 	if h.InterceptRedirects {
 		glog.V(6).Infof("Connecting to backend proxy (intercepting redirects) %s\n  Headers: %v", &location, clone.Header)
-		backendConn, rawResponse, err = utilnet.ConnectWithRedirects(req.Method, &location, clone.Header, req.Body, utilnet.DialerFunc(h.DialForUpgrade))
+		backendConn, rawResponse, err = utilnet.ConnectWithRedirects(req.Method, &location, clone.Header, req.Body, utilnet.DialerFunc(h.DialForUpgrade), h.RequireSameHostRedirects)
 	} else {
 		glog.V(6).Infof("Connecting to backend proxy (direct dial) %s\n  Headers: %v", &location, clone.Header)
 		clone.URL = &location
@@ -271,7 +273,7 @@ func (h *UpgradeAwareHandler) tryUpgrade(w http.ResponseWriter, req *http.Reques
 	defer backendConn.Close()
 
 	// determine the http response code from the backend by reading from rawResponse+backendConn
-	backendHTTPResponse, headerBytes, err := getResponse(io.MultiReader(bytes.NewReader(rawResponse), backendConn))
+	rawResponseCode, headerBytes, err := getResponseCode(io.MultiReader(bytes.NewReader(rawResponse), backendConn))
 	if err != nil {
 		glog.V(6).Infof("Proxy connection error: %v", err)
 		h.Responder.Error(w, req, err)
@@ -298,28 +300,23 @@ func (h *UpgradeAwareHandler) tryUpgrade(w http.ResponseWriter, req *http.Reques
 	}
 	defer requestHijackedConn.Close()
 
-	if backendHTTPResponse.StatusCode != http.StatusSwitchingProtocols {
-		// If the backend did not upgrade the request, echo the response from the backend to the client and return, closing the connection.
-		glog.V(6).Infof("Proxy upgrade error, status code %d", backendHTTPResponse.StatusCode)
-		// set read/write deadlines
-		deadline := time.Now().Add(10 * time.Second)
-		backendConn.SetReadDeadline(deadline)
-		requestHijackedConn.SetWriteDeadline(deadline)
-		// write the response to the client
-		err := backendHTTPResponse.Write(requestHijackedConn)
-		if err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
-			glog.Errorf("Error proxying data from backend to client: %v", err)
-		}
-		// Indicate we handled the request
-		return true
-	}
-
 	// Forward raw response bytes back to client.
 	if len(rawResponse) > 0 {
 		glog.V(6).Infof("Writing %d bytes to hijacked connection", len(rawResponse))
 		if _, err = requestHijackedConn.Write(rawResponse); err != nil {
 			utilruntime.HandleError(fmt.Errorf("Error proxying response from backend to client: %v", err))
 		}
+	}
+
+	if rawResponseCode != http.StatusSwitchingProtocols {
+		// If the backend did not upgrade the request, finish echoing the response from the backend to the client and return, closing the connection.
+		glog.V(6).Infof("Proxy upgrade error, status code %d", rawResponseCode)
+		_, err := io.Copy(requestHijackedConn, backendConn)
+		if err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
+			glog.Errorf("Error proxying data from backend to client: %v", err)
+		}
+		// Indicate we handled the request
+		return true
 	}
 
 	// Proxy the connection. This is bidirectional, so we need a goroutine
@@ -383,17 +380,17 @@ func (h *UpgradeAwareHandler) DialForUpgrade(req *http.Request) (net.Conn, error
 	return dial(updatedReq, h.UpgradeTransport)
 }
 
-// getResponseCode reads a http response from the given reader, returns the response,
+// getResponseCode reads a http response from the given reader, returns the status code,
 // the bytes read from the reader, and any error encountered
-func getResponse(r io.Reader) (*http.Response, []byte, error) {
+func getResponseCode(r io.Reader) (int, []byte, error) {
 	rawResponse := bytes.NewBuffer(make([]byte, 0, 256))
 	// Save the bytes read while reading the response headers into the rawResponse buffer
 	resp, err := http.ReadResponse(bufio.NewReader(io.TeeReader(r, rawResponse)), nil)
 	if err != nil {
-		return nil, nil, err
+		return 0, nil, err
 	}
-	// return the http response and the raw bytes consumed from the reader in the process
-	return resp, rawResponse.Bytes(), nil
+	// return the http status code and the raw bytes consumed from the reader in the process
+	return resp.StatusCode, rawResponse.Bytes(), nil
 }
 
 // dial dials the backend at req.URL and writes req to it.

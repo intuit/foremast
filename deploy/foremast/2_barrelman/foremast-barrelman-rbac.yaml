@@ -1,8 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: system:serviceaccount:foremast
-  namespace: foremast
+  name: foremast
 rules:
 - apiGroups:
   - ""
@@ -24,8 +23,40 @@ rules:
   - statefulsets/scale
   - deploymentmonitors
   - deploymentmetadatas
-  - events
   - rollback
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - create
+  - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: foremast
+rules:
+- apiGroups:
+  - ""
+  - "extensions"
+  - "apps"
+  resources:
+  - deployments
+  - deployments/rollback
+  - deployments/scale
+  - rollback
+  - events
   verbs:
   - create
   - get
@@ -33,15 +64,49 @@ rules:
   - watch
   - patch
   - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: foremast-crd-operator
+rules:
+- apiGroups:
+  - "deployment.foremast.ai"
+  resources:
+  - deploymentmonitors
+  - deploymentmetadatas
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - patch
+  - update
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: system:serviceaccount:foremast
+  name: foremast
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: system:serviceaccount:foremast
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: foremast
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: foremast-crd-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:serviceaccount:foremast-crd-operator
 subjects:
 - kind: ServiceAccount
   name: default

@@ -51,8 +51,8 @@ type MonitorController struct {
 	remediationOptions *RemediationOptions
 }
 
-// NewBarrelman returns a new sample controller
-func NewController(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface,
+// NewMonitorController returns a new DeploymentMonitor controller
+func NewMonitorController(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface,
 	monitorInformer informers.DeploymentMonitorInformer, barrelman *Barrelman) *MonitorController {
 
 	// Create event broadcaster
@@ -94,17 +94,20 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 			var continuous = oldMonitor.Spec.Continuous
 			var newContinuous = newMonitor.Spec.Continuous
 			var continuousChange = continuous != newContinuous
-			var hpa = oldMonitor.Spec.Hpa
-			var newHpa = newMonitor.Spec.Hpa
+			var hpaScoreTemplate = oldMonitor.Spec.HpaScoreTemplate
+			var newHpaScoreTemplate = newMonitor.Spec.HpaScoreTemplate
+
+			//Barrelman can run with "hpa" mode only
+			var hasHealthyMonitoring = controller.barrelman.hasHealthyMonitoring()
 
 			if newPhase == oldPhase {
-				if continuousChange {
+				if hasHealthyMonitoring && continuousChange {
 					if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
 						go barrelman.monitorContinuously(newMonitor)
 						return
 					}
-				} else if hpa != newHpa {
-					if newHpa && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
+				} else if hpaScoreTemplate != newHpaScoreTemplate {
+					if newHpaScoreTemplate != "" && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
 						go barrelman.monitorHpa(newMonitor)
 						return
 					}
@@ -116,8 +119,7 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 				}
 			}
 
-			if newPhase == d.MonitorPhaseUnhealthy && !newMonitor.Status.RemediationTaken {
-				//if !newMonitor.Spec.Continuous {
+			if hasHealthyMonitoring && newPhase == d.MonitorPhaseUnhealthy && !newMonitor.Status.RemediationTaken {
 				var action func(monitor *d.DeploymentMonitor) error
 				switch newMonitor.Spec.Remediation.Option {
 				case d.RemediationAutoRollback:
@@ -138,11 +140,10 @@ func NewController(kubeclientset kubernetes.Interface, foremastClientset clients
 					go action(newMonitor)
 					return
 				}
-				//}
 			}
 
 			// Got a newPhase
-			if newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
+			if hasHealthyMonitoring && newContinuous && newPhase != d.MonitorPhaseRunning { //Create a new continuous job
 				if newPhase == d.MonitorPhaseUnhealthy {
 					dura, err := time.Parse(time.RFC3339, newMonitor.Status.Timestamp)
 					if err == nil && (time.Now().Unix()-dura.Unix()) > 60 { //Make sure the new job w

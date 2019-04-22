@@ -41,6 +41,9 @@ type ApplicationHealthAnalyzeRequest struct {
 
 	// canary or blue-green
 	Strategy string `json:"strategy"`
+
+	// Namespace
+	Namespace string `json:"namespace,omitempty"`
 }
 
 type AnomalyInfo struct {
@@ -81,7 +84,8 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 
 //func (c *Client) toMetricQueries()
 
-func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]string, endpoint string, metrics d.Metrics, timeWindow time.Duration, strategy string) (string, error) {
+func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]string, endpoint string, metrics d.Metrics,
+	timeWindow time.Duration, strategy string, metricAliases []string) (string, error) {
 	//queries[] MetricQuery
 
 	var t = time.Now()
@@ -89,7 +93,7 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 	t = t.Add(timeWindow * time.Minute)
 	var endTime = t.Format(time.RFC3339)
 
-	var metricsInfo, err = m.CreateMetricsInfo(namespace, appName, podNames, metrics, timeWindow, strategy)
+	var metricsInfo, err = m.CreateMetricsInfo(namespace, appName, podNames, metrics, timeWindow, strategy, metricAliases)
 	if err != nil {
 		return "", err
 	}
@@ -101,6 +105,7 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 		EndTime:   endTime,
 		Strategy:  strategy,
 		Metrics:   metricsInfo,
+		Namespace: namespace,
 	}
 
 	b, err := json.Marshal(analyzingRequest)

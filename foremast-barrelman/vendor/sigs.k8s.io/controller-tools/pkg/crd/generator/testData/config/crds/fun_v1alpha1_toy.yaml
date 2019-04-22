@@ -4,12 +4,33 @@ metadata:
   creationTimestamp: null
   labels:
     controller-tools.k8s.io: "1.0"
-  name: toys.fun.myk8s.io
+  name: services.fun.myk8s.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type==\"Ready\")].status
+    description: descr1
+    format: date
+    name: toy
+    priority: 3
+    type: string
+  - JSONPath: status
+    description: descr2
+    format: int32
+    name: abc
+    priority: 1
+    type: integer
+  - JSONPath: .status.conditions.ready
+    description: descr3
+    format: byte
+    name: service
+    priority: 2
+    type: string
   group: fun.myk8s.io
   names:
     kind: Toy
-    plural: toys
+    plural: services
+    shortNames:
+    - ty
   scope: Namespaced
   subresources:
     scale:
@@ -67,6 +88,10 @@ spec:
             replicas:
               format: int32
               type: integer
+            rook:
+              oneOf:
+              - type: string
+              - type: integer
             template:
               type: object
             winner:
@@ -75,6 +100,7 @@ spec:
           - rank
           - template
           - replicas
+          - rook
           type: object
         status:
           properties:

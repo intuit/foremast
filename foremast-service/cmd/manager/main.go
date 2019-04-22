@@ -55,7 +55,13 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, s
 	output := strings.Builder{}
 	metricSourceOutput := strings.Builder{}
 	var co int
+
 	for key, value := range metric {
+		if value.Priority != nil {
+			log.Printf("parameters %#v", value.Parameters)
+			value.Parameters["start"] = "START_TIME"
+			value.Parameters["end"] = "END_TIME"
+		}
 		errCode, metricSource, retstr := constructURL(value)
 		if errCode != 0 {
 			return 404, retstr, metricSource
@@ -75,12 +81,13 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, s
 	return 0, output.String(), metricSourceOutput.String()
 }
 
-func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string, []string) {
+func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string, []string, []models.HPAMetric) {
 
 	configs := []string{"", "", ""}
 	mSources := []string{"", "", ""}
+	hpametrics := []models.HPAMetric{}
 	if m.Current == nil || len(m.Current) == 0 {
-		return 404, "MetricInfo current is empty ", configs, mSources
+		return 404, "MetricInfo current is empty ", configs, mSources, hpametrics
 	}
 	errorCode := 0
 	reason := strings.Builder{}
@@ -109,6 +116,12 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 
 	if m.Historical != nil {
 		hErrCode, ret, mSource := convertMetricQuerys(m.Historical)
+		if strategy == "hpa" {
+			for k, v := range m.Historical {
+				hpametrics = append(hpametrics, models.HPAMetric{*v.Priority, k, v.IsIncrease, v.IsAbsolute})
+			}
+		}
+
 		if hErrCode != 0 {
 			log.Println("Warning: historical convertMetricQuerys ", m.Historical, " failed. errorCode is ", hErrCode)
 			reason.WriteString(" historical query encount error ")
@@ -124,8 +137,12 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 			errorCode = 404
 		}
 	}
+	if strategy != "hpa" {
+		return errorCode, reason.String(), configs, mSources, nil
+	} else {
+		return errorCode, reason.String(), configs, mSources, hpametrics
+	}
 
-	return errorCode, reason.String(), configs, mSources
 }
 
 // RegisterEntry .... mapping input request to elasticserch structure
@@ -144,26 +161,53 @@ func RegisterEntry(context *gin.Context) {
 		return
 	}
 	//check metric query
-	errCode, reason, configs, mSources := convertMetricInfoString(appRequest.Metrics, appRequest.Strategy)
+	errCode, reason, configs, mSources, hpametrics := convertMetricInfoString(appRequest.Metrics, appRequest.Strategy)
 	if errCode != 0 {
 		log.Println("encount error while convertMetricInfoString ", reason)
 		common.ErrorResponse(context, http.StatusBadRequest, reason)
 		return
 	}
 
-	doc := models.DocumentRequest{
-		appRequest.AppName,
-		appRequest.StartTime,
-		appRequest.EndTime,
-		configs[0],
-		configs[1],
-		configs[2],
-		mSources[0],
-		mSources[1],
-		mSources[2],
-		"200",
-		appRequest.Strategy,
+	var doc models.DocumentRequest
+
+	if appRequest.Strategy == "hpa" {
+		doc = models.DocumentRequest{
+			appRequest.AppName,
+			appRequest.StartTime,
+			appRequest.EndTime,
+			configs[0],
+			configs[1],
+			configs[2],
+			mSources[0],
+			mSources[1],
+			mSources[2],
+			"200",
+			appRequest.Strategy,
+			hpametrics,
+			appRequest.Policy,
+			appRequest.Namespace,
+		}
+	} else {
+		doc = models.DocumentRequest{
+			appRequest.AppName,
+			appRequest.StartTime,
+			appRequest.EndTime,
+			configs[0],
+			configs[1],
+			configs[2],
+			mSources[0],
+			mSources[1],
+			mSources[2],
+			"200",
+			appRequest.Strategy,
+			nil,
+			"",
+			"",
+		}
 	}
+
+	log.Printf("DOCREQUEST: %#v\n", doc)
+
 	id, err := search.CreateNewDoc(context, elasticClient, doc)
 	context.JSON(http.StatusOK, converter.ConvertESToNewResp(id, err, "new", ""))
 
@@ -184,6 +228,57 @@ func SearchByID(context *gin.Context) {
 		return
 	}
 	context.JSON(http.StatusOK, converter.ConvertESToResp(doc))
+
+}
+
+// HpaAlert .... get hpa alert reason
+func HpaAlert(context *gin.Context) {
+	_appName := context.Param("appName")
+	_namespace := context.Param("namespace")
+	log.Printf("Getting info for %s/%s :\n", _namespace, _appName)
+	doc, err, reason := search.ByNamespacedQuery(context, elasticClient, _appName+" "+_namespace)
+	_ = reason
+
+	logs, err2, reason := search.GetLogs(context, elasticClient, doc.ID)
+	_ = err2
+	_ = reason
+
+	if len(logs) > 10 {
+		logs = logs[0:9]
+	}
+	log.Printf("logs: %s\n", logs)
+
+	if err == 1 {
+		context.JSON(http.StatusNotFound, converter.ConvertESToHPAResp(doc, logs))
+		// context.JSON(http.StatusInternalServerError, converter.ConvertESToHPAResp(doc.AppName, doc.Namespace, doc.ModifiedAt, doc.CreatedAt, doc.Status, doc.ID))
+		return
+	} else {
+		context.JSON(http.StatusOK, converter.ConvertESToHPAResp(doc, logs))
+		// context.JSON(http.StatusOK, converter.ConvertESToHPAResp(doc.AppName, doc.Namespace, doc.ModifiedAt, doc.CreatedAt, doc.Status, doc.ID))
+		return
+	}
+
+	context.JSON(http.StatusOK, converter.ConvertESToResp(doc))
+
+}
+
+func AddLog(context *gin.Context) {
+	var hpalog models.HPALog
+
+	if err := context.BindJSON(&hpalog); err != nil {
+		log.Println("Error: encounter context error ", err, " detail ", reflect.TypeOf(err))
+		common.ErrorResponse(context, http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	// hpalog.JobID = id
+
+	id, err := search.CreateNewHPALog(context, elasticClient, hpalog)
+	_ = err
+	_ = id
+	hpalog.LogID = id
+
+	context.JSON(http.StatusOK, hpalog)
 
 }
 
@@ -277,8 +372,17 @@ func main() {
 		//query proxy
 		v2.GET("/v1/:queryproxy", QueryProxy)
 	}
+
+	v3 := router.Group("/alert")
+	{
+		// get hpa info for namespace/app
+		v3.GET("/:appName/:namespace/:strategy", HpaAlert)
+
+		// add an hpa log
+		v3.POST("/log", AddLog)
+	}
+
 	if err = router.Run(":8099"); err != nil {
 		log.Fatal(err)
 	}
-
 }

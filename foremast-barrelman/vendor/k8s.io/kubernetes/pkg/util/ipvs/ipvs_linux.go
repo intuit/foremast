@@ -266,6 +266,8 @@ func stringToProtocol(protocol string) uint16 {
 		return uint16(syscall.IPPROTO_TCP)
 	case "udp":
 		return uint16(syscall.IPPROTO_UDP)
+	case "sctp":
+		return uint16(syscall.IPPROTO_SCTP)
 	}
 	return uint16(0)
 }
@@ -277,6 +279,8 @@ func protocolToString(proto Protocol) string {
 		return "TCP"
 	case syscall.IPPROTO_UDP:
 		return "UDP"
+	case syscall.IPPROTO_SCTP:
+		return "SCTP"
 	}
 	return ""
 }
