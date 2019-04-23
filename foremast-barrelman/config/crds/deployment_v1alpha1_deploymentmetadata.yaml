@@ -9,7 +9,7 @@ spec:
   group: deployment.foremast.ai
   names:
     kind: DeploymentMetadata
-    plural: deploymentmetadata
+    plural: deploymentmetadatas
   scope: Namespaced
   validation:
     openAPIV3Schema:
