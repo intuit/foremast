@@ -9,7 +9,7 @@ spec:
   group: deployment.foremast.ai
   names:
     kind: DeploymentMetadata
-    plural: deploymentmetadatas
+    plural: deploymentmetadata
   scope: Namespaced
   validation:
     openAPIV3Schema:
@@ -92,6 +92,20 @@ spec:
                 version:
                   type: string
               type: object
+            hpaScoreTemplates:
+              items:
+                properties:
+                  metrics:
+                    items:
+                      type: string
+                    type: array
+                  name:
+                    type: string
+                required:
+                - name
+                - metrics
+                type: object
+              type: array
             logs:
               items:
                 properties:
