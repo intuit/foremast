@@ -127,6 +127,9 @@ spec:
 func (c *HpaController) updateDeploymentMonitor(hpa *asv2.HorizontalPodAutoscaler) {
 	monitor := c.getDeploymentMonitor(hpa)
 	if monitor != nil {
+		if monitor.Status.HpaScoreEnabled {
+			return
+		}
 		var hpaStrategy = c.barrelman.hpaStrategy
 		if hpaStrategy == HPA_STRATEGY_ANYWAY || hpaStrategy == HPA_STRATEGY_HPA_EXISTS {
 			if monitor.Spec.HpaScoreTemplate == "" {
@@ -137,10 +140,14 @@ func (c *HpaController) updateDeploymentMonitor(hpa *asv2.HorizontalPodAutoscale
 		}
 
 		glog.V(4).Infof("Updating deployment monitor: %s", monitor.GetName())
-		c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
+		monitor.Status.HpaScoreEnabled = true
+
 		if monitor.Spec.HpaScoreTemplate != "" {
 			glog.V(4).Infof("Notifying foremast service: %s", monitor.GetName())
-			c.barrelman.monitorHpa(monitor)
+			if c.barrelman.monitorHpa(monitor) != nil {
+				monitor.Status.HpaScoreEnabled = false
+			}
 		}
+		c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
 	}
 }

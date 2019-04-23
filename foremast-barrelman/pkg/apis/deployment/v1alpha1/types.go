@@ -262,6 +262,8 @@ type DeploymentMonitorStatus struct {
 	Timestamp string `json:"timestamp"`
 
 	Expired bool `json:"expired"`
+
+	HpaScoreEnabled bool `json:"hpaScoreEnabled"`
 }
 
 // "healthy" deployment is considered healthy, "running" the deployment is running and it is detecting,
