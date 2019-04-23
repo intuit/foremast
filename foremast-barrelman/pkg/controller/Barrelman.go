@@ -249,9 +249,12 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 
 	var jobId string
 	var phase string
-	var oldMonitor2, er = c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
-	if er == nil {
-		oldMonitor = oldMonitor2
+
+	if oldMonitor == nil {
+		var oldMonitor2, er = c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
+		if er == nil {
+			oldMonitor = oldMonitor2
+		}
 	}
 
 	//begin monitoring new deployment
@@ -341,10 +344,12 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 			RollbackRevision: oldRevision,
 		}
 
+		var HpaScoreEnabled = oldMonitor.Status.HpaScoreEnabled
 		oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{
-			JobId:     jobId,
-			Phase:     phase,
-			Timestamp: start,
+			JobId:           jobId,
+			Phase:           phase,
+			Timestamp:       start,
+			HpaScoreEnabled: HpaScoreEnabled,
 		}
 	}
 	if monitorNotFound { //Not found

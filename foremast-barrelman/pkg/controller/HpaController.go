@@ -148,6 +148,5 @@ func (c *HpaController) updateDeploymentMonitor(hpa *asv2.HorizontalPodAutoscale
 				monitor.Status.HpaScoreEnabled = false
 			}
 		}
-		c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
 	}
 }
