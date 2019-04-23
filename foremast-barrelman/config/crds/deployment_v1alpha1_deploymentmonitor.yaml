@@ -125,6 +125,8 @@ spec:
               type: object
             expired:
               type: boolean
+            hpaScoreEnabled:
+              type: boolean
             jobId:
               type: string
             observedGeneration:
@@ -141,6 +143,7 @@ spec:
           - remediationTaken
           - timestamp
           - expired
+          - hpaScoreEnabled
           type: object
       required:
       - spec
