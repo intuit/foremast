@@ -44,34 +44,15 @@ func ConvertESToNewResp(uuid string, statusCode int32, status, reason string) mo
 	return resp
 }
 
-// ConvertESToNewResp .... convert elasticsearch to new response
-// func ConvertESToHPAResp(appName string, namespace string, mtime time.Time, ctime time.Time, status string, id string) models.HPAAlertResponse {
-func ConvertESToHPAResp(doc models.DocumentResponse, logs []models.HPALog) models.HPAAlertResponse {
-	// if statusCode == 0 {
-	// 	statusCode = 200
-	// }
-
-	resp := models.HPAAlertResponse{
-		JobID:      doc.ID,
-		AppName:    doc.AppName,
-		Namespace:  doc.Namespace,
-		Strategy:   "hpa",
-		ModifiedAt: doc.ModifiedAt,
-		CreatedAt:  doc.CreatedAt,
-		Status:     doc.Status,
-		HPALogs:    logs,
+// ConvertESToHPAResp .... convert elasticsearch to new HPA logs response
+func ConvertESToHPAResp(jobID string, logs []models.HPALog) models.HPALogResponse {
+	resp := models.HPALogResponse{
+		JobID: jobID}
+	hlogs := make([]models.HPALog, 0)
+	for _, log := range logs {
+		hlogs = append(hlogs, models.HPALog{Timestamp: log.Timestamp, Log: log.Log})
 	}
-
-	// resp := models.HPAAlertResponse{
-	// 	JobID:      id,
-	// 	AppName:    appName,
-	// 	Namespace:  namespace,
-	// 	Strategy:   "hpa",
-	// 	ModifiedAt: mtime,
-	// 	CreatedAt:  ctime,
-	// 	Status:     status,
-	// 	HPALogs:    []string{"test1", "test2", "test3"},
-	// }
+	resp.HPALog = hlogs
 	return resp
 }
 
