@@ -179,7 +179,7 @@ type HPAMetric struct {
 // HPALogResponse combine logs to single entity with job id
 type HPALogResponse struct {
 	JobID  string   `json:"job_id"`
-	HPALog []HPALog `json:"hpalog"`
+	HPALog []HPALog `json:"hpalogs"`
 }
 
 // HPALog hpa log by foremast-brain to know detail of score change
@@ -195,7 +195,7 @@ type HPALog struct {
 			MetricType string `json:"metricType"`
 			Current    int    `json:"current"`
 			Upper      int    `json:"upper"`
-			Lower      int    `json:lower`
+			Lower      int    `json:"lower"`
 		} `json:"details"`
 	} `json:"hpalog"`
 }
