@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	common "foremast.ai/foremast/foremast-service/pkg/common"
-	models "foremast.ai/foremast/foremast-service/pkg/models"
+	"foremast.ai/foremast/foremast-service/pkg/common"
+	"foremast.ai/foremast/foremast-service/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
 )
@@ -17,83 +17,87 @@ import (
 const (
 	elasticIndexName    = "documents"
 	elasticTypeName     = "document"
-	elasticLogIndexName = "logs"
-	elasticLogTypeName  = "log"
+	elasticLogIndexName = "hpalogs"
 )
 
 // CreateNewDoc .... create new request
-func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc models.DocumentRequest) (string, int32) {
-
+func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc models.DocumentRequest) (string, int32, string) {
 	bulk := elasticClient.
 		Bulk().
 		Index(elasticIndexName).
 		Type(elasticTypeName)
 	//first search if id already existing.
-	id := common.UUIDGen(ConvertDocumentRequestToString(doc))
+	var id string
+	if doc.Strategy == "hpa" {
+		id = doc.AppName + ":" + doc.Namespace + ":" + doc.Strategy
+	} else {
+		id = common.UUIDGen(ConvertDocumentRequestToString(doc))
+	}
 	log.Println("Generate UUID based on request ", id)
-	searchDoc, err, reason := ByID(context, elasticClient, id)
+	_, retCode, reason := ByID(context, elasticClient, id)
 
-	if err != 0 {
-		log.Println("Ignore me, means request is not exist and it is ok to create new request ", searchDoc.ID, "  reason is ", reason)
+	if retCode == 2 && !strings.Contains(reason, "index_not_found_exception") {
+		log.Printf("Failed to create job %s %s", id, reason)
+		return id, 2, reason
 	}
-	if err == -1 {
-		var docNew models.Document
-		if doc.Strategy == "hpa" {
-			docNew = models.Document{
-				ID:                    id,
-				AppName:               doc.AppName,
-				CreatedAt:             time.Now().UTC(),
-				StartTime:             common.StrToTime(doc.StartTime),
-				EndTime:               common.StrToTime(doc.StartTime),
-				ModifiedAt:            time.Now().UTC(),
-				CurrentConfig:         doc.CurrentConfig,
-				BaselineConfig:        doc.BaselineConfig,
-				HistoricalConfig:      doc.HistoricalConfig,
-				CurrentMetricStore:    doc.CurrentMetricStore,
-				BaselineMetricStore:   doc.BaselineMetricStore,
-				HistoricalMetricStore: doc.HistoricalMetricStore,
-				Status:                "initial",
-				StatusCode:            doc.StatusCode,
-				Strategy:              doc.Strategy,
-				HPAMetrics:            doc.HPAMetrics,
-				Policy:                doc.Policy,
-				Namespace:             doc.Namespace,
-			}
-		} else {
-			docNew = models.Document{
-				ID:                    id,
-				AppName:               doc.AppName,
-				CreatedAt:             time.Now().UTC(),
-				StartTime:             common.StrToTime(doc.StartTime),
-				EndTime:               common.StrToTime(doc.EndTime),
-				ModifiedAt:            time.Now().UTC(),
-				CurrentConfig:         doc.CurrentConfig,
-				BaselineConfig:        doc.BaselineConfig,
-				HistoricalConfig:      doc.HistoricalConfig,
-				CurrentMetricStore:    doc.CurrentMetricStore,
-				BaselineMetricStore:   doc.BaselineMetricStore,
-				HistoricalMetricStore: doc.HistoricalMetricStore,
-				Status:                "initial",
-				StatusCode:            doc.StatusCode,
-				Strategy:              doc.Strategy,
-			}
+	var docNew models.Document
+	if doc.Strategy == "hpa" {
+		docNew = models.Document{
+			ID:                    id,
+			AppName:               doc.AppName,
+			CreatedAt:             time.Now().UTC(),
+			StartTime:             common.StrToTime(doc.StartTime),
+			EndTime:               common.StrToTime(doc.StartTime),
+			ModifiedAt:            time.Now().UTC(),
+			CurrentConfig:         doc.CurrentConfig,
+			BaselineConfig:        doc.BaselineConfig,
+			HistoricalConfig:      doc.HistoricalConfig,
+			CurrentMetricStore:    doc.CurrentMetricStore,
+			BaselineMetricStore:   doc.BaselineMetricStore,
+			HistoricalMetricStore: doc.HistoricalMetricStore,
+			Status:                "initial",
+			StatusCode:            doc.StatusCode,
+			Strategy:              doc.Strategy,
+			HPAMetrics:            doc.HPAMetrics,
+			Policy:                doc.Policy,
+			Namespace:             doc.Namespace,
 		}
-		log.Printf("DOC: %#v\n", docNew)
-		bulk.Add(elastic.NewBulkIndexRequest().Id(docNew.ID).Doc(docNew))
-		if _, err := bulk.Do(context.Request.Context()); err != nil {
-			log.Println(err)
-			common.ErrorResponse(context, http.StatusInternalServerError, "Failed to create job "+id)
-			return id, 0
+	} else {
+		docNew = models.Document{
+			ID:                    id,
+			AppName:               doc.AppName,
+			CreatedAt:             time.Now().UTC(),
+			StartTime:             common.StrToTime(doc.StartTime),
+			EndTime:               common.StrToTime(doc.EndTime),
+			ModifiedAt:            time.Now().UTC(),
+			CurrentConfig:         doc.CurrentConfig,
+			BaselineConfig:        doc.BaselineConfig,
+			HistoricalConfig:      doc.HistoricalConfig,
+			CurrentMetricStore:    doc.CurrentMetricStore,
+			BaselineMetricStore:   doc.BaselineMetricStore,
+			HistoricalMetricStore: doc.HistoricalMetricStore,
+			Status:                "initial",
+			StatusCode:            doc.StatusCode,
+			Strategy:              doc.Strategy,
 		}
 	}
-	return id, 0
+	log.Printf("DOC: %#v\n", docNew)
+	bulk.Add(elastic.NewBulkIndexRequest().Id(docNew.ID).Doc(docNew))
+	if _, err := bulk.Do(context.Request.Context()); err != nil {
+		log.Println(err)
+		return id, 2, err.Error()
+	}
+	return id, 0, ""
 }
 
 // ByID .... search elastic search via id or jobid
+// error code: 0 find
+//             1 not found
+//             2 error
 func ByID(context *gin.Context, elasticClient *elastic.Client, myid string) (models.DocumentResponse, int32, string) {
 	skip := 0
 	take := 10
-	esQuery := elastic.NewMatchQuery("id", myid)
+	esQuery := elastic.NewMatchQuery("id.keyword", myid)
 	bQuery := elastic.NewBoolQuery().Must(esQuery)
 	result, err := elasticClient.Search().
 		Index(elasticIndexName).
@@ -102,14 +106,12 @@ func ByID(context *gin.Context, elasticClient *elastic.Client, myid string) (mod
 		Do(context)
 	if err != nil {
 		log.Println(err)
-		//common.ErrorResponse(context, http.StatusInternalServerError, "Something went wrong")
-		var empty models.DocumentResponse
-		return empty, -1, ""
+		return models.DocumentResponse{}, 2, err.Error()
 	}
 	// Transform search results before returning them
 	if len(result.Hits.Hits) == 0 {
 		var empty models.DocumentResponse
-		return empty, -1, ""
+		return empty, 1, ""
 	}
 	docs := make([]models.DocumentResponse, 0)
 	for _, hit := range result.Hits.Hits {
@@ -118,7 +120,6 @@ func ByID(context *gin.Context, elasticClient *elastic.Client, myid string) (mod
 		docs = append(docs, doc)
 	}
 	return docs[0], 0, ""
-
 }
 
 // ByQuery .... search by elasticsearch query
@@ -147,43 +148,6 @@ func ByQuery(context *gin.Context, elasticClient *elastic.Client, query string) 
 		docs = append(docs, doc)
 	}
 	context.JSON(http.StatusOK, docs)
-}
-
-// ByQuery .... search by elasticsearch query
-func ByNamespacedQuery(context *gin.Context, elasticClient *elastic.Client, query string) (models.DocumentResponse, int32, string) {
-	skip := 0
-	take := 10
-	esQueryname := elastic.NewMatchQuery("appName", strings.Split(query, " ")[0])
-	esQueryns := elastic.NewMatchQuery("namespace", strings.Split(query, " ")[1])
-	esQuery := elastic.NewBoolQuery().Must(esQueryname, esQueryns)
-	// esQuery := elastic.NewMultiMatchQuery(query, "appName", "content", "namespace").
-	// 	Fuzziness("2").
-	// 	MinimumShouldMatch("2")
-	result, err := elasticClient.Search().
-		Index(elasticIndexName).
-		Query(esQuery).
-		From(skip).Size(take).
-		Do(context)
-
-	if err != nil {
-		log.Println(err)
-		common.ErrorResponse(context, http.StatusInternalServerError, "Something went wrong")
-		return models.DocumentResponse{}, 1, ""
-	}
-	// Transform search results before returning them
-	docs := make([]models.DocumentResponse, 0)
-	for _, hit := range result.Hits.Hits {
-		var doc models.DocumentResponse
-		json.Unmarshal(*hit.Source, &doc)
-		docs = append(docs, doc)
-	}
-	// context.JSON(http.StatusOK, docs)
-	if len(docs) > 0 {
-		return docs[0], 2, ""
-	} else {
-		return models.DocumentResponse{}, 1, ""
-	}
-
 }
 
 // ByStatus .... This will be used by backend python model, search by open status
@@ -231,64 +195,25 @@ func ConvertDocumentRequestToString(doc models.DocumentRequest) string {
 	return buffer.String()
 }
 
-// ConvertDocumentRequestToString ... convert the request to string
-func ConvertLogRequestToString(doc models.HPALog) string {
-	var buffer bytes.Buffer
-	buffer.WriteString(doc.Timestamp.String())
-	buffer.WriteString(doc.LogID)
-	buffer.WriteString(doc.Reason)
-	log.Print("create document request :", buffer.String())
-	return buffer.String()
-}
-
-func CreateNewHPALog(context *gin.Context, elasticClient *elastic.Client, doc models.HPALog) (string, int32) {
-
-	bulk := elasticClient.
-		Bulk().
-		Index(elasticLogIndexName).
-		Type(elasticLogTypeName)
-
-	var id string
-	if doc.LogID == "" {
-		log.Println("Generate UUID based on request ", id)
-		id = common.UUIDGen(ConvertLogRequestToString(doc))
-	} else {
-		id = doc.LogID
-	}
-
-	searchDoc, err, reason := ByID(context, elasticClient, id)
-
-	if err != 0 {
-		log.Println("Ignore me, means request is not exist and it is ok to create new request ", searchDoc.ID, "  reason is ", reason)
-	}
-
-	doc.LogID = id
-	log.Printf("DOC: %#v\n", doc)
-	bulk.Add(elastic.NewBulkIndexRequest().Id(doc.LogID).Doc(doc))
-	if _, err := bulk.Do(context.Request.Context()); err != nil {
-		log.Println(err)
-		common.ErrorResponse(context, http.StatusInternalServerError, "Failed to create job "+id)
-		return id, 0
-	}
-	return id, 0
-}
-
-func GetLogs(context *gin.Context, elasticClient *elastic.Client, jobId string) ([]models.HPALog, int, string) {
+// GetLogs ... get HPA logs by jobId
+// error code: 0 find
+//             1 not found
+//             2 error
+func GetLogs(context *gin.Context, elasticClient *elastic.Client, jobID string) ([]models.HPALog, int, string) {
 	skip := 0
 	take := 10
-	esQuery := elastic.NewMatchQuery("jobId", jobId)
+	esQuery := elastic.NewMatchQuery("job_id.keyword", jobID)
 	bQuery := elastic.NewBoolQuery().Must(esQuery)
 	result, err := elasticClient.Search().Index(elasticLogIndexName).Query(bQuery).Sort("timestamp", false).From(skip).Size(take).Do(context)
 	if err != nil {
 		log.Println(err)
-
 		var empty []models.HPALog
-		return empty, -1, ""
+		return empty, 2, err.Error()
 	}
 
 	if len(result.Hits.Hits) == 0 {
 		var empty []models.HPALog
-		return empty, -1, ""
+		return empty, 1, ""
 	}
 	docs := make([]models.HPALog, 0)
 	for _, hit := range result.Hits.Hits {
@@ -296,7 +221,6 @@ func GetLogs(context *gin.Context, elasticClient *elastic.Client, jobId string) 
 		json.Unmarshal(*hit.Source, &doc)
 		docs = append(docs, doc)
 	}
-
 	return docs, 0, ""
 }
 
