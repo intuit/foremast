@@ -192,10 +192,10 @@ type HPALog struct {
 		HPAScore int    `json:"hpascore"`
 		Reason   string `json:"reason"`
 		Details  []struct {
-			MetricType string `json:"metricType"`
-			Current    int    `json:"current"`
-			Upper      int    `json:"upper"`
-			Lower      int    `json:"lower"`
+			MetricType string  `json:"metricType"`
+			Current    float64 `json:"current"`
+			Upper      float64 `json:"upper"`
+			Lower      float64 `json:"lower"`
 		} `json:"details"`
 	} `json:"hpalog"`
 }
