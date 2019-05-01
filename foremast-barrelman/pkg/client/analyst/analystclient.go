@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	d "foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment/v1alpha1"
 	m "foremast.ai/foremast/foremast-barrelman/pkg/client/metrics"
-	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog/glog"
 	"net/http"
 	"net/url"
 	"time"
@@ -61,7 +61,68 @@ type ApplicationHealthAnalyzeResponse struct {
 	Status string `json:"status"`
 
 	Anomaly map[string]AnomalyInfo `json:"anomaly,omitempty"`
+
+	HpaLogs []HpaLogEntry `json:"hpaLogs"`
 }
+
+type HpaLogEntry struct {
+	Timestamp string `json:"timestamp"`
+
+	HpaLog HpaLog `json:"hpalog"`
+}
+
+type HpaLog struct {
+	HpaScore int32 `json:"hpascore"`
+
+	Reason string `json:"reason"`
+
+	Details []HpaMetric `json:"details"`
+}
+
+type HpaMetric struct {
+	MetricAlias string `json:"metricAlias"`
+
+	Current float64 `json:"current"`
+
+	Upper float64 `json:"current"`
+
+	Lower float64 `json:"current"`
+}
+
+/**
+HPA history
+{
+    "job_id": "hpa-samples:dev-fm-foremast-examples-usw2-dev-dev:hpa",
+    "hpalogs": [{
+            "hpalog": {
+                "details": [{
+                        "current": 2.7000000000000006,
+                        "lower": 0,
+                        "metricAlias": "traffic",
+                        "upper": 1.4194502009551655
+                    },
+                    {
+                        "current": 4,
+                        "lower": 0,
+                        "metricAlias": "tomcat_threads",
+                        "upper": 1.7711655929134411
+                    },
+                    {
+                        "current": 0.040515150723457634,
+                        "lower": -0.0005548594374170275,
+                        "metricAlias": "cpu",
+                        "upper": 0.011646879268297602
+                    }
+                ],
+                "hpascore": 55,
+                "reason": "hpa is scaling up"
+            },
+            "timestamp": "0001-01-01T00:00:00Z"
+        }
+
+    ]
+}
+*/
 
 func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 	if httpClient == nil {
