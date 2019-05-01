@@ -204,7 +204,9 @@ func GetLogs(context *gin.Context, elasticClient *elastic.Client, jobID string) 
 	take := 10
 	esQuery := elastic.NewMatchQuery("job_id.keyword", jobID)
 	bQuery := elastic.NewBoolQuery().Must(esQuery)
-	result, err := elasticClient.Search().Index(elasticLogIndexName).Query(bQuery).Sort("timestamp", false).From(skip).Size(take).Do(context)
+	sortField := elastic.NewFieldSort("timestamp").Desc()
+	sortField.UnmappedType("date")
+	result, err := elasticClient.Search().Index(elasticLogIndexName).Query(bQuery).SortBy(sortField).From(skip).Size(take).Do(context)
 	if err != nil {
 		log.Println(err)
 		var empty []models.HPALog
