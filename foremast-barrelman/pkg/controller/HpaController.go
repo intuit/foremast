@@ -60,8 +60,22 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 			controller.updateDeploymentMonitor(newHpa)
 		},
 		UpdateFunc: func(old, new interface{}) {
+			oldHpa := old.(*asv2.HorizontalPodAutoscaler)
 			newHpa := new.(*asv2.HorizontalPodAutoscaler)
 			controller.updateDeploymentMonitor(newHpa)
+
+			// If there is desiredReplicas changed
+			if oldHpa.Status.DesiredReplicas != newHpa.Status.DesiredReplicas && len(newHpa.Spec.Metrics) > 0 {
+				var l = len(newHpa.Spec.Metrics)
+				for i := 0; i < l; i++ {
+					var m = newHpa.Spec.Metrics[i]
+					if m.Type == "Resource" && m.Resource.Name == "namespace_app_pod_hpa_score" {
+						//TODO check the status from CRD and get the hpalog from CRD
+
+					}
+				}
+			}
+
 		},
 		DeleteFunc: func(obj interface{}) {
 			hpa := obj.(*asv2.HorizontalPodAutoscaler)
