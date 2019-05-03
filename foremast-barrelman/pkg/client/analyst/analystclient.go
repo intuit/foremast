@@ -62,31 +62,7 @@ type ApplicationHealthAnalyzeResponse struct {
 
 	Anomaly map[string]AnomalyInfo `json:"anomaly,omitempty"`
 
-	HpaLogs []HpaLogEntry `json:"hpaLogs"`
-}
-
-type HpaLogEntry struct {
-	Timestamp string `json:"timestamp"`
-
-	HpaLog HpaLog `json:"hpalog"`
-}
-
-type HpaLog struct {
-	HpaScore int32 `json:"hpascore"`
-
-	Reason string `json:"reason"`
-
-	Details []HpaMetric `json:"details"`
-}
-
-type HpaMetric struct {
-	MetricAlias string `json:"metricAlias"`
-
-	Current float64 `json:"current"`
-
-	Upper float64 `json:"current"`
-
-	Lower float64 `json:"current"`
+	HpaLogs []d.HpaLogEntry `json:"hpaLogs"`
 }
 
 /**

@@ -18,6 +18,8 @@ import (
 
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
+	"reflect"
+	"sort"
 )
 
 const FOREMAST = "foremast"
@@ -491,6 +493,30 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 								if err == nil {
 									item.Status.Anomaly = anomaly
 									changed = true
+								}
+							}
+
+							// update HPA log if needed
+							var oldHPALog = item.Status.HpaLogs
+							if statusResponse.HpaLogs != nil {
+								if len(oldHPALog) == 0 || oldHPALog == nil {
+									item.Status.HpaLogs = statusResponse.HpaLogs
+									changed = true
+								} else {
+									var oldLogTimestamps []string
+									for _, ts := range oldHPALog {
+										oldLogTimestamps = append(oldLogTimestamps, ts.Timestamp)
+									}
+									sort.Strings(oldLogTimestamps)
+									var newLogTimestamps []string
+									for _, ts := range statusResponse.HpaLogs {
+										newLogTimestamps = append(newLogTimestamps, ts.Timestamp)
+									}
+									sort.Strings(newLogTimestamps)
+									if !reflect.DeepEqual(oldLogTimestamps, newLogTimestamps) {
+										item.Status.HpaLogs = statusResponse.HpaLogs
+										changed = true
+									}
 								}
 							}
 
