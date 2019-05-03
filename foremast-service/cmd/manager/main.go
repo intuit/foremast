@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	common "foremast.ai/foremast/foremast-service/pkg/common"
-	converter "foremast.ai/foremast/foremast-service/pkg/converter"
-	models "foremast.ai/foremast/foremast-service/pkg/models"
-	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
-	search "foremast.ai/foremast/foremast-service/pkg/search"
-	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
+	"foremast.ai/foremast/foremast-service/pkg/common"
+	"foremast.ai/foremast/foremast-service/pkg/converter"
+	"foremast.ai/foremast/foremast-service/pkg/models"
+	"foremast.ai/foremast/foremast-service/pkg/prometheus"
+	"foremast.ai/foremast/foremast-service/pkg/search"
+	"foremast.ai/foremast/foremast-service/pkg/wavefront"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
 )
@@ -222,13 +222,29 @@ func SearchByID(context *gin.Context) {
 	_id := context.Param("id")
 	log.Println("Search by id got called :" + _id + "\n")
 	doc, retCode, reason := search.ByID(context, elasticClient, _id)
-
 	if retCode == 0 {
-		context.JSON(http.StatusOK, converter.ConvertESToResp(doc))
+		logs, code, reason := search.GetLogs(context, elasticClient, _id)
+		if code == 0 {
+			context.JSON(http.StatusOK, converter.ConvertESToResp(doc, logs))
+		} else if code == 1 {
+			doc.Reason = "Job HPA log not found"
+			context.JSON(http.StatusOK, converter.ConvertESToResp(doc, nil))
+		} else {
+			doc.ID = _id
+			doc.StatusCode = "500"
+			doc.Reason = reason
+			context.JSON(http.StatusInternalServerError, converter.ConvertESToResp(doc, nil))
+		}
 	} else if retCode == 1 {
-		common.ErrorResponse(context, http.StatusNotFound, "failed to retrieve job by id "+_id)
+		doc.ID = _id
+		doc.Reason = "Job not found"
+		doc.StatusCode = "404"
+		context.JSON(http.StatusNotFound, converter.ConvertESToResp(doc, nil))
 	} else {
-		common.ErrorResponse(context, http.StatusInternalServerError, reason)
+		doc.ID = _id
+		doc.StatusCode = "500"
+		doc.Reason = reason
+		context.JSON(http.StatusInternalServerError, converter.ConvertESToResp(doc, nil))
 	}
 }
 
@@ -242,11 +258,11 @@ func HpaAlert(context *gin.Context) {
 	logs, retCode, reason := search.GetLogs(context, elasticClient, id)
 
 	if retCode == 0 {
-		context.JSON(http.StatusOK, converter.ConvertESToHPAResp(id, logs))
+		context.JSON(http.StatusOK, converter.ConvertESToHPAResp(id, logs, 200, ""))
 	} else if retCode == 1 {
-		common.ErrorResponse(context, http.StatusNotFound, "failed to retrieve log "+id)
+		context.JSON(http.StatusNotFound, converter.ConvertESToHPAResp(id, logs, 404, "HPA log not found"))
 	} else {
-		common.ErrorResponse(context, http.StatusInternalServerError, reason)
+		context.JSON(http.StatusInternalServerError, converter.ConvertESToHPAResp(id, logs, 500, reason))
 	}
 }
 

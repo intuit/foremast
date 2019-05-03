@@ -79,11 +79,12 @@ type AnomalyInfo struct {
 
 // ApplicationHealthAnalyzeResponse  -- health analyze response fields
 type ApplicationHealthAnalyzeResponse struct {
-	JobID      string                 `json:"jobId"`
-	StatusCode int32                  `json:"statusCode"`
-	Status     string                 `json:"status"`
-	Reason     string                 `json:"reason,omitempty"`
-	Anomaly    map[string]AnomalyInfo `json:"anomaly,omitempty"`
+	JobID      string                   `json:"jobId"`
+	StatusCode int32                    `json:"statusCode"`
+	Status     string                   `json:"status"`
+	Reason     string                   `json:"reason,omitempty"`
+	Anomaly    map[string]AnomalyInfo   `json:"anomaly,omitempty"`
+	HPALog     []map[string]interface{} `json:"hpalogs,omitempty"`
 }
 
 // ApplicationHealthAnalyzeResponseNew .... new response
@@ -178,8 +179,10 @@ type HPAMetric struct {
 
 // HPALogResponse combine logs to single entity with job id
 type HPALogResponse struct {
-	JobID  string   `json:"job_id"`
-	HPALog []HPALog `json:"hpalogs"`
+	JobID      string   `json:"jobId"`
+	HPALog     []HPALog `json:"hpalogs"`
+	StatusCode int32    `json:"statusCode"`
+	Reason     string   `json:"reason,omitempty"`
 }
 
 // HPALog hpa log by foremast-brain to know detail of score change
@@ -187,7 +190,7 @@ type HPALog struct {
 	JobID      string     `json:"job_id,omitempty"`
 	ModifiedAt *time.Time `json:"modified_at,omitempty"`
 	CreatedAt  *time.Time `json:"created_at,omitempty"`
-	Timestamp  *time.Time `json:"timestamp"`
+	Timestamp  float64    `json:"timestamp"`
 	Log        struct {
 		HPAScore int    `json:"hpascore"`
 		Reason   string `json:"reason"`
