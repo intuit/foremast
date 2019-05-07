@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	d "foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment/v1alpha1"
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	"github.com/golang/glog"
@@ -13,6 +14,10 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"sort"
+	"strconv"
+	"text/template"
+	"time"
 )
 
 const ForemastHPA = "foremastHpa"
@@ -30,6 +35,27 @@ type HpaController struct {
 
 	barrelman *Barrelman
 }
+
+// HpaAlertContent use to prepare data for alert template
+type HpaAlertContent struct {
+	Timestamp   string
+	Application string
+	Namespace   string
+	Action      string
+	Old         string
+	New         string
+	HpaLogEntry []d.HpaLogEntry
+}
+
+// Define alert template
+const letter = `
+At {{.Timestamp}} {{.Application}} at {{.Namespace}} was scaled {{.Action}} from {{.Old}} to {{.New}}.
+This is because{{range $index, $l := .HpaLogEntry}}{{range $i, $d := $l.HpaLog.Details}}
+{{$d.MetricAlias}} {{$l.Timestamp}} value {{$d.Current}} is out of normal range ({{$d.Lower}}, {{$d.Upper}}){{end}}{{end}}
+
+If you have any question, Please refer to IKS HPA Doc
+IKS Teams
+`
 
 // NewDeploymentController returns a new sample controller
 func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface,
@@ -69,9 +95,46 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 				var l = len(newHpa.Spec.Metrics)
 				for i := 0; i < l; i++ {
 					var m = newHpa.Spec.Metrics[i]
-					if m.Type == "Resource" && m.Resource.Name == "namespace_app_pod_hpa_score" {
+					if m.Type == "Object" && m.Object.Metric.Name == "namespace_app_pod_hpa_score" {
 						//TODO check the status from CRD and get the hpalog from CRD
+						monitor := controller.getDeploymentMonitor(newHpa)
+						alertContent := HpaAlertContent{}
+						alertContent.Timestamp = time.Now().Format(time.RFC1123)
+						alertContent.Application = monitor.Annotations[DeploymentName]
+						alertContent.Namespace = monitor.Namespace
+						alertContent.Action = "up"
+						alertContent.Old = "50"
+						hpaEntries := []d.HpaLogEntry{}
 
+						sort.Slice(monitor.Status.HpaLogs, func(i, j int) bool { // desc
+							return monitor.Status.HpaLogs[i].Timestamp > monitor.Status.HpaLogs[j].Timestamp
+						})
+						current := strconv.FormatInt(time.Now().Unix(), 10)
+						logCount := 4 // default scaling up log count
+						if newHpa.Status.DesiredReplicas < oldHpa.Status.DesiredReplicas {
+							// find most recently 4 scaling down logs
+							logCount = 6
+							alertContent.Action = "down"
+						}
+						for _, l := range monitor.Status.HpaLogs {
+							if current >= l.Timestamp {
+								logTime, _ := strconv.ParseFloat(l.Timestamp, 10)
+								l.Timestamp = time.Unix(int64(logTime), 0).Format(time.RFC1123)
+								hpaEntries = append(hpaEntries, l)
+								if alertContent.New == "" {
+									alertContent.New = strconv.Itoa(int(l.HpaLog.HpaScore))
+								}
+								if len(hpaEntries) >= logCount {
+									break
+								}
+							}
+						}
+						alertContent.HpaLogEntry = hpaEntries
+						// write to log
+						template := template.Must(template.New("letter").Parse(letter))
+						var buf bytes.Buffer
+						template.Execute(&buf, alertContent)
+						glog.Infof("%v", buf.String())
 					}
 				}
 			}
