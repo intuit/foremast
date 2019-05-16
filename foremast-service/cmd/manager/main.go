@@ -168,6 +168,11 @@ func RegisterEntry(context *gin.Context) {
 		common.ErrorResponse(context, http.StatusBadRequest, reason)
 		return
 	}
+	_, url, _ := convertMetricQuerys(map[string]models.MetricQuery{"podCountURL": appRequest.PodCountURL}, appRequest.Strategy)
+	var podCountURL string
+	if url != "" {
+		podCountURL = strings.Split(url, "== ")[1]
+	}
 
 	var doc models.DocumentRequest
 
@@ -187,6 +192,7 @@ func RegisterEntry(context *gin.Context) {
 			hpametrics,
 			appRequest.Policy,
 			appRequest.Namespace,
+			podCountURL,
 		}
 	} else {
 		doc = models.DocumentRequest{
@@ -202,6 +208,7 @@ func RegisterEntry(context *gin.Context) {
 			"200",
 			appRequest.Strategy,
 			nil,
+			"",
 			"",
 			"",
 		}

@@ -64,6 +64,9 @@ type ApplicationHealthAnalyzeRequest struct {
 
 	// app namespace
 	Namespace string `json:"namespace,omitempty"`
+
+	// pod count metric URL
+	PodCountURL MetricQuery `json:"podCountURL,omitempty"`
 }
 
 // QueryRequest qurey string as struct
@@ -117,6 +120,7 @@ type Document struct {
 	HPAMetrics            map[string]HPAMetric `json:"hpaMetricsConfig,omitempty"`
 	Policy                string               `json:"policy,omitempty"`
 	Namespace             string               `json:"namespace,omitempty"`
+	PodCountURL           string               `json:"podCountURL,omitempty"`
 }
 
 // DocumentRequest .... request structure
@@ -135,6 +139,7 @@ type DocumentRequest struct {
 	HPAMetrics            map[string]HPAMetric `json:"hpaMetricsConfig,omitempty"`
 	Policy                string               `json:"policy,omitempty"`
 	Namespace             string               `json:"namespace,omitempty"`
+	PodCountURL           string               `json:"podCountURL,omitempty"`
 }
 
 // DocumentResponse .... es response structure

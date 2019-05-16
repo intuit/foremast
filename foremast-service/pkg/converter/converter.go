@@ -75,7 +75,7 @@ func ConvertESToResp(input models.DocumentResponse, logs []models.HPALog) models
 		hpaLogs := make([]map[string]interface{}, 0)
 		for _, l := range logs {
 			hpaLogEntry := map[string]interface{}{}
-			hpaLogEntry["timestamp"] = l.Timestamp
+			hpaLogEntry["timestamp"] = strconv.FormatFloat(l.Timestamp, 'f', -1, 64)
 			hpaLog := map[string]interface{}{}
 			hpaLog["hpascore"] = l.Log.HPAScore
 			hpaLog["reason"] = l.Log.Reason

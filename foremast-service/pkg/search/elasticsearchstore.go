@@ -61,6 +61,7 @@ func CreateNewDoc(context *gin.Context, elasticClient *elastic.Client, doc model
 			HPAMetrics:            doc.HPAMetrics,
 			Policy:                doc.Policy,
 			Namespace:             doc.Namespace,
+			PodCountURL:           doc.PodCountURL,
 		}
 	} else {
 		docNew = models.Document{
