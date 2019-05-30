@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	d "foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment/v1alpha1"
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	"github.com/golang/glog"
@@ -13,6 +14,10 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"sort"
+	"strconv"
+	"text/template"
+	"time"
 )
 
 const ForemastHPA = "foremastHpa"
@@ -30,6 +35,27 @@ type HpaController struct {
 
 	barrelman *Barrelman
 }
+
+// HpaAlertContent use to prepare data for alert template
+type HpaAlertContent struct {
+	Timestamp   string
+	Application string
+	Namespace   string
+	Action      string
+	Old         string
+	New         string
+	HpaLogEntry []d.HpaLogEntry
+}
+
+// Define alert template
+const letter = `
+At {{.Timestamp}} {{.Application}} at {{.Namespace}} was scaled {{.Action}} from {{.Old}} to {{.New}} pods. This is because
+{{range $index, $l := .HpaLogEntry}}{{range $i, $d := $l.HpaLog.Details}}
+{{$d.MetricAlias}} {{$l.Timestamp}} value {{$d.Current}} is out of normal range ({{$d.Lower}}, {{$d.Upper}}){{end}}{{end}}
+
+If you have any question, Please refer to IKS HPA Doc
+IKS Teams
+`
 
 // NewDeploymentController returns a new sample controller
 func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clientset.Interface,
@@ -60,8 +86,59 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 			controller.updateDeploymentMonitor(newHpa)
 		},
 		UpdateFunc: func(old, new interface{}) {
+			oldHpa := old.(*asv2.HorizontalPodAutoscaler)
 			newHpa := new.(*asv2.HorizontalPodAutoscaler)
 			controller.updateDeploymentMonitor(newHpa)
+
+			// If there is desiredReplicas changed
+			if oldHpa.Status.DesiredReplicas != newHpa.Status.DesiredReplicas && len(newHpa.Spec.Metrics) > 0 {
+				var l = len(newHpa.Spec.Metrics)
+				for i := 0; i < l; i++ {
+					var m = newHpa.Spec.Metrics[i]
+					if m.Type == "Object" && m.Object.Metric.Name == "namespace_app_pod_hpa_score" {
+						//TODO check the status from CRD and get the hpalog from CRD
+						monitor := controller.getDeploymentMonitor(newHpa)
+						alertContent := HpaAlertContent{}
+						alertContent.Timestamp = time.Now().Format(time.RFC1123)
+						alertContent.Application = monitor.Annotations[DeploymentName]
+						alertContent.Namespace = monitor.Namespace
+						alertContent.Action = "up"
+						alertContent.Old = strconv.Itoa(int(oldHpa.Status.CurrentReplicas))
+						hpaEntries := []d.HpaLogEntry{}
+
+						sort.Slice(monitor.Status.HpaLogs, func(i, j int) bool { // desc
+							return monitor.Status.HpaLogs[i].Timestamp > monitor.Status.HpaLogs[j].Timestamp
+						})
+						current := strconv.FormatInt(time.Now().Unix(), 10)
+						logCount := 4 // default scaling up log count
+						if newHpa.Status.DesiredReplicas < oldHpa.Status.CurrentReplicas {
+							// find most recently 4 scaling down logs
+							logCount = 6
+							alertContent.Action = "down"
+						}
+						for _, l := range monitor.Status.HpaLogs {
+							if current >= l.Timestamp {
+								logTime, _ := strconv.ParseFloat(l.Timestamp, 10)
+								l.Timestamp = time.Unix(int64(logTime), 0).Format(time.RFC1123)
+								hpaEntries = append(hpaEntries, l)
+								if alertContent.New == "" {
+									alertContent.New = strconv.Itoa(int(newHpa.Status.DesiredReplicas))
+								}
+								if len(hpaEntries) >= logCount {
+									break
+								}
+							}
+						}
+						alertContent.HpaLogEntry = hpaEntries
+						// write to log
+						template := template.Must(template.New("letter").Parse(letter))
+						var buf bytes.Buffer
+						template.Execute(&buf, alertContent)
+						glog.Infof("%v", buf.String())
+					}
+				}
+			}
+
 		},
 		DeleteFunc: func(obj interface{}) {
 			hpa := obj.(*asv2.HorizontalPodAutoscaler)
@@ -127,28 +204,26 @@ spec:
 func (c *HpaController) updateDeploymentMonitor(hpa *asv2.HorizontalPodAutoscaler) {
 	monitor := c.getDeploymentMonitor(hpa)
 	if monitor != nil {
+		if monitor.Status.HpaScoreEnabled {
+			return
+		}
 		var hpaStrategy = c.barrelman.hpaStrategy
-		if hpaStrategy == HPA_STRATEGY_ANYWAY || hpaStrategy == HPA_STRATEGY_SPEC_EXISTS {
+		if hpaStrategy == HPA_STRATEGY_ANYWAY || hpaStrategy == HPA_STRATEGY_HPA_EXISTS {
 			if monitor.Spec.HpaScoreTemplate == "" {
 				monitor.Spec.HpaScoreTemplate = HPA_SCORE_TEMPLATE_DEFAULT
-			}
-		} else if hpaStrategy == HPA_STRATEGY_ENABLED_ONLY {
-			if *hpa.Spec.MinReplicas > 0 && len(hpa.Spec.Metrics) == 1 && hpa.Spec.Metrics[0].Object.Metric.Name != "" {
-				if *hpa.Spec.MinReplicas < hpa.Spec.MaxReplicas { //Not disabled
-					monitor.Spec.HpaScoreTemplate = HPA_SCORE_TEMPLATE_DEFAULT
-				}
-			} else {
-				monitor.Spec.HpaScoreTemplate = ""
 			}
 		} else {
 			monitor.Spec.HpaScoreTemplate = ""
 		}
 
 		glog.V(4).Infof("Updating deployment monitor: %s", monitor.GetName())
-		c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(hpa.Namespace).Update(monitor)
+		monitor.Status.HpaScoreEnabled = true
+
 		if monitor.Spec.HpaScoreTemplate != "" {
 			glog.V(4).Infof("Notifying foremast service: %s", monitor.GetName())
-			c.barrelman.monitorHpa(monitor)
+			if c.barrelman.monitorHpa(monitor) != nil {
+				monitor.Status.HpaScoreEnabled = false
+			}
 		}
 	}
 }

@@ -18,6 +18,8 @@ import (
 
 	clientset "foremast.ai/foremast/foremast-barrelman/pkg/client/clientset/versioned"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
+	"reflect"
+	"sort"
 )
 
 const FOREMAST = "foremast"
@@ -26,11 +28,8 @@ const MODE_HPA_ONLY = "hpa_only"
 const MODE_HPA_AND_HEALTHY_MONITORING = "hpa_and_healthy_monitoring"
 
 // HPA score strategy
-// Generates HPA_SCORE for HPA enabled only
-const HPA_STRATEGY_ENABLED_ONLY = "enabled_only"
-
 // If the deployment has HPA object, generates score
-const HPA_STRATEGY_SPEC_EXISTS = "spec_exists"
+const HPA_STRATEGY_HPA_EXISTS = "hpa_exists"
 
 // Generates HPA SCORE any way
 const HPA_STRATEGY_ANYWAY = "anyway"
@@ -252,9 +251,12 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 
 	var jobId string
 	var phase string
-	var oldMonitor2, er = c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
-	if er == nil {
-		oldMonitor = oldMonitor2
+
+	if oldMonitor == nil {
+		var oldMonitor2, er = c.foremastClientset.DeploymentV1alpha1().DeploymentMonitors(newDepl.Namespace).Get(newDepl.Name, metav1.GetOptions{})
+		if er == nil {
+			oldMonitor = oldMonitor2
+		}
 	}
 
 	//begin monitoring new deployment
@@ -344,10 +346,12 @@ func (c *Barrelman) monitorNewDeployment(appName string, oldDepl, newDepl *appsv
 			RollbackRevision: oldRevision,
 		}
 
+		var HpaScoreEnabled = oldMonitor.Status.HpaScoreEnabled
 		oldMonitor.Status = v1alpha1.DeploymentMonitorStatus{
-			JobId:     jobId,
-			Phase:     phase,
-			Timestamp: start,
+			JobId:           jobId,
+			Phase:           phase,
+			Timestamp:       start,
+			HpaScoreEnabled: HpaScoreEnabled,
 		}
 	}
 	if monitorNotFound { //Not found
@@ -489,6 +493,30 @@ func (c *Barrelman) checkRunningStatus(kubeclientset kubernetes.Interface, forem
 								if err == nil {
 									item.Status.Anomaly = anomaly
 									changed = true
+								}
+							}
+
+							// update HPA log if needed
+							var oldHPALog = item.Status.HpaLogs
+							if statusResponse.HpaLogs != nil {
+								if len(oldHPALog) == 0 || oldHPALog == nil {
+									item.Status.HpaLogs = statusResponse.HpaLogs
+									changed = true
+								} else {
+									var oldLogTimestamps []string
+									for _, ts := range oldHPALog {
+										oldLogTimestamps = append(oldLogTimestamps, ts.Timestamp)
+									}
+									sort.Strings(oldLogTimestamps)
+									var newLogTimestamps []string
+									for _, ts := range statusResponse.HpaLogs {
+										newLogTimestamps = append(newLogTimestamps, ts.Timestamp)
+									}
+									sort.Strings(newLogTimestamps)
+									if !reflect.DeepEqual(oldLogTimestamps, newLogTimestamps) {
+										item.Status.HpaLogs = statusResponse.HpaLogs
+										changed = true
+									}
 								}
 							}
 

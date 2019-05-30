@@ -33,8 +33,8 @@ spec:
               type: object
             continuous:
               type: boolean
-            hpa:
-              type: boolean
+            hpaScoreTemplate:
+              type: string
             logs:
               items:
                 properties:
@@ -125,6 +125,8 @@ spec:
               type: object
             expired:
               type: boolean
+            hpaScoreEnabled:
+              type: boolean
             jobId:
               type: string
             observedGeneration:
@@ -141,6 +143,7 @@ spec:
           - remediationTaken
           - timestamp
           - expired
+          - hpaScoreEnabled
           type: object
       required:
       - spec

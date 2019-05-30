@@ -72,7 +72,7 @@ func main() {
 	}
 	var hpaStrategy = os.Getenv("HPA_STRATEGY")
 	if len(hpaStrategy) == 0 {
-		hpaStrategy = controller.HPA_STRATEGY_ENABLED_ONLY
+		hpaStrategy = controller.HPA_STRATEGY_HPA_EXISTS
 	}
 
 	barrelman := controller.NewBarrelman(kubeClient, foremastClient, mode, hpaStrategy)
@@ -88,6 +88,11 @@ func main() {
 
 	if monitorController != nil {
 		log.Printf("Monitor controller started.")
+	}
+
+	hpaController := controller.NewHpaController(kubeClient, foremastClient, kubeInformerFactory.Autoscaling().V2beta2().HorizontalPodAutoscalers(), barrelman)
+	if hpaController != nil {
+		log.Printf("HPA controller started.")
 	}
 
 	go sharedInformerFactory.Start(stopCh)

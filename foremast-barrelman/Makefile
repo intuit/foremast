@@ -25,6 +25,10 @@ deploy: manifests
 	kubectl apply -f config/crds
 	kustomize build config/default | kubectl apply -f -
 
+# Generate CRD
+crd:
+	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go crd
+
 # Generate manifests e.g. CRD, RBAC etc.
 manifests:
 	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go rbac

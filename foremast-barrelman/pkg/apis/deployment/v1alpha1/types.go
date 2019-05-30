@@ -262,6 +262,37 @@ type DeploymentMonitorStatus struct {
 	Timestamp string `json:"timestamp"`
 
 	Expired bool `json:"expired"`
+
+	HpaScoreEnabled bool `json:"hpaScoreEnabled"`
+
+	HpaLogs []HpaLogEntry `json:"hpaLogs"`
+}
+
+// HpaLogEntry as hpa logs
+type HpaLogEntry struct {
+	Timestamp string `json:"timestamp"`
+
+	HpaLog HpaLog `json:"hpalog"`
+}
+
+// HpaLog entity
+type HpaLog struct {
+	HpaScore int32 `json:"hpascore"`
+
+	Reason string `json:"reason"`
+
+	Details []HpaMetric `json:"details"`
+}
+
+// HpaMetric detail for the HPA metric
+type HpaMetric struct {
+	MetricAlias string `json:"metricAlias"`
+
+	Current float64 `json:"current"`
+
+	Upper float64 `json:"upper"`
+
+	Lower float64 `json:"lower"`
 }
 
 // "healthy" deployment is considered healthy, "running" the deployment is running and it is detecting,

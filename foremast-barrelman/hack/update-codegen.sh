@@ -29,7 +29,7 @@ echo "$(dirname ${BASH_SOURCE})/../../../.."
 
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   foremast.ai/foremast/foremast-barrelman/pkg/client foremast.ai/foremast/foremast-barrelman/pkg/apis \
-  deployment.foremast.ai:v1alpha1 \
+  deployment:v1alpha1 \
   --output-base "$(dirname ${BASH_SOURCE})/../../../.." \
   --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt
 

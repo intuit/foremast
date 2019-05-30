@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	d "foremast.ai/foremast/foremast-barrelman/pkg/apis/deployment/v1alpha1"
 	m "foremast.ai/foremast/foremast-barrelman/pkg/client/metrics"
-	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog/glog"
 	"net/http"
 	"net/url"
 	"time"
@@ -44,6 +44,9 @@ type ApplicationHealthAnalyzeRequest struct {
 
 	// Namespace
 	Namespace string `json:"namespace,omitempty"`
+
+	// Pod count url
+	PodCountURL m.MetricQuery `json:"podCountURL,omitempty"`
 }
 
 type AnomalyInfo struct {
@@ -61,7 +64,44 @@ type ApplicationHealthAnalyzeResponse struct {
 	Status string `json:"status"`
 
 	Anomaly map[string]AnomalyInfo `json:"anomaly,omitempty"`
+
+	HpaLogs []d.HpaLogEntry `json:"hpaLogs"`
 }
+
+/**
+HPA history
+{
+    "job_id": "hpa-samples:dev-fm-foremast-examples-usw2-dev-dev:hpa",
+    "hpalogs": [{
+            "hpalog": {
+                "details": [{
+                        "current": 2.7000000000000006,
+                        "lower": 0,
+                        "metricAlias": "traffic",
+                        "upper": 1.4194502009551655
+                    },
+                    {
+                        "current": 4,
+                        "lower": 0,
+                        "metricAlias": "tomcat_threads",
+                        "upper": 1.7711655929134411
+                    },
+                    {
+                        "current": 0.040515150723457634,
+                        "lower": -0.0005548594374170275,
+                        "metricAlias": "cpu",
+                        "upper": 0.011646879268297602
+                    }
+                ],
+                "hpascore": 55,
+                "reason": "hpa is scaling up"
+            },
+            "timestamp": "0001-01-01T00:00:00Z"
+        }
+
+    ]
+}
+*/
 
 func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 	if httpClient == nil {
@@ -106,6 +146,10 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 		Strategy:  strategy,
 		Metrics:   metricsInfo,
 		Namespace: namespace,
+	}
+	podCountURL, err := m.CreatePodCountURL(namespace, appName, metrics, timeWindow)
+	if err == nil {
+		analyzingRequest.PodCountURL = podCountURL
 	}
 
 	b, err := json.Marshal(analyzingRequest)
