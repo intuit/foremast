@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	common "foremast.ai/foremast/foremast-service/pkg/common"
-	converter "foremast.ai/foremast/foremast-service/pkg/converter"
-	models "foremast.ai/foremast/foremast-service/pkg/models"
-	prometheus "foremast.ai/foremast/foremast-service/pkg/prometheus"
-	search "foremast.ai/foremast/foremast-service/pkg/search"
-	wavefront "foremast.ai/foremast/foremast-service/pkg/wavefront"
+	"foremast.ai/foremast/foremast-service/pkg/common"
+	"foremast.ai/foremast/foremast-service/pkg/converter"
+	"foremast.ai/foremast/foremast-service/pkg/models"
+	"foremast.ai/foremast/foremast-service/pkg/prometheus"
+	"foremast.ai/foremast/foremast-service/pkg/search"
+	"foremast.ai/foremast/foremast-service/pkg/wavefront"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
 )
@@ -23,7 +23,7 @@ var (
 	elasticClient *elastic.Client
 )
 
-// query service endpoint
+// QueryEndpoint query service endpoint
 var QueryEndpoint string
 
 // ConfigSeparator .... constant variable based on to separate the queries
@@ -48,7 +48,7 @@ func constructURL(metricQuery models.MetricQuery) (int32, string, string) {
 	return 404, metricQuery.DataSourceType, ""
 }
 
-func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, string) {
+func convertMetricQuerys(metric map[string]models.MetricQuery, strategy string) (int32, string, string) {
 	if len(metric) == 0 {
 		return 404, "", ""
 	}
@@ -57,7 +57,7 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, s
 	var co int
 
 	for key, value := range metric {
-		if value.Priority != nil {
+		if "hpa" == strategy || "continuous" == strategy {
 			log.Printf("parameters %#v", value.Parameters)
 			value.Parameters["start"] = "START_TIME"
 			value.Parameters["end"] = "END_TIME"
@@ -81,17 +81,17 @@ func convertMetricQuerys(metric map[string]models.MetricQuery) (int32, string, s
 	return 0, output.String(), metricSourceOutput.String()
 }
 
-func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string, []string, []models.HPAMetric) {
+func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string, []string, []string, map[string]models.HPAMetric) {
 
 	configs := []string{"", "", ""}
 	mSources := []string{"", "", ""}
-	hpametrics := []models.HPAMetric{}
+	hpametrics := map[string]models.HPAMetric{}
 	if m.Current == nil || len(m.Current) == 0 {
 		return 404, "MetricInfo current is empty ", configs, mSources, hpametrics
 	}
 	errorCode := 0
 	reason := strings.Builder{}
-	errCode, ret, mSource := convertMetricQuerys(m.Current)
+	errCode, ret, mSource := convertMetricQuerys(m.Current, strategy)
 
 	if errCode != 0 {
 		log.Println("Error: current convertMetricQuerys ", m.Current, " failed. errorCode is ", errCode)
@@ -104,7 +104,7 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 	mSources[0] = mSource
 
 	if m.Baseline != nil {
-		errCode, ret, mSource := convertMetricQuerys(m.Baseline)
+		errCode, ret, mSource := convertMetricQuerys(m.Baseline, strategy)
 		if errCode != 0 {
 			log.Println("Warning: baseline convertMetricQuerys ", m.Baseline, " failed. errorCode is ", errCode)
 			reason.WriteString(" baseline query encount error ")
@@ -115,13 +115,16 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 	}
 
 	if m.Historical != nil {
-		hErrCode, ret, mSource := convertMetricQuerys(m.Historical)
+		hErrCode, ret, mSource := convertMetricQuerys(m.Historical, strategy)
 		if strategy == "hpa" {
 			for k, v := range m.Historical {
-				hpametrics = append(hpametrics, models.HPAMetric{*v.Priority, k, v.IsIncrease, v.IsAbsolute})
+				priority := 1
+				if v.Priority != nil {
+					priority = *v.Priority
+				}
+				hpametrics[k] = models.HPAMetric{Priority: priority, IsIncrease: v.IsIncrease, IsAbsolute: v.IsAbsolute}
 			}
 		}
-
 		if hErrCode != 0 {
 			log.Println("Warning: historical convertMetricQuerys ", m.Historical, " failed. errorCode is ", hErrCode)
 			reason.WriteString(" historical query encount error ")
@@ -139,10 +142,8 @@ func convertMetricInfoString(m models.MetricsInfo, strategy string) (int, string
 	}
 	if strategy != "hpa" {
 		return errorCode, reason.String(), configs, mSources, nil
-	} else {
-		return errorCode, reason.String(), configs, mSources, hpametrics
 	}
-
+	return errorCode, reason.String(), configs, mSources, hpametrics
 }
 
 // RegisterEntry .... mapping input request to elasticserch structure
@@ -167,6 +168,11 @@ func RegisterEntry(context *gin.Context) {
 		common.ErrorResponse(context, http.StatusBadRequest, reason)
 		return
 	}
+	_, url, _ := convertMetricQuerys(map[string]models.MetricQuery{"podCountURL": appRequest.PodCountURL}, appRequest.Strategy)
+	var podCountURL string
+	if url != "" {
+		podCountURL = strings.Split(url, "== ")[1]
+	}
 
 	var doc models.DocumentRequest
 
@@ -186,6 +192,7 @@ func RegisterEntry(context *gin.Context) {
 			hpametrics,
 			appRequest.Policy,
 			appRequest.Namespace,
+			podCountURL,
 		}
 	} else {
 		doc = models.DocumentRequest{
@@ -203,109 +210,69 @@ func RegisterEntry(context *gin.Context) {
 			nil,
 			"",
 			"",
+			"",
 		}
 	}
 
 	log.Printf("DOCREQUEST: %#v\n", doc)
 
-	id, err := search.CreateNewDoc(context, elasticClient, doc)
-	context.JSON(http.StatusOK, converter.ConvertESToNewResp(id, err, "new", ""))
-
+	id, retCode, reason := search.CreateNewDoc(context, elasticClient, doc)
+	if retCode == 0 {
+		context.JSON(http.StatusOK, converter.ConvertESToNewResp(id, retCode, "new", ""))
+	} else {
+		common.ErrorResponse(context, http.StatusInternalServerError, reason)
+	}
 }
 
 // SearchByID .... restful serach by uuid or job id
 func SearchByID(context *gin.Context) {
 	_id := context.Param("id")
 	log.Println("Search by id got called :" + _id + "\n")
-	doc, err, reason := search.ByID(context, elasticClient, _id)
-
-	if err != 0 {
-		if err == -1 {
-			context.JSON(http.StatusOK, converter.ConvertESToNewResp(_id, 200, "unknown", _id+" not found."))
+	doc, retCode, reason := search.ByID(context, elasticClient, _id)
+	if retCode == 0 {
+		logs, code, reason := search.GetLogs(context, elasticClient, _id)
+		if code == 0 {
+			context.JSON(http.StatusOK, converter.ConvertESToResp(doc, logs))
+		} else if code == 1 {
+			doc.Reason = "Job HPA log not found"
+			context.JSON(http.StatusOK, converter.ConvertESToResp(doc, nil))
 		} else {
-			context.JSON(http.StatusOK, converter.ConvertESToNewResp(_id, 404, "unknown", reason))
+			doc.ID = _id
+			doc.StatusCode = "500"
+			doc.Reason = reason
+			context.JSON(http.StatusInternalServerError, converter.ConvertESToResp(doc, nil))
 		}
-		return
+	} else if retCode == 1 {
+		doc.ID = _id
+		doc.Reason = "Job not found"
+		doc.StatusCode = "404"
+		context.JSON(http.StatusNotFound, converter.ConvertESToResp(doc, nil))
+	} else {
+		doc.ID = _id
+		doc.StatusCode = "500"
+		doc.Reason = reason
+		context.JSON(http.StatusInternalServerError, converter.ConvertESToResp(doc, nil))
 	}
-	context.JSON(http.StatusOK, converter.ConvertESToResp(doc))
-
 }
 
 // HpaAlert .... get hpa alert reason
 func HpaAlert(context *gin.Context) {
 	_appName := context.Param("appName")
 	_namespace := context.Param("namespace")
-	log.Printf("Getting info for %s/%s :\n", _namespace, _appName)
-	doc, err, reason := search.ByNamespacedQuery(context, elasticClient, _appName+" "+_namespace)
-	_ = reason
+	_strategy := context.Param("strategy")
+	id := _appName + ":" + _namespace + ":" + _strategy
+	log.Printf("Getting info for %s:%s:%s :\n", _namespace, _appName, _strategy)
+	logs, retCode, reason := search.GetLogs(context, elasticClient, id)
 
-	logs, err2, reason := search.GetLogs(context, elasticClient, doc.ID)
-	_ = err2
-	_ = reason
-
-	if len(logs) > 10 {
-		logs = logs[0:9]
-	}
-	log.Printf("logs: %s\n", logs)
-
-	if err == 1 {
-		context.JSON(http.StatusNotFound, converter.ConvertESToHPAResp(doc, logs))
-		// context.JSON(http.StatusInternalServerError, converter.ConvertESToHPAResp(doc.AppName, doc.Namespace, doc.ModifiedAt, doc.CreatedAt, doc.Status, doc.ID))
-		return
+	if retCode == 0 {
+		context.JSON(http.StatusOK, converter.ConvertESToHPAResp(id, logs, 200, ""))
+	} else if retCode == 1 {
+		context.JSON(http.StatusNotFound, converter.ConvertESToHPAResp(id, logs, 404, "HPA log not found"))
 	} else {
-		context.JSON(http.StatusOK, converter.ConvertESToHPAResp(doc, logs))
-		// context.JSON(http.StatusOK, converter.ConvertESToHPAResp(doc.AppName, doc.Namespace, doc.ModifiedAt, doc.CreatedAt, doc.Status, doc.ID))
-		return
+		context.JSON(http.StatusInternalServerError, converter.ConvertESToHPAResp(id, logs, 500, reason))
 	}
-
-	context.JSON(http.StatusOK, converter.ConvertESToResp(doc))
-
 }
 
-func AddLog(context *gin.Context) {
-	var hpalog models.HPALog
-
-	if err := context.BindJSON(&hpalog); err != nil {
-		log.Println("Error: encounter context error ", err, " detail ", reflect.TypeOf(err))
-		common.ErrorResponse(context, http.StatusBadRequest, "Bad request")
-		return
-	}
-
-	// hpalog.JobID = id
-
-	id, err := search.CreateNewHPALog(context, elasticClient, hpalog)
-	_ = err
-	_ = id
-	hpalog.LogID = id
-
-	context.JSON(http.StatusOK, hpalog)
-
-}
-
-/*
-func ProxyQuery(context *gin.Context) {
-	var myquery models.QueryRequest
-	//check bad request
-	if err := context.BindJSON(&myquery); err != nil {
-		log.Println("Error: encounter context error ", err, " detail ", reflect.TypeOf(err))
-		common.ErrorResponse(context, http.StatusBadRequest, "Bad request")
-		return
-	}
-	httpclient := http.Client{
-		Timeout: time.Duration(90000 * time.Millisecond),
-	}
-	resp, err := httpclient.Get(myquery.QueryString)
-	if err != nil {
-		common.ErrorResponse(context, http.StatusBadRequest, "invoke query "+myquery.QueryString+" failed " )
-		return
-	}
-	defer resp.Body.Close()
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err!= nil{
-		common.ErrorResponse(context, http.StatusBadRequest, "failed to retrieve contents "+string(contents))
-	}
-	context.JSON(http.StatusOK, string(contents))
-}*/
 // QueryProxy .... Acting as proxy for different cluster of  query service (for example prometheus)
 //                 assume service only access global query service
 func QueryProxy(context *gin.Context) {
@@ -325,6 +292,7 @@ func QueryProxy(context *gin.Context) {
 	contents, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		common.ErrorResponse(context, http.StatusBadRequest, "failed to retrieve contents "+string(contents))
+		return
 	}
 	context.JSON(http.StatusOK, string(contents))
 }
@@ -335,7 +303,7 @@ func main() {
 	QueryEndpoint = os.Getenv("QUERY_SERVICE_ENDPOINT")
 	if esURL == "" {
 		//esURL = "http://elasticsearch-discovery.foremast.svc.cluster.local:9200/"
-		esURL = "http://a2c1d2f06186b11e98f4602f39e94cef-36929393.us-west-2.elb.amazonaws.com:9200/"
+		esURL = "http://localhost:9200/"
 	}
 	if QueryEndpoint == "" {
 		// QueryEndpoint = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
@@ -377,9 +345,6 @@ func main() {
 	{
 		// get hpa info for namespace/app
 		v3.GET("/:appName/:namespace/:strategy", HpaAlert)
-
-		// add an hpa log
-		v3.POST("/log", AddLog)
 	}
 
 	if err = router.Run(":8099"); err != nil {

@@ -1,10 +1,9 @@
 package converter
 
 import (
-	"fmt"
 	"strconv"
 
-	models "foremast.ai/foremast/foremast-service/pkg/models"
+	"foremast.ai/foremast/foremast-service/pkg/models"
 )
 
 // ConvertStatusToExternal .... convert internal status to k8s controller
@@ -25,7 +24,7 @@ func ConvertStatusToExternal(status string) string {
 	case "abort":
 		return "abort"
 	default:
-		return "inprogress"
+		return "unknown"
 	}
 }
 
@@ -44,39 +43,23 @@ func ConvertESToNewResp(uuid string, statusCode int32, status, reason string) mo
 	return resp
 }
 
-// ConvertESToNewResp .... convert elasticsearch to new response
-// func ConvertESToHPAResp(appName string, namespace string, mtime time.Time, ctime time.Time, status string, id string) models.HPAAlertResponse {
-func ConvertESToHPAResp(doc models.DocumentResponse, logs []models.HPALog) models.HPAAlertResponse {
-	// if statusCode == 0 {
-	// 	statusCode = 200
-	// }
-
-	resp := models.HPAAlertResponse{
-		JobID:      doc.ID,
-		AppName:    doc.AppName,
-		Namespace:  doc.Namespace,
-		Strategy:   "hpa",
-		ModifiedAt: doc.ModifiedAt,
-		CreatedAt:  doc.CreatedAt,
-		Status:     doc.Status,
-		HPALogs:    logs,
+// ConvertESToHPAResp .... convert elasticsearch to new HPA logs response
+func ConvertESToHPAResp(jobID string, logs []models.HPALog, statusCode int32, reason string) models.HPALogResponse {
+	resp := models.HPALogResponse{
+		JobID: jobID, StatusCode: statusCode}
+	if reason != "" {
+		resp.Reason = reason
 	}
-
-	// resp := models.HPAAlertResponse{
-	// 	JobID:      id,
-	// 	AppName:    appName,
-	// 	Namespace:  namespace,
-	// 	Strategy:   "hpa",
-	// 	ModifiedAt: mtime,
-	// 	CreatedAt:  ctime,
-	// 	Status:     status,
-	// 	HPALogs:    []string{"test1", "test2", "test3"},
-	// }
+	hlogs := make([]models.HPALog, 0)
+	for _, log := range logs {
+		hlogs = append(hlogs, models.HPALog{Timestamp: log.Timestamp, Log: log.Log})
+	}
+	resp.HPALog = hlogs
 	return resp
 }
 
 // ConvertESToResp .... convert elasticsearch to response
-func ConvertESToResp(input models.DocumentResponse) models.ApplicationHealthAnalyzeResponse {
+func ConvertESToResp(input models.DocumentResponse, logs []models.HPALog) models.ApplicationHealthAnalyzeResponse {
 
 	code, err := strconv.Atoi(input.StatusCode)
 	if err != nil {
@@ -88,17 +71,28 @@ func ConvertESToResp(input models.DocumentResponse) models.ApplicationHealthAnal
 		Status:     ConvertStatusToExternal(input.Status),
 		Reason:     input.Reason,
 	}
-	return resp
-}
-
-// ConvertESsToResps .... convert elasticsearch results to multiples responses
-func ConvertESsToResps(inputs []models.DocumentResponse) []models.ApplicationHealthAnalyzeResponse {
-
-	docs := make([]models.ApplicationHealthAnalyzeResponse, len(inputs))
-	fmt.Print(len(inputs))
-	for _, element := range inputs {
-
-		docs = append(docs, ConvertESToResp(element))
+	if logs != nil {
+		hpaLogs := make([]map[string]interface{}, 0)
+		for _, l := range logs {
+			hpaLogEntry := map[string]interface{}{}
+			hpaLogEntry["timestamp"] = strconv.FormatFloat(l.Timestamp, 'f', -1, 64)
+			hpaLog := map[string]interface{}{}
+			hpaLog["hpascore"] = l.Log.HPAScore
+			hpaLog["reason"] = l.Log.Reason
+			details := []map[string]interface{}{}
+			for _, d := range l.Log.Details {
+				detail := map[string]interface{}{}
+				detail["metricAlias"] = d.MetricType
+				detail["current"] = d.Current
+				detail["upper"] = d.Upper
+				detail["lower"] = d.Lower
+				details = append(details, detail)
+			}
+			hpaLog["details"] = details
+			hpaLogEntry["hpalog"] = hpaLog
+			hpaLogs = append(hpaLogs, hpaLogEntry)
+		}
+		resp.HPALog = hpaLogs
 	}
-	return docs
+	return resp
 }
