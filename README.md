@@ -55,7 +55,7 @@ Documentation for running the front-end portion of the project can be found [her
 
 - January 2019 [v0.5](https://github.com/intuit/foremast/issues?utf8=%E2%9C%93&q=is%3Aclosed+is%3Aissue+milestone%3A0.5+)
 - February 2019 [v0.6](https://github.com/intuit/foremast/issues?q=is%3Aopen+is%3Aissue+milestone%3A0.6)
-- HPA score support
+- HPA score support **Ongoing**
 - ClusterAutoScaler prediction support
 
 ## Contributing
