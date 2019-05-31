@@ -44,6 +44,9 @@ type ApplicationHealthAnalyzeRequest struct {
 
 	// Namespace
 	Namespace string `json:"namespace,omitempty"`
+
+	// Pod count url
+	PodCountURL m.MetricQuery `json:"podCountURL,omitempty"`
 }
 
 type AnomalyInfo struct {
@@ -143,6 +146,10 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 		Strategy:  strategy,
 		Metrics:   metricsInfo,
 		Namespace: namespace,
+	}
+	podCountURL, err := m.CreatePodCountURL(namespace, appName, metrics, timeWindow)
+	if err == nil {
+		analyzingRequest.PodCountURL = podCountURL
 	}
 
 	b, err := json.Marshal(analyzingRequest)

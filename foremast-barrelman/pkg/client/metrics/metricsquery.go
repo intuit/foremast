@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 	"time"
-)
+	)
 
 //type Interface interface {
 //	createMetricsInfo(namespace string, appName string, podNames [][]string, metrics d.Metrics) (MetricsInfo, error)
@@ -144,6 +144,28 @@ func CreateMetricsInfo(namespace string, appName string, podNames [][]string, me
 	} else {
 		return MetricsInfo{}, errors.NewBadRequest("Unsupported DataSourceType:" + dataSourceType)
 	}
+}
+
+func CreatePodCountURL(namespace string, appName string, metrics d.Metrics, timeWindow time.Duration) (MetricQuery, error) {
+	for _, monitoring := range metrics.Monitoring {
+		if monitoring.MetricAlias == "count" {
+			var now = time.Now()
+			var p = make(map[string]interface{})
+			var step int64 = 60
+			var nowUnix = (now.Unix() / step) * step
+			p["endpoint"] = metrics.Endpoint
+			p["step"] = step
+			p["start"] = nowUnix + step
+			p["end"] = (now.Add((timeWindow+1)*time.Minute).Unix() / step) * step
+			p["query"] = "namespace_app_pod_" + monitoring.MetricName + "{namespace=\"" + namespace + "\",app=\"" + appName + "\"}"
+			var metricQuery = MetricQuery{
+				DataSourceType: metrics.DataSourceType,
+				Parameters:     p,
+			}
+			return metricQuery, nil
+		}
+	}
+	return MetricQuery{}, errors.NewBadRequest("No count metric found:" + appName)
 }
 
 type MetricsInfo struct {

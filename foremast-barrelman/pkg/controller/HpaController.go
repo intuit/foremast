@@ -49,8 +49,8 @@ type HpaAlertContent struct {
 
 // Define alert template
 const letter = `
-At {{.Timestamp}} {{.Application}} at {{.Namespace}} was scaled {{.Action}} from {{.Old}} to {{.New}}.
-This is because{{range $index, $l := .HpaLogEntry}}{{range $i, $d := $l.HpaLog.Details}}
+At {{.Timestamp}} {{.Application}} at {{.Namespace}} was scaled {{.Action}} from {{.Old}} to {{.New}} pods. This is because
+{{range $index, $l := .HpaLogEntry}}{{range $i, $d := $l.HpaLog.Details}}
 {{$d.MetricAlias}} {{$l.Timestamp}} value {{$d.Current}} is out of normal range ({{$d.Lower}}, {{$d.Upper}}){{end}}{{end}}
 
 If you have any question, Please refer to IKS HPA Doc
@@ -103,7 +103,7 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 						alertContent.Application = monitor.Annotations[DeploymentName]
 						alertContent.Namespace = monitor.Namespace
 						alertContent.Action = "up"
-						alertContent.Old = "50"
+						alertContent.Old = strconv.Itoa(int(oldHpa.Status.CurrentReplicas))
 						hpaEntries := []d.HpaLogEntry{}
 
 						sort.Slice(monitor.Status.HpaLogs, func(i, j int) bool { // desc
@@ -111,7 +111,7 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 						})
 						current := strconv.FormatInt(time.Now().Unix(), 10)
 						logCount := 4 // default scaling up log count
-						if newHpa.Status.DesiredReplicas < oldHpa.Status.DesiredReplicas {
+						if newHpa.Status.DesiredReplicas < oldHpa.Status.CurrentReplicas {
 							// find most recently 4 scaling down logs
 							logCount = 6
 							alertContent.Action = "down"
@@ -122,7 +122,7 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 								l.Timestamp = time.Unix(int64(logTime), 0).Format(time.RFC1123)
 								hpaEntries = append(hpaEntries, l)
 								if alertContent.New == "" {
-									alertContent.New = strconv.Itoa(int(l.HpaLog.HpaScore))
+									alertContent.New = strconv.Itoa(int(newHpa.Status.DesiredReplicas))
 								}
 								if len(hpaEntries) >= logCount {
 									break
