@@ -1,7 +1,7 @@
 # Table of contents
 
 * [Foremast](README.md)
-* [Releas Notes](releas-notes.md)
+* [Release Notes](releas-notes.md)
 
 ## docs
 
