@@ -5,7 +5,7 @@
 
 ## docs
 
-* [Contributing guidelines](contributing.md)
+* [Contributing guidelines](CONTRIBUTING.md)
 * [Installation](docs/installation.md)
 * [Design](docs/design.md)
 
