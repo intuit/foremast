@@ -6,6 +6,6 @@
 ## docs
 
 * [Contributing guidelines](CONTRIBUTING.md)
-* [Installation](docs/installation.md)
-* [Design](docs/design.md)
+* [Installation](docs/guides/installation.md)
+* [Design](docs/guides/design.md)
 
