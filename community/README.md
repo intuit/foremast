@@ -18,7 +18,7 @@ The project is now being stewarded by Intuit, with contributions from other comp
 
 ## Community meetings
 
-The Foremast community meets on the [first friday](https://calendar.google.com/calendar/embed?src=vsg25pgb33f4e4mshkfkrbfifo%40group.calendar.google.com&ctz=America%2FLos_Angeles) of every month, at 9:30 AM PST (GMT -8). Feel free to join any of our meetings. You can also follow along with [proceedings](https://docs.google.com/document/d/1ev-Itcl_POBuu99RfLmNxd2rD2dQWKJZCGvxw_lgnhM/edit?usp=sharing) and [video recordings](https://www.youtube.com/channel/UC46gJODnt_dy4Ss3wzGpgvA) from our past meetings.
+The Foremast community meets on the [first Friday](https://calendar.google.com/calendar/embed?src=vsg25pgb33f4e4mshkfkrbfifo%40group.calendar.google.com&ctz=America%2FLos_Angeles) of every month, at 9:30 AM PST (GMT -8). Feel free to join any of our meetings. You can also follow along with [proceedings](https://docs.google.com/document/d/1ev-Itcl_POBuu99RfLmNxd2rD2dQWKJZCGvxw_lgnhM/edit?usp=sharing) and [video recordings](https://www.youtube.com/channel/UC46gJODnt_dy4Ss3wzGpgvA) from our past meetings.
 
 ## How can I get started?
 
@@ -29,7 +29,7 @@ The main [Github repo](https://github.com/intuit/foremast) is an excellent start
 
 ## How can I help?
 
-Foremast is in its incubation phase and needs diverse perspectives and usecases from different organizations drive its next phase of growth. Feel free to contribute and help by:
+Foremast is in its incubation phase and needs diverse perspectives and use cases from different organizations drive its next phase of growth. Feel free to contribute and help by:
 - Picking up [issues](https://github.com/intuit/foremast/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 - Starting a discussion on [Slack](https://foremastio.slack.com) 
 
