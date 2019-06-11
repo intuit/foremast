@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
-	"net/http"
 	"strings"
 	"time"
 
+	"context"
 	"foremast.ai/foremast/foremast-service/pkg/common"
 	"foremast.ai/foremast/foremast-service/pkg/models"
 	"github.com/gin-gonic/gin"
@@ -18,6 +18,7 @@ const (
 	elasticIndexName    = "documents"
 	elasticTypeName     = "document"
 	elasticLogIndexName = "hpalogs"
+	elasticModelData    = "model_datas"
 )
 
 // CreateNewDoc .... create new request
@@ -123,50 +124,42 @@ func ByID(context *gin.Context, elasticClient *elastic.Client, myid string) (mod
 	return docs[0], 0, ""
 }
 
-// ByQuery .... search by elasticsearch query
-func ByQuery(context *gin.Context, elasticClient *elastic.Client, query string) {
-	skip := 0
-	take := 10
-	esQuery := elastic.NewMultiMatchQuery(query, "appName", "content").
-		Fuzziness("2").
-		MinimumShouldMatch("2")
+// ByJobID .... search by elasticsearch by job id
+func ByJobID(context *gin.Context, elasticClient *elastic.Client, jobID string) (uuid string, err error) {
+	now := time.Now()
+	past := now.Add(time.Duration(-30) * time.Minute)
+	sortField := elastic.NewFieldSort("modified_at").Desc()
+	sortField.UnmappedType("date")
+	esQuery := elastic.NewMatchQuery("job_id.keyword", jobID)
+	bQuery := elastic.NewBoolQuery().Must(esQuery).Filter(elastic.NewRangeQuery("modified_at").Gte(past))
 	result, err := elasticClient.Search().
-		Index(elasticIndexName).
-		Query(esQuery).
-		From(skip).Size(take).
+		Index(elasticModelData).
+		Query(bQuery).SortBy(sortField).From(0).Size(1).
 		Do(context)
 
 	if err != nil {
 		log.Println(err)
-		common.ErrorResponse(context, http.StatusInternalServerError, "Something went wrong")
-		return
+		if err.(*elastic.Error).Details.Type == "index_not_found_exception" {
+			return "", nil
+		}
+		return "", err
 	}
-	// Transform search results before returning them
-	docs := make([]models.DocumentResponse, 0)
-	for _, hit := range result.Hits.Hits {
-		var doc models.DocumentResponse
-		json.Unmarshal(*hit.Source, &doc)
-		docs = append(docs, doc)
+	if len(result.Hits.Hits) == 0 {
+		return "", nil
 	}
-	context.JSON(http.StatusOK, docs)
+	return result.Hits.Hits[0].Id, nil
 }
 
 // ByStatus .... This will be used by backend python model, search by open status
-func ByStatus(context *gin.Context, elasticClient *elastic.Client, myStatusCode string) {
-	skip := 0
-	take := 10
-	esQuery := elastic.NewMultiMatchQuery(myStatusCode, "statuscode").
-		Fuzziness("2").
-		MinimumShouldMatch("2")
+func ByStatus(elasticClient *elastic.Client, myStatusCode ...interface{}) ([]models.DocumentResponse, error) {
+	esQuery := elastic.NewTermsQuery("status", myStatusCode...)
 	result, err := elasticClient.Search().
 		Index(elasticIndexName).
-		Query(esQuery).
-		From(skip).Size(take).
-		Do(context)
+		Query(esQuery).Sort("modified_at", true).
+		Do(context.Background())
 	if err != nil {
 		log.Println(err)
-		common.ErrorResponse(context, http.StatusInternalServerError, "Something went wrong")
-		return
+		return nil, err
 	}
 	// Transform search results before returning them
 	docs := make([]models.DocumentResponse, 0)
@@ -175,8 +168,7 @@ func ByStatus(context *gin.Context, elasticClient *elastic.Client, myStatusCode 
 		json.Unmarshal(*hit.Source, &doc)
 		docs = append(docs, doc)
 	}
-	context.JSON(http.StatusOK, docs)
-	return
+	return docs, nil
 }
 
 // ConvertDocumentRequestToString ... convert the request to string

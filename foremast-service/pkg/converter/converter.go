@@ -20,7 +20,7 @@ func ConvertStatusToExternal(status string) string {
 	case "completed_unknown":
 		return "abort"
 	case "preprocess_failed":
-		return "abort"
+		return "preprocess_failed"
 	case "abort":
 		return "abort"
 	default:

@@ -1,13 +1,13 @@
 package wavefront
 
 import (
-	"fmt"
-	"net/url"
+		"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 
-	models "foremast.ai/foremast/foremast-service/pkg/models"
+	"foremast.ai/foremast/foremast-service/pkg/models"
+	"log"
 )
 
 // BuildURL .... Build Prometheus url
@@ -47,6 +47,6 @@ func BuildURL(metricQuery models.MetricQuery) string {
 
 		urlstring.WriteString(strconv.FormatFloat(end.(float64), 'f', 0, 64))
 	}
-	fmt.Println("WAVEFRONT URL: " + urlstring.String())
+	log.Println("WAVEFRONT URL: " + urlstring.String())
 	return urlstring.String()
 }

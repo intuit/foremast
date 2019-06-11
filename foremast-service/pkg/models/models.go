@@ -154,10 +154,10 @@ type DocumentResponse struct {
 	Strategy            string               `json:"strategy"`
 	CurrentConfig       string               `json:"currentConfig"`
 	BaselineConfig      string               `json:"baselineConfig,omitempty"`
-	HistoricConfig      string               `json:"historicConfig,omitempty"`
+	HistoricConfig      string               `json:"historicalConfig,omitempty"`
 	CurrentMetricStore  string               `json:"currentMetricStore,omitempty"`
 	BaselineMetricStore string               `json:"baselineMetricStore,omitempty"`
-	HistoricMetricStore string               `json:"historicMetricStore,omitempty"`
+	HistoricMetricStore string               `json:"historicalMetricStore,omitempty"`
 	Status              string               `json:"status"`
 	StatusCode          string               `json:"statusCode"`
 	Reason              string               `json:"reason,omitempty"`
@@ -166,6 +166,8 @@ type DocumentResponse struct {
 	HPAMetrics          map[string]HPAMetric `json:"hpaMetricsConfig,omitempty"`
 	Policy              string               `json:"policy,omitempty"`
 	Namespace           string               `json:"namespace,omitempty"`
+	Action              string               `json:"action,omitempty"`
+	PodCountURL         string               `json:"podCountURL,omitempty"`
 }
 
 // SearchResponse .... es search reqponse structure
@@ -196,14 +198,20 @@ type HPALog struct {
 	ModifiedAt *time.Time `json:"modified_at,omitempty"`
 	CreatedAt  *time.Time `json:"created_at,omitempty"`
 	Timestamp  float64    `json:"timestamp"`
-	Log        struct {
-		HPAScore int    `json:"hpascore"`
-		Reason   string `json:"reason"`
-		Details  []struct {
-			MetricType string  `json:"metricType"`
-			Current    float64 `json:"current"`
-			Upper      float64 `json:"upper"`
-			Lower      float64 `json:"lower"`
-		} `json:"details"`
-	} `json:"hpalog"`
+	Log        LogContent `json:"hpalog"`
+}
+
+// LogContent ...
+type LogContent struct {
+	HPAScore int    `json:"hpascore"`
+	Reason   string `json:"reason"`
+	Details  []LogDetail `json:"details`
+}
+
+// LogDetail ...
+type LogDetail struct {
+	MetricType string  `json:"metricType"`
+	Current    float64 `json:"current"`
+	Upper      float64 `json:"upper"`
+	Lower      float64 `json:"lower"`
 }
