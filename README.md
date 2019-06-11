@@ -60,6 +60,6 @@ Documentation for running the front-end portion of the project can be found [her
 
 ## Contributing
 
-We welcome you to get involved with Foremast. You can contribute either by using Foremast and providing feedback, or contribute to our code, participate in our code and design reviews etc.
+We welcome you to get involved with Foremast. You can contribute by using Foremast and providing feedback, contributing to our code, participating in our code and design reviews etc.
 
 Read the [contributing guidelines](docs/guides/contributing.md) to learn about building the project, the project structure, and the purpose of each package.

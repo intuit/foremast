@@ -4,7 +4,7 @@
 
 ## Installation
 
-With an introduction to the core concepts in the previous section, lets move onto setting up foremast and using it.
+With an introduction to the core concepts in the previous section, let's move onto setting up foremast and using it.
 
 ### Install All-in-One
 
@@ -34,7 +34,7 @@ prometheus-k8s-1                      3/3     Running   1          6h
 prometheus-operator-587d64f4c-lvzsn   1/1     Running   0          6h
 ```
 
-#### Hints: if you get error when you running the creation, please run the command again.
+#### Hints: if you get an error when you running the creation, please run the command again.
 
 #### Foremast
 
@@ -107,7 +107,7 @@ Handling connection for 9090
 ```
 
 You can type "[http://localhost:9090/graph](http://localhost:9090/graph)" in your browser after that.   
-Search for`namespace_app_per_pod:http_server_requests_errors` and display the metric with tab **Graph**, you are going to see a error chart.
+Search for`namespace_app_per_pod:http_server_requests_errors` and display the metric with tab **Graph**, you are going to see an error chart.
 
 #### Run demo v2
 

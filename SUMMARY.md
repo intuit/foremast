@@ -1,11 +1,11 @@
 # Table of contents
 
 * [Foremast](README.md)
-* [Releas Notes](releas-notes.md)
+* [Release Notes](CHANGELOG.md)
 
 ## docs
 
-* [Contributing guidelines](docs/contributing.md)
-* [Installation](docs/installation.md)
-* [Design](docs/design.md)
+* [Contributing guidelines](CONTRIBUTING.md)
+* [Installation](docs/guides/installation.md)
+* [Design](docs/guides/design.md)
 
