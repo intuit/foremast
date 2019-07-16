@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-
 	"foremast.ai/foremast/foremast-service/pkg/common"
 	"foremast.ai/foremast/foremast-service/pkg/converter"
 	"foremast.ai/foremast/foremast-service/pkg/models"
