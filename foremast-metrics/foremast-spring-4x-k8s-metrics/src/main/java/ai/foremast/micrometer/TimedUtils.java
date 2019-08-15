@@ -17,25 +17,38 @@ package ai.foremast.micrometer;
 
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.annotation.TimedSet;
-import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.annotation.*;
 
-import java.lang.reflect.AnnotatedElement;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.stream.Collectors;
+
 
 public final class TimedUtils {
     private TimedUtils() {
     }
 
-    public static Set<Timed> findTimedAnnotations(AnnotatedElement element) {
-        Timed t = AnnotationUtils.findAnnotation(element, Timed.class);
+    public static Set<Timed> findTimedAnnotations(Method method) {
+        Timed t = AnnotationUtils.findAnnotation(method, Timed.class);
         //noinspection ConstantConditions
         if (t != null)
             return Collections.singleton(t);
 
-        TimedSet ts = AnnotationUtils.findAnnotation(element, TimedSet.class);
+        TimedSet ts = AnnotationUtils.findAnnotation(method, TimedSet.class);
+        if (ts != null) {
+            return Arrays.stream(ts.value()).collect(Collectors.toSet());
+        }
+
+        return Collections.emptySet();
+    }
+
+    public static Set<Timed> findTimedAnnotations(Class<?> clazz) {
+        Timed t = AnnotationUtils.findAnnotation(clazz, Timed.class);
+        //noinspection ConstantConditions
+        if (t != null)
+            return Collections.singleton(t);
+
+        TimedSet ts = AnnotationUtils.findAnnotation(clazz, TimedSet.class);
         if (ts != null) {
             return Arrays.stream(ts.value()).collect(Collectors.toSet());
         }

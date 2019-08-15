@@ -171,13 +171,16 @@ public class WebMvcMetricsFilter implements Filter {
             filterChain.doFilter(request, wrapper);
 
             record(timingContext, wrapper, request,
-                    handlerObject, (Throwable) request.getAttribute(DispatcherServlet.EXCEPTION_ATTRIBUTE));
+                    handlerObject, (Throwable) request.getAttribute(EXCEPTION_ATTRIBUTE));
         } catch (NestedServletException e) {
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             record(timingContext, response, request, handlerObject, e.getCause());
             throw e;
         }
     }
+
+    public static final String EXCEPTION_ATTRIBUTE = DispatcherServlet.class.getName() + ".EXCEPTION";
+
 
     @Override
     public void destroy() {
