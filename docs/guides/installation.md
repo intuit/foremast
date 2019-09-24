@@ -71,10 +71,10 @@ $ kubectl create -Rf deploy/foremast/
 $ kubectl get pods -n foremast
 
 NAME                               READY   STATUS    RESTARTS   AGE
-barrelman-85c67bbbb5-nh5sl         1/1     Running   0          1h
+foremast-barrelman-85c67bbbb5-nh5sl         1/1     Running   0          1h
 elasticsearch-0                    1/1     Running   0          5h
-foremast-ai-api-867fc9f756-pt6lz   1/1     Running   0          5h
-foremast-engine-748d45cc98-qph54   1/1     Running   0          5h
+foremast-service-867fc9f756-pt6lz   1/1     Running   0          5h
+foremast-brain-748d45cc98-qph54   1/1     Running   0          5h
 ```
 
 ## Run example
