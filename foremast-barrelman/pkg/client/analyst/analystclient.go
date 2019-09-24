@@ -21,7 +21,7 @@ type Client struct {
 	BaseURL   *url.URL
 	UserAgent string
 
-	httpClient *http.Client
+	DoFunc func(req *http.Request) (*http.Response, error)
 }
 
 type ApplicationHealthAnalyzeRequest struct {
@@ -113,10 +113,10 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 			glog.V(5).Infof("The base URL is wrong: %v", endpoint)
 			return nil, err
 		} else {
-			return &Client{httpClient: httpClient, BaseURL: u}, nil
+			return &Client{DoFunc: httpClient.Do, BaseURL: u}, nil
 		}
 	} else {
-		return &Client{httpClient: httpClient}, nil
+		return &Client{DoFunc: httpClient.Do}, nil
 	}
 }
 
@@ -168,7 +168,7 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.DoFunc(req)
 	if err != nil {
 		return "", err
 	}
@@ -192,22 +192,6 @@ func (c *Client) StartAnalyzing(namespace string, appName string, podNames [][]s
 	return analyzingResponse.JobId, nil
 }
 
-/*
-[
-    {
-        "id": "5f99629670a33e99ecf6a7218b8351f6fedeba9fc4284dd5968fa02d298ccc80",
-        "appName": "k8s-metrics-demo",
-        "created_at": "2018-10-26T00:50:03.457664Z",
-        "startTime": "2018-10-26T00:50:03.457665Z",
-        "endTime": "2018-10-26T00:50:03.457665Z",
-        "modified_at": "2018-10-26T00:50:03.457665Z",
-        "status": "created",
-        "stage": "initial",
-        "content": "start=\"\ufffd\",end=\"\ufffd\",endpoint=\"http://localhost:9090/api/v1/query_range\",filterStr=\"namespace_pod:http_server_requests_error_4xx\",steps=\"60\""
-    }
-]
-*/
-
 func (c *Client) GetStatus(jobId string) (ApplicationHealthAnalyzeResponse, error) {
 	//queries[] MetricQuery
 	rel := &url.URL{Path: "id/" + jobId}
@@ -221,7 +205,7 @@ func (c *Client) GetStatus(jobId string) (ApplicationHealthAnalyzeResponse, erro
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.DoFunc(req)
 	if err != nil {
 		return ApplicationHealthAnalyzeResponse{
 			StatusCode: 501,
@@ -239,24 +223,6 @@ func (c *Client) GetStatus(jobId string) (ApplicationHealthAnalyzeResponse, erro
 		}, err
 	}
 
-	/*
-			switch status {
-		case "initial":
-			return "new"
-		case "preprocess_inprogress":
-			return "inprogress"
-		case "postprocess_inprogress":
-			return "inprogress"
-		case "completed_health":
-			return "success"
-		case "completed_unhealth":
-			return "anomaly"
-		case "abort":
-			return "abort"
-		default:
-			return "unknown"
-		}
-	*/
 	var phase string
 	switch response.Status {
 	case "created", "initial", "new", "inprogress", "unknown":
@@ -278,10 +244,6 @@ func (c *Client) GetStatus(jobId string) (ApplicationHealthAnalyzeResponse, erro
 		phase = response.Status
 	}
 
-	//var getStatusResponse = ApplicationHealthAnalyzeResponse{
-	//	StatusCode: 200,
-	//	Status:     phase,
-	//}
 	response.Status = phase
 	return response, nil
 }
