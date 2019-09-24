@@ -1,47 +1,47 @@
 package common
 
 import (
-	"bytes"
-	"fmt"
+	"time"
+	"log"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"strings"
+	"github.com/gin-gonic/gin"
 )
 
-// ConvertMapToString ... convert map to string
-func ConvertMapToString(m map[string]string) string {
-	b := new(bytes.Buffer)
-	size := len(m)
-	i := 1
-	for key, value := range m {
-		fmt.Fprintf(b, "%s=\"%s\"", key, value)
-		if i < size {
-			fmt.Fprintf(b, ",")
-		}
-		i++
-
+// StrToTime .... convert input string format of time to time
+func StrToTime(input string) time.Time {
+	t1, err := time.Parse(
+		time.RFC3339,
+		input)
+	if err != nil {
+		log.Print(err)
+		return time.Now().UTC()
 	}
-	return b.String()
+	return t1
 }
 
-// ConvertStringToMap .... convert string to map
-func ConvertStringToMap(str string) map[string]string {
-	m := make(map[string]string)
-	strs := strings.Split(str, ",")
-	for _, s := range strs {
-		if len(s) != 0 {
-			sm := strings.Split(s, "=")
-			m[sm[0]] = sm[1]
-		}
-	}
-	return m
+// UUIDGen .... based on input string to generate uuid
+func UUIDGen(str string) string {
+	secret := ""
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(str))
+	sha := hex.EncodeToString(h.Sum(nil))
+	return sha
 }
 
-/*
-func main1() {
-	m := make(map[string]string)
-	m["k1"] = "ab"
-	m["k2"] = "cd"
-	ss := ConvertMapToString(m)
+// CheckStrEmpty .... check if input string is empty
+func CheckStrEmpty(str string) bool {
+	if len(strings.TrimSpace(str)) == 0 {
+		return true
+	}
+	return false
+}
 
-	mm := ConvertStringToMap(ss)
-	fmt.Println(" mm ", mm)
-}*/
+// ErrorResponse .... use ErrorResponse to handle error
+func ErrorResponse(c *gin.Context, code int, err string) {
+	c.JSON(code, gin.H{
+		"error": err,
+	})
+}

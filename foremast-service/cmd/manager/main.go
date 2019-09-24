@@ -1,14 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"reflect"
-	"strings"
-	"time"
-
 	"foremast.ai/foremast/foremast-service/pkg/common"
 	"foremast.ai/foremast/foremast-service/pkg/converter"
 	"foremast.ai/foremast/foremast-service/pkg/models"
@@ -17,20 +9,26 @@ import (
 	"foremast.ai/foremast/foremast-service/pkg/wavefront"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
+	"log"
+	"net/http"
+	"os"
+	"reflect"
+	"strings"
+	"time"
 )
 
 var (
 	elasticClient *elastic.Client
+	// QueryEndpoint query service endpoint
+	QueryEndpoint string
 )
 
-// QueryEndpoint query service endpoint
-var QueryEndpoint string
-
-// ConfigSeparator .... constant variable based on to separate the queries
-const ConfigSeparator = " ||"
-
-// KvSeparator   .... used for key and value separate
-const KvSeparator = "== "
+const (
+	// ConfigSeparator .... constant variable based on to separate the queries
+	ConfigSeparator = " ||"
+	// KvSeparator   .... used for key and value separate
+	KvSeparator = "== "
+)
 
 func constructURL(metricQuery models.MetricQuery) (int32, string, string) {
 	config := metricQuery.Parameters
@@ -273,28 +271,94 @@ func HpaAlert(context *gin.Context) {
 	}
 }
 
-// QueryProxy .... Acting as proxy for different cluster of  query service (for example prometheus)
-//                 assume service only access global query service
-func QueryProxy(context *gin.Context) {
-	//allow crqs
-	context.Header("Access-Control-Allow-Origin", "*")
-	queryMaps := context.Request.URL.RawQuery
-	targeturl := QueryEndpoint + "api/v1/query_range?" + queryMaps
-	httpclient := http.Client{
-		Timeout: time.Duration(90000 * time.Millisecond),
+//// QueryProxy .... Acting as proxy for different cluster of  query service (for example prometheus)
+////                 assume service only access global query service
+//func QueryProxy(context *gin.Context) {
+//	//allow crqs
+//	context.Header("Access-Control-Allow-Origin", "*")
+//	queryMaps := context.Request.URL.RawQuery
+//	targeturl := QueryEndpoint + "api/v1/query_range?" + queryMaps
+//	httpclient := http.Client{
+//		Timeout: time.Duration(90000 * time.Millisecond),
+//	}
+//	resp, err := httpclient.Get(targeturl)
+//	if err != nil {
+//		common.ErrorResponse(context, http.StatusBadRequest, "invoke query "+targeturl+" failed ")
+//		return
+//	}
+//	defer resp.Body.Close()
+//	contents, err := ioutil.ReadAll(resp.Body)
+//	if err != nil {
+//		common.ErrorResponse(context, http.StatusBadRequest, "failed to retrieve contents "+string(contents))
+//		return
+//	}
+//	context.JSON(http.StatusOK, string(contents))
+//}
+
+// GetOpenRequest find open request from request queue
+// The queue come from elasticsearch documents
+func GetOpenRequest(context *gin.Context) {
+	queue := common.GetQueueInstance()
+	doc := models.DocumentResponse{}
+
+	for {
+		obj, found := queue.Pop()
+		if found {
+			doc = obj.(models.DocumentResponse)
+			// check if last modified time is 45 secs ago
+			if doc.ModifiedAt.Before(time.Now().Add(time.Duration(-45) * time.Second)) {
+				// query if model exist and not expired
+				uuid, err := search.ByJobID(context, elasticClient, doc.ID)
+				if err != nil {
+					doc.ID = ""
+					doc.StatusCode = "500"
+					doc.Status = "unknown"
+					doc.Reason = "Something wrong when query elasticsearch"
+					context.JSON(http.StatusInternalServerError, converter.ConvertESToResp(doc, nil))
+					return
+				}
+				doc.Action = "realtime"
+				if uuid == "" {
+					doc.Action = "historical"
+				}
+				context.JSON(http.StatusOK, doc)
+				return
+			}
+			continue
+		}
+		break
 	}
-	resp, err := httpclient.Get(targeturl)
-	if err != nil {
-		common.ErrorResponse(context, http.StatusBadRequest, "invoke query "+targeturl+" failed ")
-		return
-	}
-	defer resp.Body.Close()
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		common.ErrorResponse(context, http.StatusBadRequest, "failed to retrieve contents "+string(contents))
-		return
-	}
-	context.JSON(http.StatusOK, string(contents))
+	doc.ID = ""
+	doc.Reason = "No open request found"
+	doc.StatusCode = "404"
+	context.JSON(http.StatusNotFound, converter.ConvertESToResp(doc, nil))
+}
+
+// fillQueueFromES to get documents from ES and add to queue for later process
+func fillQueueFromES() {
+	go func() {
+		for {
+			select {
+			case <-time.After(100 * time.Microsecond):
+				queue := common.GetQueueInstance()
+				if queue.Len() == 0 {
+					log.Println("fill open requests queue from ES")
+					docs, err := search.ByStatus(elasticClient, "preprocess_inprogress", "preprocess_completed",
+						"preprocess_failed", "postprocess_inprogress", "initial")
+					if err != nil {
+						log.Println("failed to reach get open requests from ES ", err)
+						continue
+					}
+					if len(docs) > 0 {
+						for _, doc := range docs {
+							queue.Push(doc)
+						}
+					}
+					log.Printf("current queue size %d", queue.Len())
+				}
+			}
+		}
+	}()
 }
 
 // main .... program entry
@@ -307,7 +371,7 @@ func main() {
 	}
 	if QueryEndpoint == "" {
 		// QueryEndpoint = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
-		QueryEndpoint = "http://a6ac3e9663bb411e9a63702d1928664b-740248454.us-west-2.elb.amazonaws.com:9090/"
+		QueryEndpoint = "http://loalhost:9090/"
 	}
 
 	var err error
@@ -325,6 +389,9 @@ func main() {
 			break
 		}
 	}
+	// fill up queue
+	fillQueueFromES()
+
 	router := gin.Default()
 	v1 := router.Group("/v1/healthcheck")
 	{
@@ -337,8 +404,8 @@ func main() {
 	}
 	v2 := router.Group("/api/")
 	{
-		//query proxy
-		v2.GET("/v1/:queryproxy", QueryProxy)
+		//find open request
+		v2.GET("/v1/getrequest", GetOpenRequest)
 	}
 
 	v3 := router.Group("/alert")
