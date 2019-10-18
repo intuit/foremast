@@ -37,6 +37,10 @@ There are multiple sets of parameters that can be overwritten.
 - `MIN_WILCOXON_DATA_POINTS` -- Minimum data points required by Wilcoxon algorithm
 - `MIN_KRUSKAL_DATA_POINTS` -- Minimum data points required by Kruskal algorithm
 
+#### Community Presentations
+- Foremast presented at Kubecon
+https://kccnceu19.sched.com/event/MPaQ/ready-a-deep-dive-into-pod-readiness-gates-for-service-health-management-minhan-xia-google-ping-zou-intuit
+
 ### How to make changes:
 
 You can add algorithm names and different parameters.
