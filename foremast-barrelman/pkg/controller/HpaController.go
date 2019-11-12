@@ -131,9 +131,9 @@ func NewHpaController(kubeclientset kubernetes.Interface, foremastClientset clie
 						}
 						alertContent.HpaLogEntry = hpaEntries
 						// write to log
-						template := template.Must(template.New("letter").Parse(letter))
+						tmpl := template.Must(template.New("letter").Parse(letter))
 						var buf bytes.Buffer
-						template.Execute(&buf, alertContent)
+						tmpl.Execute(&buf, alertContent)
 						glog.Infof("%v", buf.String())
 					}
 				}

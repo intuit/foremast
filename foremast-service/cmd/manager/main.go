@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-
 	"foremast.ai/foremast/foremast-service/pkg/common"
 	"foremast.ai/foremast/foremast-service/pkg/converter"
 	"foremast.ai/foremast/foremast-service/pkg/models"
@@ -306,8 +305,7 @@ func main() {
 		esURL = "http://localhost:9200/"
 	}
 	if QueryEndpoint == "" {
-		// QueryEndpoint = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
-		QueryEndpoint = "http://a6ac3e9663bb411e9a63702d1928664b-740248454.us-west-2.elb.amazonaws.com:9090/"
+		QueryEndpoint = "http://prometheus-k8s.monitoring.svc.cluster.local:9090/"
 	}
 
 	var err error

@@ -58,6 +58,9 @@ Documentation for running the front-end portion of the project can be found [her
 - HPA score support **Ongoing**
 - ClusterAutoScaler prediction support
 
+## Foremast presented at Kubecon
+https://kccnceu19.sched.com/event/MPaQ/ready-a-deep-dive-into-pod-readiness-gates-for-service-health-management-minhan-xia-google-ping-zou-intuit
+
 ## Contributing
 
 We welcome you to get involved with Foremast. You can contribute by using Foremast and providing feedback, contributing to our code, participating in our code and design reviews etc.

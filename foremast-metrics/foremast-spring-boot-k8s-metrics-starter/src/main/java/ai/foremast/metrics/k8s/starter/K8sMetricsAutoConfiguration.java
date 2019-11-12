@@ -4,8 +4,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
+import org.springframework.boot.actuate.metrics.web.reactive.server.DefaultWebFluxTagsProvider;
+import org.springframework.boot.actuate.metrics.web.reactive.server.WebFluxTagsProvider;
 import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider;
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -42,12 +45,24 @@ public class K8sMetricsAutoConfiguration implements MeterRegistryCustomizer {
     }
 
     @Bean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     public WebMvcTagsProvider serviceCallerTag() {
         if (metricsProperties.hasCaller()) {
             return new CallerWebMvcTagsProvider(metricsProperties.getCallerHeader());
         }
         else {
             return new DefaultWebMvcTagsProvider();
+        }
+    }
+
+    @Bean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
+    public WebFluxTagsProvider serviceFluxCallerTag() {
+        if (metricsProperties.hasCaller()) {
+            return new CallerWebFluxTagsProvider(metricsProperties.getCallerHeader());
+        }
+        else {
+            return new DefaultWebFluxTagsProvider();
         }
     }
 
