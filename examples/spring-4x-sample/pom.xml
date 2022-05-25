@@ -9,7 +9,7 @@
   <packaging>war</packaging>
 
   <properties>
-    <spring.version>4.3.18.RELEASE</spring.version>
+    <spring.version>5.2.22.RELEASE</spring.version>
 
     <servletapi.version>2.5</servletapi.version>
     <slf4j.version>1.6.1</slf4j.version>
