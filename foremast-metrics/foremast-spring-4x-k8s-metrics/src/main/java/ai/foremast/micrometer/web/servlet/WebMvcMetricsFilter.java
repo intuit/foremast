@@ -22,6 +22,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import ai.foremast.micrometer.TimedUtils;
 import io.micrometer.core.instrument.binder.tomcat.TomcatMetrics;
+import org.apache.catalina.Manager;
+import org.apache.catalina.core.ApplicationContext;
+import org.apache.catalina.core.ApplicationContextFacade;
+import org.apache.catalina.core.StandardContext;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
@@ -37,6 +41,7 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -64,6 +69,8 @@ public class WebMvcMetricsFilter implements Filter {
     private String prometheusPath = "/actuator/prometheus";
 
     private PrometheusServlet prometheusServlet;
+
+    private TomcatMetrics tomcatMetrics;
 
     private void record(TimingSampleContext timingContext, HttpServletResponse response, HttpServletRequest request,
                         Object handlerObject, Throwable e) {
@@ -127,11 +134,36 @@ public class WebMvcMetricsFilter implements Filter {
 
         //Tomcat
         try {
-            new TomcatMetrics(null, Collections.emptyList()).bindTo(this.registry);
+            Manager manager = getManager(filterConfig.getServletContext());
+            tomcatMetrics = new TomcatMetrics(manager, Collections.emptyList());
+            tomcatMetrics.bindTo(this.registry);
         }
         catch(Throwable tx) {
-
+            tx.printStackTrace();
         }
+    }
+
+    /**
+     * Return Tomcat Manager
+     * @param servletContext
+     * @return
+     */
+    private Manager getManager(ServletContext servletContext) {
+        try {
+            ApplicationContextFacade applicationContextFacade = (ApplicationContextFacade) servletContext;
+            Field applicationContextFacadeField = ApplicationContextFacade.class.getDeclaredField("context");
+            applicationContextFacadeField.setAccessible(true);
+            ApplicationContext appContext = (ApplicationContext) applicationContextFacadeField.get(applicationContextFacade);
+            Field applicationContextField = ApplicationContext.class.getDeclaredField("context");
+            applicationContextField.setAccessible(true);
+            StandardContext stdContext = (StandardContext) applicationContextField.get(appContext);
+            return stdContext.getManager();
+        } catch (Exception e) {
+            e.printStackTrace();
+            //skip this as we can also use Manager as null for metrics
+            //"Unable to get Catalina Manager. Cause: {}", e.getMessage() , e;
+        }
+        return null;
     }
 
     @Override
