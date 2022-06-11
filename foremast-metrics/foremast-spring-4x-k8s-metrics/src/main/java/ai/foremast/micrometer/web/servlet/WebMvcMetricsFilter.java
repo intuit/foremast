@@ -17,11 +17,16 @@ package ai.foremast.micrometer.web.servlet;
 
 import ai.foremast.micrometer.autoconfigure.MetricsProperties;
 import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import ai.foremast.micrometer.TimedUtils;
 import io.micrometer.core.instrument.binder.tomcat.TomcatMetrics;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.prometheus.client.CollectorRegistry;
 import org.apache.catalina.Manager;
 import org.apache.catalina.core.ApplicationContext;
 import org.apache.catalina.core.ApplicationContextFacade;
@@ -59,6 +64,7 @@ public class WebMvcMetricsFilter implements Filter {
     private static final Log logger = LogFactory.getLog(WebMvcMetricsFilter.class);
 
     private MeterRegistry registry;
+    private CollectorRegistry collectorRegistry;
     private MetricsProperties metricsProperties;
     private WebMvcTagsProvider tagsProvider = new DefaultWebMvcTagsProvider();
     private String metricName;
@@ -95,8 +101,14 @@ public class WebMvcMetricsFilter implements Filter {
     public void init(final FilterConfig filterConfig) throws ServletException {
         WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(filterConfig.getServletContext());
 
-        this.registry = ctx.getBean(MeterRegistry.class);
         this.metricsProperties = ctx.getBean(MetricsProperties.class);
+        if (this.metricsProperties.isUseGlobalRegistry()) {
+            this.registry = ctx.getBean(MeterRegistry.class);
+        } else {
+            PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+            this.collectorRegistry = registry.getPrometheusRegistry();
+            this.registry =  registry;
+        }
         this.metricName = metricsProperties.getWeb().getServer().getRequestsMetricName();
         this.autoTimeRequests = metricsProperties.getWeb().getServer().isAutoTimeRequests();
         this.mappingIntrospector = new HandlerMappingIntrospector(ctx);
@@ -130,6 +142,9 @@ public class WebMvcMetricsFilter implements Filter {
                     return filterConfig.getInitParameterNames();
                 }
             });
+            if (collectorRegistry != null) {
+                prometheusServlet.setCollectorRegistry(collectorRegistry);
+            }
         }
 
         //Tomcat
