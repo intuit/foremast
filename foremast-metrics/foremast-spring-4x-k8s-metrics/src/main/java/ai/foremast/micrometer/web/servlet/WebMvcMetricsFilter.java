@@ -144,6 +144,7 @@ public class WebMvcMetricsFilter implements Filter {
             });
             if (collectorRegistry != null) {
                 prometheusServlet.setCollectorRegistry(collectorRegistry);
+                registry.config().meterFilter(prometheusServlet.getCommonMetricsFilter());
             }
         }
 
