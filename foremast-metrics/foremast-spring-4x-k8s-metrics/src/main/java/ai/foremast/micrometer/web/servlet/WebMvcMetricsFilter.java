@@ -22,6 +22,13 @@ import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import ai.foremast.micrometer.TimedUtils;
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
+import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
+import io.micrometer.core.instrument.binder.system.UptimeMetrics;
 import io.micrometer.core.instrument.binder.tomcat.TomcatMetrics;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.prometheus.PrometheusConfig;
@@ -33,6 +40,7 @@ import org.apache.catalina.core.ApplicationContextFacade;
 import org.apache.catalina.core.StandardContext;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -157,6 +165,14 @@ public class WebMvcMetricsFilter implements Filter {
         catch(Throwable tx) {
             tx.printStackTrace();
         }
+
+        new UptimeMetrics().bindTo(this.registry);
+        new ProcessorMetrics().bindTo(this.registry);
+        new FileDescriptorMetrics().bindTo(this.registry);
+        new JvmGcMetrics().bindTo(this.registry);
+        new JvmMemoryMetrics().bindTo(this.registry);
+        new JvmThreadMetrics().bindTo(this.registry);
+        new ClassLoaderMetrics().bindTo(this.registry);
     }
 
     /**
