@@ -53,6 +53,7 @@ public class PrometheusServlet extends HttpServlet {
         WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(config.getServletContext());
         this.setCollectorRegistry(ctx.getBean(CollectorRegistry.class));
         this.setCommonMetricsFilter(ctx.getBean(CommonMetricsFilter.class));
+
     }
 
 

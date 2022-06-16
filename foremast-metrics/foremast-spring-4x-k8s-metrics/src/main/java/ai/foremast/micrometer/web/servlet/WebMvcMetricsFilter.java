@@ -17,13 +17,30 @@ package ai.foremast.micrometer.web.servlet;
 
 import ai.foremast.micrometer.autoconfigure.MetricsProperties;
 import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import ai.foremast.micrometer.TimedUtils;
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
+import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
+import io.micrometer.core.instrument.binder.system.UptimeMetrics;
 import io.micrometer.core.instrument.binder.tomcat.TomcatMetrics;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.prometheus.client.CollectorRegistry;
+import org.apache.catalina.Manager;
+import org.apache.catalina.core.ApplicationContext;
+import org.apache.catalina.core.ApplicationContextFacade;
+import org.apache.catalina.core.StandardContext;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -37,6 +54,7 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -54,6 +72,7 @@ public class WebMvcMetricsFilter implements Filter {
     private static final Log logger = LogFactory.getLog(WebMvcMetricsFilter.class);
 
     private MeterRegistry registry;
+    private CollectorRegistry collectorRegistry;
     private MetricsProperties metricsProperties;
     private WebMvcTagsProvider tagsProvider = new DefaultWebMvcTagsProvider();
     private String metricName;
@@ -64,6 +83,8 @@ public class WebMvcMetricsFilter implements Filter {
     private String prometheusPath = "/actuator/prometheus";
 
     private PrometheusServlet prometheusServlet;
+
+    private TomcatMetrics tomcatMetrics;
 
     private void record(TimingSampleContext timingContext, HttpServletResponse response, HttpServletRequest request,
                         Object handlerObject, Throwable e) {
@@ -88,8 +109,14 @@ public class WebMvcMetricsFilter implements Filter {
     public void init(final FilterConfig filterConfig) throws ServletException {
         WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(filterConfig.getServletContext());
 
-        this.registry = ctx.getBean(MeterRegistry.class);
         this.metricsProperties = ctx.getBean(MetricsProperties.class);
+        if (this.metricsProperties.isUseGlobalRegistry()) {
+            this.registry = ctx.getBean(MeterRegistry.class);
+        } else {
+            PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+            this.collectorRegistry = registry.getPrometheusRegistry();
+            this.registry =  registry;
+        }
         this.metricName = metricsProperties.getWeb().getServer().getRequestsMetricName();
         this.autoTimeRequests = metricsProperties.getWeb().getServer().isAutoTimeRequests();
         this.mappingIntrospector = new HandlerMappingIntrospector(ctx);
@@ -123,15 +150,52 @@ public class WebMvcMetricsFilter implements Filter {
                     return filterConfig.getInitParameterNames();
                 }
             });
+            if (collectorRegistry != null) {
+                prometheusServlet.setCollectorRegistry(collectorRegistry);
+                registry.config().meterFilter(prometheusServlet.getCommonMetricsFilter());
+            }
         }
 
         //Tomcat
         try {
-            new TomcatMetrics(null, Collections.emptyList()).bindTo(this.registry);
+            Manager manager = getManager(filterConfig.getServletContext());
+            tomcatMetrics = new TomcatMetrics(manager, Collections.emptyList());
+            tomcatMetrics.bindTo(this.registry);
         }
         catch(Throwable tx) {
-
+            tx.printStackTrace();
         }
+
+        new UptimeMetrics().bindTo(this.registry);
+        new ProcessorMetrics().bindTo(this.registry);
+        new FileDescriptorMetrics().bindTo(this.registry);
+        new JvmGcMetrics().bindTo(this.registry);
+        new JvmMemoryMetrics().bindTo(this.registry);
+        new JvmThreadMetrics().bindTo(this.registry);
+        new ClassLoaderMetrics().bindTo(this.registry);
+    }
+
+    /**
+     * Return Tomcat Manager
+     * @param servletContext
+     * @return
+     */
+    private Manager getManager(ServletContext servletContext) {
+        try {
+            ApplicationContextFacade applicationContextFacade = (ApplicationContextFacade) servletContext;
+            Field applicationContextFacadeField = ApplicationContextFacade.class.getDeclaredField("context");
+            applicationContextFacadeField.setAccessible(true);
+            ApplicationContext appContext = (ApplicationContext) applicationContextFacadeField.get(applicationContextFacade);
+            Field applicationContextField = ApplicationContext.class.getDeclaredField("context");
+            applicationContextField.setAccessible(true);
+            StandardContext stdContext = (StandardContext) applicationContextField.get(appContext);
+            return stdContext.getManager();
+        } catch (Exception e) {
+            e.printStackTrace();
+            //skip this as we can also use Manager as null for metrics
+            //"Unable to get Catalina Manager. Cause: {}", e.getMessage() , e;
+        }
+        return null;
     }
 
     @Override

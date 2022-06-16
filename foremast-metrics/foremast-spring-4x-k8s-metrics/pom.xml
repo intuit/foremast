@@ -5,7 +5,7 @@
 
     <groupId>ai.foremast.metrics</groupId>
     <artifactId>foremast-spring-4x-k8s-metrics</artifactId>
-    <version>0.1.7-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>foremast-spring-4.x-k8s-metrics</name>
@@ -21,7 +21,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
         <jdk.version>1.8</jdk.version>
-        <spring.version>4.3.15.RELEASE</spring.version>
+        <spring.version>5.3.18</spring.version>
         <servletapi.version>2.5</servletapi.version>
     </properties>
 
@@ -112,6 +112,7 @@
                     <stagingProgressTimeoutMinutes>20</stagingProgressTimeoutMinutes>
                 </configuration>
             </plugin>
+<!--
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
@@ -126,6 +127,7 @@
                     </execution>
                 </executions>
             </plugin>
+-->
         </plugins>
         <pluginManagement>
             <plugins>
